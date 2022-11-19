@@ -1,0 +1,73 @@
+<div id="shop"></div>
+
+<script id="tpl_shop" type="text/x-jsrender">
+{{for rows ~photos=photos ~selPayMethod=selPayMethod}}
+<div class="card card-body"><div class="row">
+    <div class="col-md-3 col-sm-2 mb-2 mb-sm-0">
+        <img class="img-fluid" src="" alt="" data-link="src{:~photos['shop'+shopitem]||~S.emptyImg()}">
+    </div>
+    <div class="col-md-6 col-sm-10">
+        <small class="mr-2 text-muted">Заказ {{:id}}-{{:orderpack}}, {{formatDateTime:created}}</small>
+        <span class="badge badge-{{:st.cls}}">{{:st.name}}</span>
+        
+        <h4 class="card-title my-2">
+            {{:itemname}}
+            <small class="text-muted">{{:opts}}</small>
+        </h4>
+        {{if st.info}}
+            <div class="mt-2 alert alert-{{:st.cls}}">
+                {{:st.info}}
+            </div>
+        {{/if}}
+        <div class="text-muted mt-2" data-link="visible{:status!='cart'}">
+            <i class="fa fa-home"></i>
+            {{if address}}
+                {{:address}}
+            {{else}}
+                {{:city_name}} &bull; {{:club_name}}
+            {{/if}}
+            <div class="my-2 mb-sm-0">
+                <i class="fa fa-user"></i> {{:name}} {{:tel}}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-12">
+        <div class="row align-items-center">
+        <h3 class="col-6 col-sm-12 m-0 mb-sm-2 text-sm-right">{{:total}}</h3>
+        {{if status=='cart'}}
+            <div class="col-6 col-sm-12 text-right">
+                <a href="/shop/cart.html"
+                    class="btn btn-success btn-xs rounded-pill1 ml-auto">Оформить</a>
+            </div>
+        {{else status=='process' && ~selPayMethod && orderpack}}
+            <div class="col-6 col-sm-12 text-right">
+            <a href="/pay/shop-{{:orderpack}}/{{:~selPayMethod}}"
+                class="btn btn-warning ml-auto btn-shoppay">Оплатить</a>
+            </div>
+        {{/if}}
+        </div>
+    </div>
+</div></div>
+{{/for}}
+<p class="text-center">
+    <a href="/shop/catalog.html" class="btn btn-light">
+        <i class="fa fa-fw fa-angle-double-left"></i> Продолжить покупки
+    </a>
+</p>
+</script>
+
+<script>
+$(function(){
+    var shopData = [[!shopData?oper=`list`]];
+    SCRM.setClubStatus(shopData.clubStatus);
+
+    $.each(shopData.rows, function(i, v){
+        v.st = SCRM.getClubStatus('idOrderItems', v.status);
+        if (v.st && v.st.email) {
+            v.st.email = row.st.email.replace('%clubname%', v.clubname).replace('%cityname%', v.cityname);
+        }
+    });
+    
+    $.templates('#tpl_shop').link("#shop", shopData);
+});
+</script>

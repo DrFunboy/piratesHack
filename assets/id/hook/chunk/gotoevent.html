@@ -1,0 +1,147 @@
+[[$tplSearch]]
+
+<script id="tpl_gotoEventBox" type="text/x-jsrender">
+<div class="card-title">Выбрано: <b>{{:selIDs.length}}</b></div>
+<div class="steps steps-" role="tablist">
+<ul data-link="{on 'click' 'a' ~changeStep}">
+    <li class="step" data-link="class{:step==1? 'active': 'success'}">
+        <a href="#" class="step-trigger" tabindex="-1" data-step="1">Мероприятие</a>
+    </li>
+    <li class="step" data-link="class{:step==2? 'active': ((step >2)? 'success': '')}">
+        <a href="#" class="step-trigger" tabindex="-1" data-step="2">Категории</a>
+    </li>
+    <li class="step" data-link="class{:step==3? 'active': ''}">
+        <a href="#" class="step-trigger" tabindex="-1" data-step="3">Команда</a>
+    </li>
+</ul>
+</div>
+
+<div data-link="visible{:step==1}">
+    {{include ~placeholder="Наименование" tmpl="#tpl_searchinput"/}}
+    
+    <div class="list-group list-group-reflow list-group-bordered">
+        {^{for idEvents}}
+            <a href="#" class="list-group-item list-group-item-action px-0"
+                data-link="{on ~getCategory}">
+            <div>
+                <h4 class="list-group-item-title">{{:name}}</h4>
+                <p class="list-group-item-text text-truncate text-muted">
+                {{formatDate:datestart}} - {{formatDate:dateend}}
+                </p>
+            </div>
+            </a>
+        {{/for}}
+    </div>
+</div>
+
+<div data-link="visible{:step==2}">
+    <div class="mb-2">{^{:selEventHtml}}</div>
+    {^{for categories}}
+        <div class="custom-control custom-checkbox mb-1">
+            <input type="checkbox" class="custom-control-input" id="cat{{:id}}" data-category="{{:id}}">
+            <label class="custom-control-label" for="cat{{:id}}">{{:name}}</label>
+        </div>
+    {{/for}}
+</div>
+
+<div data-link="visible{:step==3}">
+    <input type="text" class="form-control" data-link="team">
+</div>
+</script>
+
+<script>
+// Запуск через ~Run = будет data
+SCRM._service['/chunk/gotoevent'] = function(data) {
+    var spData = data.linkCtx.data;
+    var ids = spData.selRows;
+    if (!ids) {
+        var sp_id = (spData.sp||{}).id;
+        if (sp_id) ids = [sp_id];
+    }
+    if (!ids) {
+        SCRM.alert('Не выбраны записи');
+        return false;
+    }
+    
+    var ev_data = {
+        selIDs: ids,
+        step: 1,
+        body: '#tpl_gotoEventBox',
+        ok: 'Записать',
+        
+        onOK: function(e, md) {
+            var ch = $('[data-category]:checked', md.mdl);
+            if (!ch.length) {
+                alrt('Не выбраны категории');
+                return;
+            }
+            // else :
+
+            var ins_cat = $.map(ch, function(v, i){
+                return $(v).data('category');
+            });
+            
+            function newCategory(n) {
+                if (n < ins_cat.length) {
+                    var insData = {
+                        oper: 'add',
+                        team: ev_data.team,
+                        idevent: ev_data.selEvent,
+                        ideventcategory: ins_cat[n],
+                        addmulti: 'sportsmen',
+                        sportsmen: ids.join(',')
+                    };
+                    
+                    pEDIT('idEventMember', insData, function(data){
+                        newCategory(n+1);
+                    });
+                } else {
+                    if (ids.length==1) md.mdl.trigger('clubUpdateSpData', {id: ids[0], tab: '#t_spEvents'});
+                    md.mdl_hide();
+                }
+            }
+            newCategory(0);
+        }
+    };
+    club_Modal(ev_data, {
+        srchSubmit: function(e, data) {
+            e.preventDefault();
+            srchEvent(ev_data.srchTxt);
+        },
+        changeStep: function(e, d){
+            e.preventDefault();
+            var step = $(e.target).data('step');
+            SCRM.link(ev_data, {step: step});
+        },
+        getCategory: function(e, data) {
+            e.preventDefault();
+            var d = data.linkCtx.data;
+            pDATA('idEventCategory', {
+                sidx: 'name', sord: 'asc',
+                rows: 1001,
+                _where: {idevent: d.id}
+            }, function(data){
+                SCRM.link(ev_data, {
+                    selEvent: d.id,
+                    selEventHtml: $(e.currentTarget).html(),
+                    categories: data.rows,
+                    step: 2
+                });
+            });
+        }
+    });
+    
+    function srchEvent(srchstr){
+        pDATA('idEvent', {
+            sidx: 'name', sord: 'asc',
+            filters: SCRM.obj2Filter(srchstr? 
+                {name: {data: srchstr, op: 'cn'}} :
+                {dateend: {data: 'now', op: 'ge'}}
+            )
+        }, function(data){
+            SCRM.link(ev_data, {idEvents: data.rows});
+        });
+    }
+    srchEvent();
+}
+</script>

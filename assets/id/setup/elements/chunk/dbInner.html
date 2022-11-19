@@ -1,0 +1,853 @@
+<div class="mb-2 d-none" id="actionsMain">
+    <button class="btn btn-success btn-sm" data-link="{on ~newSportsmen}"><i class="fa fa-user-plus"></i></button>
+    <div class="dropdown mx-1"[[- data-link="css-display{if !spCount tmpl='none'}"]]>
+        <button data-toggle="dropdown" class="btn btn-primary btn-sm d-flex flex-nowrap align-items-center" 
+            disabled="disabled" data-link="disabled{:!selRowsCnt}">
+            Действия
+            <small data-link="text{:selRowsCnt} css-display{if !selRowsCnt tmpl='none'}" class="badge badge-pill badge-warning ml-1"></small>
+        </button>
+        <div class="dropdown-menu">
+            <div class="dropdown-arrow"></div>
+            <a href="#" class="dropdown-item prevent-default" data-pholder="Номер приказа/справки/заявление от родителей"
+                data-link="{on 'click' ~changeField 'status'}">Сменить Статус</a>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item prevent-default"
+                data-link="{on 'click' ~changeSquad}">Группа, Уровень</a>
+            <a href="#" class="dropdown-item prevent-default"
+                data-link="{on 'click' ~changeField 'trainer'}">Сменить тренера</a>
+            <a href="#" class="dropdown-item prevent-default"
+                data-link="{on 'click' ~changeField 'razr'}">Присвоить разряд</a>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item prevent-default"
+                data-link="{on 'click' ~changeField 'price'}">Сменить тариф</a>
+            <button class="dropdown-item btn-addinvoice" data-link="{on ~addInvoices}">Начисление</button>
+            <a href="#" class="dropdown-item"
+                data-extaction="/database/insure-manager.html" data-grid="main">Застраховать</a>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item prevent-default" data-link="{on ~Run '/chunk/gotoevent'}">Мероприятие</a>
+        </div>
+    </div>
+    <button class="btn btn-outline-primary btn-sm mr-1 d-none"
+        data-link="class{merge:(!~S^f||!selRowsCnt) toggle='d-none'} {on ~sendMessage}">
+        <i class="fa fa-envelope"></i>
+    </button>
+    <div class="dropdown d-none" data-link="class{merge:!selRowsCnt toggle='d-none'}">
+        <button data-toggle="dropdown" class="btn btn-outline-primary btn-sm"><i class="fa fa-print"></i></button>
+        <div class="dropdown-menu">
+            <div class="dropdown-arrow"></div>
+            <a href="#" class="dropdown-item" data-link="{on ~exportQRcard}"
+                data-handler="idSportsmen_qrcard" data-tmpl="sportsmen_qrcard.docx">QR карточки</a>
+            <a href="#" class="dropdown-item" data-link="{on ~exportQRcard}"
+                data-handler="idSportsmen_qrtable" data-tmpl="">QR наклейки</a>
+            <div data-link="visible{:selRowsCnt==1}">
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item prevent-default"
+                    data-link="{on ~exportContract}">Скачать договор</a>
+            </div>
+        </div>
+    </div>
+    <div class="dropdown mx-1">
+        <button data-toggle="dropdown" class="btn btn-secondary btn-sm">
+            <i class="fa fa-filter"></i><span class="d-none d-sm-inline"> Фильтр</span></button>
+        <div class="dropdown-menu">
+            <div class="dropdown-arrow"></div>
+            <a href="#" class="dropdown-item prevent-default"
+                data-link="{on 'click' spFilter 'saldo:debts'}">Должники</a></li>
+            <a href="#" class="dropdown-item prevent-default"
+                data-link="{on 'click' spFilter 'duedate:0'}">Без абонемента</a></li>
+            <a href="#" class="dropdown-item prevent-default" data-link="{on ~Run '/chunk/sp.birth'}">Именинники</a>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item prevent-default"
+                data-link="{on 'click' spFilter ''}">Сбросить фильтр</a>
+        </div>
+    </div>
+    <div class="dropdown" data-link="visible{:gridOpts.showDuedate}">
+        <button data-toggle="dropdown" class="btn btn-secondary btn-sm">
+            <i class="fa fa-battery-3"></i><span class="d-none d-lg-inline"> Абонементы</span>
+        </button>
+        <div class="dropdown-menu" data-link="{radiogroup idSchedule_main} {for ~S.clubStatus^idSchedule tmpl='#tpl_SchInv'}">
+        </div>
+    </div>
+
+    <div class="dropdown mx-1">
+        <button data-toggle="dropdown" class="btn btn-secondary btn-sm">
+            <i class="fa fa-clipboard"></i><span class="d-none d-sm-inline"> Буфер</span></button>
+        <div class="dropdown-menu">
+            <div class="dropdown-arrow"></div>
+            <a href="#" class="dropdown-item prevent-default" data-link="{on ~clipAdd}">
+                <i class="fa fa-user-plus dropdown-icon"></i> Добавить</a>
+            <a href="#" class="dropdown-item prevent-default" data-link="{on ~clipRemove}">
+                <i class="fa fa-user-times dropdown-icon"></i> Удалить</a>
+            <a href="#" class="dropdown-item prevent-default" data-link="{on ~clipShow}">
+                <i class="fa fa-users dropdown-icon"></i> Показать</a>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item prevent-default" data-link="{on ~clipClear}">Очистить</a>
+        </div>
+    </div>
+    [[-<div class="dropdown">
+        <button data-toggle="dropdown" class="btn btn-secondary btn-sm"><i class="fa fa-gear"></i></button>
+        <div class="dropdown-menu" id="grmain_Cols">
+            <div class="dropdown-arrow"></div>
+            <a href="#" class="dropdown-item" data-ch="1" data-fields="birth,doc">Личное</a>
+            <a href="#" class="dropdown-item" data-ch="1" data-fields="contract,contractdate">Договор</a>
+            <a href="#" class="dropdown-item" data-ch="1" data-fields="contact,tel,email,pasp">Контакты</a>
+            <a href="#" class="dropdown-item" data-ch="1" data-fields="price,saldo,discount">Финансы</a>
+            <a href="#" class="dropdown-item" data-fields="residue">Абонементы</a>
+            <a href="#" class="dropdown-item" data-ch="1" data-fields="meddate,insdate">Справки, страховки</a>
+            <a href="#" class="dropdown-item" data-ch="1" data-fields="razr,squad_name,trainer_name,level_name,sport_name,club_name">Группа, разряды</a>
+        </div>
+    </div>]]
+</div>
+
+<table id="grmain" data-entity="idSportsmen"></table>
+
+<style>
+    #TblGrid_grmain.EditTable {
+        border-spacing: 2px 6px;
+        border-collapse: initial;
+    }
+    .ui-jqdialog-content .CaptionTD {
+        vertical-align: top;
+        text-align: right;
+    }
+</style>
+
+<script id="tpl_SchInv" type="text/x-jsrender">
+    {{if #index==0}}<div class="dropdown-arrow"></div>{{/if}}
+    <label class="custom-control custom-radio">
+        <input type="radio" class="custom-control-input" name="SchInv" value="{{:alias}}">
+        <span class="custom-control-label">{{:name}}</span>
+    </label>
+</script>
+
+<script id="tpl_sp_search" type="text/x-jsrender">
+<p class="text-muted">Введите ФИО, мы поищем в базе, чтобы не создавать дубликаты</p>
+{{include ~placeholder="ФИО" tmpl="#tpl_searchinput"/}}
+
+<div class="list-group list-group-flush list-group-bordered mt-2" data-link="visible{:idSportsmens}">
+    {^{for idSportsmens ~cls="fa-pencil" tmpl='#tpl_rowSportsmen' /}}
+    <a href="#" class="list-group-item list-group-item-action list-group-item-success" data-link="{on ~chSportsmen}">
+        <div class="list-group-item-body">Создать <b data-link="srch_txt"></b></div>
+        <div class="list-group-item-figure">
+            <i class="fa fa-plus"></i>
+        </div>
+    </a>
+</div>
+</script>
+
+[[$tplSearch]]
+
+<script>
+window.dbValues = SCRM.dbValues || {};
+
+$.extend(true, SCRM.lexicon, {
+    idSportsmen:{
+        status:'Статус',
+        name:'Ф.И.О.',
+        gender:'Пол',
+        birth:'Дата рождения',
+        doc:'N Свидетельства',
+        contract:'N Договора',
+        contractdate:'Дата договора',
+        contact:'Контакт',
+        pasp:'Паспорт',
+        email:'Email',
+        tel:'Телефон',
+        price:'Стоимость',
+        discount:'Скидка',
+        saldo:'Баланс',
+        duedate:'Абонемент',
+        meddate:'Срок мед. справки',
+        insdate:'Срок страховки',
+        razr:'Разряд',
+        club_name:'Зал',
+        sport_name:'Дисциплина',
+        level_name:'Уровень',
+        squad:'Зал, Группа',
+        squad_name:'Группа',
+        trainer:'Тренер',
+        trainer_name:'Тренер',
+        info:'Заметки',
+        height:'Рост',
+        weight:'Вес',
+        username: 'Кабинет'
+    }
+});
+
+function get_clipSportsmen() {
+    return getObjectFromLocalStorage('club_clip_sportsmen') || [ ];
+}
+
+/* ============ sportsmenGrid =============== */
+
+
+$(document)
+.on('sportsmenGrid', 'table', function(e, initOpts) { //, '[data-entity="idSportsmen"]'
+    var spGrid = $(e.target),
+        spData = spGrid.data('spData');
+
+    if (!spData) {
+        
+        spData = $.extend({
+            url: window.location.origin,
+            grid: spGrid,
+            wrapper: $('<div class="spgrid-wrapper"></div>').insertBefore(spGrid)
+                [[+actions:notempty=`.append( $('#actionsMain').clone().toggleClass('d-flex d-none') )`]]
+                .append(spGrid),
+            pnlSp: $('<div class="mt-2" data-link="visible{:spVisible}"></div>').insertAfter(spGrid), //.next('#panelSportsmen'),
+            needReload: false,
+            spFilter: function(filter, e) {
+                if (!filter) {
+                    spGrid.jqGrid('setGridParam', {
+                        postData: {
+                            filters: spGrid.data('init-filters')
+                        }
+                    }).setGridFilter([]);
+                } else {
+                    var filters = $.map(filter.split(';'),
+                    function(fltrow, i) {
+                        var fltr = fltrow.split(':');
+                        if (fltr[1]=='debts') {
+                            return {fld: fltr[0], value: 0, oper: 'lt'};
+                        }
+                        return {fld: fltr[0], value: decodeURI(fltr[1]), oper: fltr[2]};
+                    });
+                    spGrid.setGridFilter(filters);
+                }
+            },
+            reloadGrid: function(e) {
+                spGrid.trigger('reloadGrid', [{current:true}]);
+            },
+            reloadGridData: function(e) {
+                spGrid
+                .trigger('clearSelection')
+                .trigger('reloadGrid');
+            }
+        }, [[!clubConfig?name=`idSchedule_main,Gender_main`]]);
+
+        spGrid
+        .data('spData', spData)
+        .on('hide.spGrid', function(e) {
+            spData.wrapper.hide();
+        })
+        .on('show.spGrid', function(e) {
+            clubScroll( spData.wrapper.show() );
+        });
+        
+        spData.gridOpts = $.extend(true, {
+            postData: {},
+            gridEntity: 'idSportsmen',
+            colModel: [],
+            fltrToolbar: true,
+            rownumbers: true,
+            search: true,
+            multiSort: true,
+            sortname: 'name', sortorder: 'asc',
+            autowidth: true,
+            rowattr: function(data) {
+                if ($.inArray(data.status, SCRM.app.sp_arc) != -1) {
+                    return {'class': 'rowArc'};
+                }
+            },
+            searching: {
+    			//showQuery: true,
+    			loadFilterDefaults: true,
+    			multipleSearch: true,
+    			//multipleGroup: true,
+    			closeOnEscape: true,
+    			searchOperators: true,
+    			searchOnEnter: true
+    		},
+            formEditing: {
+                width: 700,
+                labelswidth: 50
+            },
+            reloadAlert: true,
+            showDuedate: false,
+            navOpts: {add:false, edit:true, del:false}
+        }, initOpts);
+        
+        SCRM.loadWSS('grid', function() {
+            $.link(true, spData.wrapper, spData, {
+                newSportsmen: function(){
+                    var srchData = {
+                        body: '#tpl_sp_search',
+                        title: 'Новый спортсмен'
+                    };
+                    club_Modal(srchData, { // handlers
+                        srchSubmit: function(e, data) {
+                            e.preventDefault();
+                            SCRM.link(srchData, {idSportsmens: null}); //hide results
+                            if (!srchData.srchTxt||srchData.srchTxt.length<2) return;
+                            pDATA('idSportsmen', {
+                                rows: 100,
+                                filters: SCRM.obj2Filter({name: {data: srchData.srchTxt, op: 'bw'}})
+                            }, function(data){
+                                SCRM.link(srchData, {idSportsmens: data.rows});
+                            });
+                        },
+                        chSportsmen: function(e, data){
+                            e.preventDefault();
+                            var d = data.linkCtx.data;
+                            if (d.id){
+                                spGrid
+                                .one('jqGridSerializeGridData', function(e, pd) {
+                                    var gr = $(e.target);
+                                    //var oldPostData = $.extend({}, pd);
+                                    gr.one('jqGridAfterLoadComplete', function(e, data){
+                                        gr
+                                        .jqGrid('setSelection', d.id)
+                                        .jqGrid('editGridRow', d.id);
+                                        SCRM.link(spData, {needReload: true});
+                                        //.jqGrid('setGridParam', {postData: oldPostData})
+                                    });
+                                    return { _where: {id: d.id} };
+                                })
+                                //.jqGrid('showCol', 'id')
+                                .trigger('reloadGrid');
+                            } else {
+                                spGrid
+                                .one('jqGridAddEditInitializeForm', function(e, form) {
+                                    $('#name', form).val( srchData.srchTxt );
+                                })
+                                .jqGrid('editGridRow', 'new');
+                            }
+                            srchData.mdl_hide();
+                        }
+                    });
+                }, // end newSportsmen
+                changeField: function(chfield, e){
+                    SCRM._run.call(e, '/chunk/sp.changefield', {
+                        chfield: chfield,
+                        postData: {
+                            id: spData.selRows.join(',')
+                        },
+                        callback: spData.clearReload
+                    });
+                },
+                addInvoices: function(e){
+                    SCRM._run('/chunk/newinvoice', {
+                        modal: {
+                            title: 'Массовые начисления',
+                            ok: 'Начислить'
+                        },
+                        post: {
+                            addmulti: 'sportsmen',
+                            sportsmen: spData.selRows.join(',')
+                        }
+                    });
+                },
+                changeSquad: function(e, data) {
+                    SCRM._run('/chunk/squadlist', {
+                        post: {
+                            ismain: '1',
+                            sportsmen: spData.selRows.join(',')
+                        },
+                        callback: spData.clearReload
+                    });
+                    /*squadAdd({
+                        ismain: '1',
+                        sportsmen: spData.selRows.join(',')
+                    }, function(data) {
+                        spData.reloadGrid();
+                        // TODO: Удалить, потому что окно будет закрыто ?
+                        SCRM._runLoader('spCard')();
+                        //clubSpCard.loadData();
+                    });*/
+                },
+                exportQRcard: function(e, data) {
+                    e.preventDefault();
+                    var lnk = $(e.target);
+                    var data = $.extend({ // Чтобы не изменить Post
+                        doc_type: 'docx',
+                        _export: lnk.data('handler'),
+                        tmpl: lnk.data('tmpl'),
+                    }, spGrid.jqGrid('getGridParam', 'postData'), {
+                        _where: 'id=' + spData.selRows.join(','),
+                        filters: '',
+                        rows: 1001 // Безлимитно
+                    });
+                    clubPostForm(spGrid.jqGrid('getGridParam', 'url'), data);
+                },
+                exportContract: function(e, data){
+                    clubPostForm('/data/sportsmen', {
+                        key: spData.sp.key,
+                        mode: 'export'
+                    });
+                },
+                sendMessage: function(e, data){
+                    pDATA('idSportsmen', {
+                        _where: {id: spData.selRows.join(',')},
+                        rows: 1001
+                    }, function(data){
+                        SCRM._service.sendMessage(data.rows);
+                    });
+                },
+                clipAdd: function(e) {
+                    getGridSelRows(spGrid, function(selIDs){
+                        var clipSportsmen = get_clipSportsmen();
+                        $.each(selIDs, function(i, v){
+                            var itemIndex = $.inArray(v, clipSportsmen);
+                            if (itemIndex == -1) clipSportsmen.push(v);
+                        });
+                        saveObjectInLocalStorage('club_clip_sportsmen', clipSportsmen);
+                    });
+                },
+                clipRemove: function(e){
+                    getGridSelRows(spGrid, function(selIDs){
+                        var clipSportsmen = get_clipSportsmen();
+                        $.each(selIDs, function(i, v){
+                            var itemIndex = $.inArray(v, clipSportsmen);
+                            if (itemIndex > -1) clipSportsmen.splice(itemIndex, 1);
+                        });
+                        saveObjectInLocalStorage('club_clip_sportsmen', clipSportsmen);
+                    });
+                },
+                clipClear: function(e){
+                    removeObjectFromLocalStorage('club_clip_sportsmen');
+                    SCRM.msg("Буфер обмена пуст!", "Успешно");
+                },
+                clipShow: function(e) {
+                    spGrid.setGridFilter('id', get_clipSportsmen().join(','));
+                }
+            });
+    
+            $.observe(spData, 'idSchedule_main', function(e, data){
+                spGrid.trigger('reloadGrid');
+            });
+        
+            function saldoCls(row) {
+                var cellCls = ['saldoCell'];
+                if (row.saldo*1 > 0) cellCls.push('text-success'); else {
+                    if (row.saldo*1 < 0) cellCls.push('text-danger','font-weight-bold');
+                    if (row.price && row.price*1 != 0  && row.saldo*1 < 0-row.price*1) cellCls.push('rowWarn');
+                }
+                return cellCls;
+            }
+            
+            [[-function residueCls(row){
+                var cellCls = ['residueCell'], diff = diffNow(row.duedate);
+                if (diff < 0 && (row.residue > 0 || row.invtype_amount == 0)) {
+                    cellCls.push('text-success');
+                } else {
+                    cellCls.push('text-muted');
+                }
+                return cellCls;
+            }]]
+            
+            var narc = {id: 'narc', name: '[Не в архиве]'};
+            var gridOpts = spData.gridOpts;
+            gridOpts.colModel.push(
+                {name: 'id', template: idFieldTemplate},
+                {name: 'created', template: createdTemplate},
+                {name: 'status', width: 50, align: 'center',
+                    template: lookTemplate,
+                    cellattr: function(rowId, cellValue, rawObject, cm, rdata){
+                        return arr2clstring( saldoCls(rawObject) );
+                    },
+                    formatter: function(cv){
+                        return SCRM.statusFmt('idSportsmen', cv, 'name', true);
+                    },
+                    unformat: function(cellValue, options, cell) {
+                        return $(cell).find('i').data('status');
+                    },
+                    searchoptions: {
+                        defaultValue: 'narc'
+                    },
+                    clubStatus: 'idSportsmen', lookupKey: 'name'
+                },
+                {name: 'name', //index: 'idSportsmen.name',
+                    width: 200, editable: true, setROW: true, // Может обновляться через fieldEDIT
+                    formoptions: {rowpos: 1, colpos: 1},
+                    editrules: {edithidden: true, required: true}
+                },
+                {name: 'gender', index: 'idSportsmen.gender',
+                    width: 40, hidden: true,
+                    editable: true,
+                    editoptions: {
+                        defaultValue: spData.Gender_main
+                    },
+                    formoptions: {rowpos: 1, colpos: 2},
+                    template: selTemplate,
+                    clubStatus: 'Gender', lookupKey: 'alias'
+                },
+                //{name:'num', width:50, hidden: true, sorttype:'int'},
+                {name: 'birth', index: 'idSportsmen.birth',
+                    editable: true, editrules: {edithidden:true},
+                    formoptions:{rowpos:2, colpos:1},
+                    template: dateTemplate,
+                    cellattr: cellEmptyColor
+                },
+                {name: 'doc', width: 100, hidden:true,
+                    editable: true, editrules: {edithidden:true}, setROW: true,
+                    formoptions:{rowpos: 2, colpos: 2},
+                    cellattr: cellEmptyColor
+                },
+                {name:'contract', width:80,
+                    editable: true, editrules: {edithidden:true}, setROW: true,
+                    formoptions:{rowpos:3, colpos:1},
+                    cellattr: cellEmptyColor
+                },
+                {name:'contractdate',
+                    editable: true, editrules: {edithidden:true},
+                    formoptions:{rowpos:3, colpos:2},
+                    template: dateTemplate,
+                    cellattr: cellEmptyColor
+                },
+                {name:'contact', width:100,
+                    editable: true, editrules: {edithidden:true}, setROW: true,
+                    formoptions:{rowpos:4, colpos:1},
+                    cellattr: cellEmptyColor,
+                    inCard: true
+                },
+                {name:'pasp', hidden:true,
+                    editable: true, editrules: {edithidden:true},
+                    formoptions:{rowpos:4, colpos:2},
+                    template: 'booleanCheckboxFa',
+                    inCard: true
+                },
+                {name:'email', hidden: true, template: emailTemplate,
+                    editable: true,
+                    editrules: {edithidden: true}, //, email: true
+                    formoptions: {rowpos: 5, colpos: 1}
+                },
+                {name:'tel', template: telTemplate,
+                    editable: true,
+                    editrules: {edithidden: true},
+                    formoptions:{rowpos: 5, colpos: 2},
+                    cellattr: cellEmptyColor
+                },
+                {name: 'price',
+                    editable: true, editrules: {edithidden: true},
+                    formoptions:{rowpos: 7, colpos: 1},
+                    template: numberTemplate
+                },
+                {name: 'discount', width: 45, align: 'right',
+                    editable: true, editrules: {edithidden:true},
+                    formoptions: {rowpos:7, colpos:2},
+                    template: selTemplate,
+                    //dbvalues: dbValues.Discount,
+                    clubStatus: 'Discount', lookupKey: 'name',
+                    dbvalues0: ''
+                },      
+        
+                {name:'saldo',
+                    template: numberTemplate,
+                    cellattr: function(rowId, cellValue, rawObject, cm, rdata){
+                        return arr2clstring( saldoCls(rawObject) );
+                    }
+                },
+                // duedate
+                {name: 'meddate',
+                    editable: true, editrules: {edithidden:true},
+                    formoptions:{rowpos: 9, colpos: 1},
+                    template: dateTemplate,
+                    cellattr: cellInsuranceColor
+                },
+                {name: 'insdate',
+                    editable: true, editrules: {edithidden: true},
+                    formoptions:{rowpos: 9, colpos: 2},
+                    template: dateTemplate,
+                    cellattr: cellInsuranceColor
+                },
+                {name: 'razr', width: 50,
+                    editable: true, editrules: {edithidden:true},
+                    formoptions:{rowpos:10, colpos:1},
+                    template: selTemplate,
+                    clubStatus: 'idSportsmenGrade', lookupKey: 'name',
+                    dbvalues0: ''
+                },
+        
+                {name:'level_name', index:'idSquad.lvl', width: 55,
+                    template: lookTemplate,
+                    dbvalues: 'idLevel'
+                },
+                {name:'squad_name', index:'idSquad.name', width: 55},
+                {name:'trainer_name', index: 'idTrainer.name', width: 100},
+                {name:'club_name', index:'idSquad.club', width: 85,
+                    template: lookTemplate,
+                    dbvalues: 'idClub'
+                },
+                {name:'sport_name', index:'idSquad.sport', width: 100,
+                    template: lookTemplate,
+                    dbvalues: 'idSport'
+                },
+                {name: 'squad', hidden: true, hidedlg: true,
+                    searchrules: { integer: true },
+                    editable: true, editrules: {edithidden:true}, //, required:true, integer:true
+                    formoptions:{rowpos:11, colpos:1},
+                    edittype: 'custom',
+                    editoptions:{
+                        custom_element: function(value, edopt) {
+                            var el = $('<select><option>...</option></select>');
+                            SCRM._run('/chunk/squadlist', function(html) {
+                                el.html(html).val(value||0);
+                            });
+                            return el;
+                        }
+                    }
+                },
+                {name:'trainer', editable: true,
+                    hidden:true, hidedlg: true, editrules: {edithidden: true},
+                    formoptions: {rowpos: 11, colpos: 2},
+                    template: selTemplate,
+                    dbvalues: 'idTrainer', dbvalues0: 0
+                },
+                {name: 'info', hidden: true,
+                    template: infoTemplate,
+                    editable: true, editrules: {edithidden:true}, setROW: true,
+                    formoptions: {rowpos:12, colpos:1},
+                    inCard: true
+                },
+                {name: 'height', width:50, hidden: true,
+                    editable: true, editrules: {edithidden:true},
+                    formoptions:{rowpos:13, colpos:1},
+                    inCard: true
+                },
+                {name:'weight', width:50, hidden: true,
+                    editable: true, editrules: {edithidden:true},
+                    formoptions:{rowpos:13, colpos:2},
+                    inCard: true
+                },
+                {name:'username',
+                    width:30, editable: false,
+                    search: false,
+                    align: 'center',
+                    formatter: hasUser
+                },
+                {name:'key', hidden: true, editable: false}
+            );
+
+            
+            if (gridOpts.showDuedate) {
+                gridOpts.colModel.splice(16, 0, {
+                    name:'duedate', width: 110, hidden: false,
+                    align: 'right',
+                    searchoptions: {
+                        sopt: ['eq']
+                    },
+                    formatter: function(cv, options, row){
+                        var str = [];
+                        //row.debt_lesson = row.lesson_amount*1 - row.cnt_lesson*1;
+                        if (row.duedate) {
+                            //if (row.debt_lesson != 0) 
+                            if (row.cnt_lesson > 0) str.push(row.cnt_lesson);
+                            str.push( str2date(row.duedate,'d') );
+                            // if (diff > -90 || row.name_typeinvoice || residue===0) // Если < 3 мес или idInvoice
+                        }
+                        return str.join(' ~ '); // если пустое, будет пустая строка
+                    },
+                    cellattr: function(rowId, cellValue, data, cm, row){
+                        if (data.duedate) {
+                            return arr2clstring(['text-success']);
+                        }
+                        /*var cellCls = []; //, diff = diffNow(row.duedate);
+                        if (data.duedate && (data.debt_lesson > 0 || data.lesson_amount == 0)) {
+                            cellCls.push('text-success');
+                        } else {
+                            cellCls.push('text-muted');
+                        }
+                        return arr2clstring(cellCls);*/
+                    }
+                });
+            }
+            
+            
+            if (gridOpts.ipcFields) {
+                function cellSaldoColor2(rowId, cellValue, rawObject, cm, rdata){
+                    return rawObject.tmp_cls;
+                }
+                var ipcFields = {
+                    invoiced: {
+                        label: 'Начислено',
+                        width: 90,
+                        template: numberTemplate,
+                        formatter: function(cv, options, row) {
+                            if (options.rowId == '') return (row.invoiced)? row.invoiced : ''; // if footer
+                            return numberFormatter(cv);
+                        },
+                        cellattr: cellSaldoColor2,
+                        inCard: true
+                    },
+                    add_cnt: {
+                        label: 'Количество',
+                        template: numberTemplate,
+                        cellattr: cellSaldoColor2,
+                        inCard: true
+                    },
+                    payed: {
+                        label: 'Оплачено',
+                        width: 90,
+                        template: numberTemplate,
+                        cellattr: cellSaldoColor2,
+                        inCard: true
+                    },
+                    add_info: {
+                        template: infoTemplate,
+                        inCard: true
+                    }
+                };
+                $.each(gridOpts.ipcFields.split(','), function(i, v){
+                    var fld = ipcFields[v];
+                    if (fld) {
+                        fld.name = v;
+                        gridOpts.colModel.push(fld);
+                    }
+                });
+                $.extend(gridOpts, {
+                    footerrow: true,
+                    userDataOnFooter: true,
+                    multiselect: false
+                });
+                spGrid.one('jqGridAfterInit', function(e){
+                    var hideCols = 'doc,orderdate,meddate,insdate,pasp,razr,contact,tel'.split(',');
+                    $(this)
+                    .jqGrid('hideCol', hideCols)
+                    .jqGridExport();
+                });
+            }
+        
+            grids.main = spGrid
+            .one('jqGridBeforeInit', function(e, grOpts) {
+                var editedRows,
+                gr = $(this)
+                .one('jqGridAfterInit', function(e, grOpts){
+                    $.each(gr.jqGrid('getGridParam', 'colModel'), function(i, v) {
+                        if (!v.label) {
+                            var nlabel = SCRM.lexicon.idSportsmen[v.name];
+                            if (nlabel && nlabel != v.name) { // Есть в справочнике
+                                gr.jqGrid('setLabel', v.name, nlabel);
+                                v.label = nlabel;
+                            }
+                        }
+                    });
+                    grOpts.reloadAlert.link(true, spData);
+                    spData.pnlSp.link(true, spData);
+                    
+                    gr
+                    .jqGridColumns()
+                    .data('init-filters', gr.jqGrid('getGridParam', 'postData').filters);
+                })
+                .on('jqGridAddEditBeforeInitData', function (e, form, ddd) { // Редактируется строка
+                    var id = gr.jqGrid('getGridParam', 'selrow');
+                    console.log('jqGridAddEditBeforeInitData',  e, form, ddd, id, editedRows);
+                    if (id in editedRows) {
+                        SCRM.alert('Данные в строке неактуальны. Обновите таблицу');
+                        return false;
+                    }
+                })
+                .on('jqGridBeforeRequest.spGrid', function(e) {
+                    var sstatus = gr.data('start_status');
+                    if (sstatus) {
+                        var col = gr.jqGrid('getColProp', 'status');
+                        col.searchoptions.defaultValue = (sstatus=='*')? '' : sstatus;
+                        gr.data('start_status', null);
+                    }
+                })
+                .on('jqGridSerializeGridData.spGrid', function(e, postData) {
+                    if (gridOpts.showDuedate) postData._stype = spData.idSchedule_main;
+                    if (postData.clubStatus) postData.clubStatus.push('idSchedule');
+                })
+                .on('jqGridBeforeSetLookup', function(e, params){
+                    if (params.f.name == 'status') {
+                        params.rows.unshift(narc);
+                    }
+                })
+                .on('jqGridAfterLoadComplete.spGrid', function(e, data) {
+                    editedRows = {};
+                    if (data.sp_arc) SCRM.app.sp_arc = data.sp_arc.split(',');
+                    if (data.dbvalues && data.dbvalues.idTrainer) {
+                        SCRM.dbValues.idTrainer = data.dbvalues.idTrainer;
+                    }
+                    SCRM.link(spData, {needReload: false});
+                })
+                .on('needReload.spGrid', function(e, data) {
+                    SCRM.link(spData, {needReload: true});
+                });
+                
+                // При изменении данных в eCard
+                $(document)
+                .on('eCardSpEdit', function(e, data){
+                    var id = ''+data.id,
+                        ids = gr.jqGrid('getDataIDs');
+                    if (in_array(id, ids)) {
+                        editedRows[id] = true;
+                        SCRM.link(spData, {needReload: true});
+                    }
+                });
+                
+                // TODO: Выпилить, чтобы было однообразно
+                $(document)
+                .on('OnRefreshSpData', function(e, data) {
+                    // Если при обновлении карточки меняется
+                    var id = (data.sp||{}).id,
+                        ids = gr.jqGrid('getDataIDs');
+                    if (in_array(id, ids)) SCRM.link(spData, {needReload: true});
+                });
+            })
+            .jqGridInit(gridOpts)
+            .on('jqGridAddEditInitializeForm', function(e, form, oper) {
+                var tr = $('tr#tr_info', form);
+                $('td:eq(1)', tr).attr('colspan', 3); 
+                $('td:gt(1)', tr).remove();
+                
+                var gen = $('#gender', form).css('width', 'auto');
+                $('select.customelement', form).addClass( gen.attr('class') );
+            })
+            .on('jqGridSelectRow jqGridSelectAll', function(e, rid, sel) {
+                var grid = $(this);
+                //console.log(e, rid, sel)
+                var selRows = getGridSelRows(grid);
+                var nsd = {
+                    //loading: 1,
+                    spVisible: false,
+                    selRows: selRows,
+                    selRowsCnt: selRows.length // spCount
+                };
+        
+                if (selRows.length == 1) {
+                    nsd.spVisible = true;
+                    nsd.spID = selRows[0];
+                    nsd.sp = grid.jqGrid('getRowData', nsd.spID);
+        
+                    var tr = grid.jqGrid('getGridRowById', nsd.spID);
+                    var mainCols = grid.jqGrid('getGridParam', 'colModel');
+                    [[-nsd.infoTable = $.map(mainCols, function(col, i){
+                        if (!col.inCard) return null;
+                        var cdata = $.jgrid.getDataFieldOfCell.call(grid[0], tr, i);
+                        col.HTML = cdata.html();
+                        col.CLS = cdata.attr('class');
+                        return col;
+                    });]]
+                    nsd.cardHolder = spData.pnlSp;
+                    //nsd.cardModal = true;
+                    SCRM._runLoader('spCard')(nsd); // spVisible = true
+                    //clubSpCard.loadData(); 
+                }
+                SCRM.link(spData, nsd);
+            })
+            .on('jqGridDeleteBeforeShowForm', function (e, form) {
+                $('.delmsg', form).html('Удаляются спортсмены только в статусе <b>'+ 
+                    SCRM.app.sp_arc.join(', ') +'</b>.<br>Продолжить?');
+            })
+            .on('jqGridDeleteAfterComplete', function(e, rowid, jqXhrOrBool, postData, options) {
+                $(this).trigger('clearSelection');
+            });
+        });
+    } else {
+        if (initOpts && spGrid.hasClass('ui-jqgrid-btable')) {
+            spGrid.jqGrid('setGridParam', initOpts);
+        }
+        spGrid.trigger('reloadGrid');
+    }
+});
+</script>
+
+[[-
+colModel:
+        {name: 'act', template: 'actions', width: 38}
+    ,
+    actionsNavOptions: {
+        editbutton: false
+    }
+]]

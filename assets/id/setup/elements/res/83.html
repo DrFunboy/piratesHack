@@ -1,0 +1,124 @@
+<div id="leadWrapper" class="spinner-parent"></div>
+
+<script id="tplLead" type="text/x-jsrender">
+<div class="row bg-error">
+    <div class="col-lg-9 col-xl-6">
+        <div class="card">
+            <div class="card-body table-warning">
+                <div class="row">
+                <div class="col-12 col1-sm-6" data-link="visible{:datestart || leadSchedule}">
+                    <div class="text-muted text-small">Дата просмотра</div>
+                    <div data-link="visible{:!editSchedule}">
+                        <h5 class="h5 d-inline m-0">{{formatDateTime:datestart}}</h5>
+                        <button class="ml-2 btn btn-secondary btn-xs" data-link="visible{:leadSchedule} {on ~editSchedule}"><i class="fa fa-edit"></i></button>
+                    </div>
+                    <div data-link="visible{:editSchedule}">
+                        <select class="form-control" data-link="datestart">
+                            <option value="">-- Выбрать --</option>
+                            {^{for leadSchedule sort="datestart"}}
+                                <option value="{{:datestart}}">{{formatDateTime:datestart}}</option>
+                            {{/for}}
+                        </select>
+                        <button class="btn btn-primary btn-sm mt-2" data-link="visible{:saveSchedule} {on ~saveSchedule}">
+                        Сохранить</button>
+                    </div>
+                </div>
+                
+                [[-<div class="col-12 col-sm-6">
+                    <small class="text-muted">Статус</small>
+                    <h5 class="text-danger h5" id="lead_status">{{leadFmt:status}}</h5>
+                </div>]]
+                </div>
+            </div>
+            <div class="card-body">
+            {^{leadrow ~title="Дата рождения"}}
+                {{formatDate:birth}}
+            {{/leadrow}}
+            {^{leadrow ~title="ФИО родителя или законного представителя"}}
+                {{:contact}}
+            {{/leadrow}}
+            {^{leadrow ~title="Телефон"}}
+                {{:tel}}
+            {{/leadrow}}
+            {^{leadrow ~title="Email"}}
+                {{:email}}
+            {{/leadrow}}
+            {^{leadrow ~title="Дисциплина"}}
+                {{:sportname}}
+            {{/leadrow}}
+            {^{leadrow ~title="Город"}}
+                {{:cityname}}
+            {{/leadrow}}
+            {^{leadrow ~title="Отделение"}}
+                {{:clubname}}
+            {{/leadrow}}
+            </div>
+        </div>
+    </div>
+</div>
+</script>
+
+<script id="tpl_leadrow" type="text/x-jsrender">
+<div class="form-row">
+    <label class="col-md-4 text-muted">{{:~title}}</label>
+    <div class="col-md-8 mb-3">
+        {{include tmpl=#content/}}
+    </div>
+</div>
+</script>
+
+[[$jsLeadStatus]]
+<script>
+var lead_data = [[!idGetLead]];
+var leadSchedule = [[!leadSchedule]];
+SCRM.loadWSS('ready', function(){
+    SCRM.link(SCRM.app, {
+        title: lead_data.name,
+        subtitle: leadFmt(lead_data.status)
+    });
+    $.views.tags("leadrow", {
+        contentCtx: true,
+        template: "#tpl_leadrow"
+    });
+    $.templates('#tplLead')
+    .link("#leadWrapper", lead_data,{
+        editSchedule: function(e, data){
+            SCRM.link(lead_data, {editSchedule: true});
+        },
+        saveSchedule: function(e, data){
+            var btn = $(e.target);
+            spinnr(true, btn);
+            SCRM.link(lead_data, {saveSchedule: false});
+            //$.observable(lead_data).setProperty('editSchedule', true);
+            pJSON('/hook/editlead', {
+                datestart:lead_data.datestart,
+                key: lead_data.key
+            }, function(data){
+                SCRM.success('Обновлено');
+                spinnr(false, btn);
+            });
+        }
+        
+    });
+    
+    /*function с_datestart( a, b ) {
+        if ( a.datestart < b.datestart ) return -1;
+        if ( a.datestart > b.datestart ) return 1;
+        return 0;
+    }*/
+
+    var ls = {
+        leadSchedule: $.map(leadSchedule.rows, function(v, i){
+            if (!lead_data.club) return v;
+            if (v.club == lead_data.club ) return v;
+        })
+    };
+    if (ls.leadSchedule.length > 0) {
+        if (!lead_data.datestart) ls.editSchedule = true;
+        SCRM.link(lead_data, ls);
+        $.observe(lead_data, 'datestart', function(e, data){
+            SCRM.link(lead_data, {saveSchedule: true});
+        });
+    }
+});
+</script>

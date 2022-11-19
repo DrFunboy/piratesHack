@@ -1,0 +1,9 @@
+<div class="container card card-body" id="startPage">sdfg</div>
+[[!runHook?hook=`chunk/eform`]]
+<script>
+(function(){
+    var wForm = [[+pageData]];
+    var c = $('#startPage');
+    SCRM._run.call(c, '/chunk/eform', wForm);
+})();
+</script>

@@ -1,0 +1,171 @@
+<script id="mdl_jqGridInvoiceAdd" type="text/x-jsrender">
+{{include newRow ~statuses=statuses ~hint=hint ~showMenuindex=showMenuindex}}
+    <div class="form-row">
+    
+        <div class="col-6 col-md-3 mb-3 offset-md-9 offset-6" data-link="visible{:menuindex.edit}">
+            <label for="mdlGridAdd_menuindex">Сортировка</label> 
+            <input type="number" class="form-control" id="mdlGridAdd_menuindex" data-link="{:menuindex.value:} ">
+        </div>
+    
+        <div class="col-12 mb-3">
+            <div class="d-flex">
+                <label for="mdlGridAdd_name">Наименование <abbr title="Required">*</abbr></label> 
+                <label class="ml-auto"><a href="#" class="dashed" data-link="visible{:!menuindex.edit} {on ~showMenuindex}">{{:menuindex.value}}</a> </label> 
+            </div>
+            <input type="text" class="form-control" id="mdlGridAdd_name" data-link="{:name.value:} class{merge:name.bad toggle='is-invalid'}">
+        </div>
+        
+        <div class="col-6 col-md-9 mb-3">
+            <label for="mdlGridAdd_price">Стоимость</label> 
+            <input type="number" class="form-control" id="mdlGridAdd_price" data-link="{:price.value:} ">
+        </div>
+        
+        <div class="col-12 col-md-12">
+            <div class="custom-control custom-checkbox mb-3">
+                <input type="checkbox" class="custom-control-input" id="mdlGridAdd_pass" data-link="pass"> 
+                <label class="custom-control-label" for="mdlGridAdd_pass">Абонемент</label>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-row" data-link="visible{:pass}"> 
+        <div class="col-12 col-md-9 mb-3">
+            <label for="mdlGridAdd_period">Период <abbr title="Required">*</abbr> {{:~hint}}</label>
+            <input type="text" class="form-control" id="mdlGridAdd_period" data-link="{:period.value:} class{merge:period.bad toggle='is-invalid'}"">
+        </div>
+        
+        <div class="col-6 col-md-3 mb-3">
+            <label for="mdlGridAdd_amount">Кол-во занятий</label> 
+            <input type="number" class="form-control" id="mdlGridAdd_amount" data-link="{:amount.value:} ">
+        </div>
+        
+        <div class="col-12 col-md-12">
+        <label>Тип</label>
+        {^{checkboxgroup type}}
+            {{for ~statuses}}
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="mdlGridAdd_{{:alias}}" value="{{:alias}}"> 
+                    <label class="custom-control-label" for="mdlGridAdd_{{:alias}}">{{:name}}</label>
+                </div>
+            {{/for}}
+        {{/checkboxgroup}}
+        </div>
+    </div>
+{{/include}}
+</script>
+<script>
+SCRM._service['[[+rq]]'] = function(params) {
+    var target = this,
+        className = target.className,
+        lnk = $(target),
+        typeinvoice = lnk.data('id');
+    if (typeinvoice) {
+        var sitdata = {
+            body: '#tpl_idSInvType_edit',
+            cm_size: 'sm'
+        };
+            
+        club_Modal(sitdata, {
+            idSInvType: function(e, data) {
+                var ch = $(e.target).prop('checked'),
+                    d = data.linkCtx.data,
+                    ed;
+                    
+                if (ch && !d.SInvType) ed = {oper: 'add', stype: d.alias, typeinvoice: typeinvoice};
+                if (!ch && d.SInvType) {
+                    ed = {oper: 'del', id: d.SInvType};
+                    $.observable(d).setProperty('SInvType', null);
+                }
+                if (ed) pEDIT('idSInvType', ed, function(data){
+                    if (data.oper=='add' && data.row) $.observable(d).setProperty('SInvType', data.row.id);
+                    grids.idInvoiceType.trigger('reloadGrid', [{current:true}]);
+                });
+            }
+        });
+        
+        pDATA('idSInvType', {
+            rows: 1001,
+            _where: {typeinvoice: typeinvoice}
+        }, function(data){
+            var SInvType = {};
+            $.each(data.rows, function(i, v) {
+                SInvType[ v.stype ] = v.id;
+            });
+            var newSched = $.map(optsData.idSchedule, function(v, i) {
+                return $.extend({
+                    SInvType: SInvType[v.alias]
+                }, v);
+            });
+            SCRM.link(sitdata, {idSchedule: newSched});
+        });
+    } else {
+        var addModal = {
+            title: "Добавить услугу",
+            ok: "Сохранить",
+            body: "#mdl_jqGridInvoiceAdd",
+            newRow: {
+                menuindex: {
+                    value: 10,
+                },
+                name: {
+                    value: "",
+                    required: true
+                },
+                price: {
+                    value: "",
+                },
+                amount: {
+                    value: "",
+                },
+                period: {
+                    value: "+1 month",
+                    reqObj: "pass",
+                    required: true
+                },
+                type: ["a"],
+            },
+            hint: SCRM.hintLink('options_typeinvoice_period'),
+            showMenuindex: function(e){
+                e.preventDefault();
+                SCRM.link(addModal.newRow.menuindex, {edit:true});
+            },
+            statuses: [[!clubStatus?tbl=`idSchedule`]],
+            onOK: function(e, mdl){
+                var error = false;
+                $.each(mdl.newRow, function(k ,v){
+                    if (v.required && ( !v.reqObj || mdl.newRow[v.reqObj]) && !v.value) {
+                        SCRM.link(v, {bad: true}); 
+                        error = true;
+                    } else if (v.bad) SCRM.link(v, {bad: false});
+                });
+                
+                if (!error){
+                    var arr = {
+                        oper: "add",
+                        menuindex: addModal.newRow.menuindex.value,
+                        name: addModal.newRow.name.value,
+                        price: addModal.newRow.price.value,
+                        published: "1"
+                    };
+                    if (addModal.newRow.pass) {
+                        arr = $.extend(arr, {
+                            amount: addModal.newRow.amount.value,
+                            period: addModal.newRow.period.value,
+                        });
+                        
+                        if (addModal.newRow.type.length) {
+                            arr.stype = addModal.newRow.type;
+                        }
+                    }
+                    pEDIT("idInvoiceType", arr, function(row){
+                        addModal.mdl_hide();
+                        grids.idInvoiceType.trigger('reloadGrid', [{current:true}]);
+                    });
+                }
+            }
+        };
+        
+        club_Modal(addModal);
+    }
+}
+</script>

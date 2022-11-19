@@ -1,0 +1,18 @@
+<!-- clubReport -->
+<script>
+$.observable(clubReport).setProperty('opts', {
+    postData : {
+        table: 'idLead',
+        _report: 'idLead_group'
+    },
+    callback: function(data) {
+        var allcount = 0;
+        var dataChart = [ ];
+        $.each(data.rows, function(k, v){
+            dataChart.push([v.label+' ('+ v.data +')',  v.data])
+            allcount += 1*v.data;
+        });
+        clubCountsChart(dataChart, allcount);
+    }
+});
+</script>

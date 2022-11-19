@@ -1,0 +1,38 @@
+<!-- clubReport -->
+
+<script id="report_tpl" type="text/x-jsrender">
+    <table class="table table-bordered no-margins">
+        <thead>
+            <tr>
+                <th>Создано</th>
+                <th>Дата начисления</th>
+                <th>Сумма</th>
+                <th>Спортсмены</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{for rows}}
+          <tr>
+            <td><a href="#" class="fmtCreated" data-id="{{:id}}" data-tbl="idInvoice">{{formatDateTime:created}}</a></td>
+            <td>{{formatDate:dateinvoice}}</td>
+            <td class="text-right">{{:sum}}</td>
+            <td><a href="#" data-w="id={{:sportsmen}}" class="show-sportsmen-pnl">{{:sportsmen_name}}</a>
+            </td>
+          </tr>
+        {{/for}}
+        </tbody>
+    </table>
+</script>
+
+<script>
+$.observable(clubReport).setProperty({
+    opts: {
+        postData : {
+            //sql: 1,
+            table: 'idInvoice',
+            _report: 'idInvoice_oldperiod',
+            tableadd: 'idSportsmen'
+        }
+    }
+});
+</script>

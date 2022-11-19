@@ -1,0 +1,161 @@
+<script id="wFormGenger" type="text/x-jsrender">
+    <div data-link="{radiogroup value convert='i2s'}">
+        {{for ~S.clubStatus.Gender sort="menuindex"}}
+        <div class="custom-control custom-control-inline custom-radio">
+            <input type="radio" class="custom-control-input" value="{{:alias}}" id="eFormCs{{:id}}">
+            <label class="custom-control-label" for="eFormCs{{:id}}">{{:name}}</label>
+        </div>
+        {{/for}}
+    </div>
+</script>
+
+<script id="tpl_selectOptionClub" type="text/x-jsrender">
+    <option data-link="value{:id} text{:name + (address? ' ('+address+')':'')}"></option>
+</script>
+
+<script id="tpl_eFormMain" type="text/x-jsrender">
+<form action="" data-link="{on 'submit' ~submitEform} visible{:fields}" style="display:none">
+<fieldset>
+{^{for fields}}
+    {{if type=='success'}}
+        <div class="alert alert-success" data-link="{include tmpl=tpl}"></div>
+    {{else html tmpl=html}}
+    {{else hidden}}
+        <input type="hidden" value="{{:value}}">
+    {{else type=='checklink' ~idx=#index}}
+    <div class="row mb-3">
+        <div class="offset-lg-3 col-lg-8 col-xl-6">
+        <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" id="eForm{{:~idx}}" name="eForm{{:~idx}}" data-link="value">
+            <label class="custom-control-label" for="eForm{{:~idx}}">{{:label}}
+            {{if href||run}}
+                <a href="{{:href||'#'}}" {{if run}}data-run="{{:run}}"{{/if}} target="_blank">{{:link_text||'.DOC'}}</a>
+            {{/if}}
+            </label>
+        </div>
+        </div>
+    </div>
+    {{else type=='submit'}}
+    <div class="row">
+        <div class="offset-lg-3 col-lg-8  col-xl-6">
+            <button class="btn btn-primary" type="submit" data-link="disabled{:!~root^btnSendEnabled || ~root^loading}">
+                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" data-link="visible{:~root^loading}"></span>
+                {{:label}}
+            </button>
+        </div>
+    </div>
+    {{else ~idx=#index}}
+    <div class="row mb-3">
+        <label for="eForm{{:~idx}}" class="col-lg-3 text-lg-right">
+            {{:label||name}} <abbr data-link="visible{:required}">*</abbr>
+        </label>
+        <div class="col-lg-8 col-xl-6">
+            {{if type=='select'}}
+            <select class="custom-select" data-link="value" id="eForm{{:~idx}}">
+                <option value="">-- Выбрать --</option>
+                {{for options sort="name" tmpl=tpl||'#tpl_selectOption' /}}
+            </select>
+            {{else tpl tmpl=tpl}}
+            {{else}}
+            <input type="{{:type||'text'}}" id="eForm{{:~idx}}" class="form-control" data-link="{:value convert=fmt :} required{:required} autocomplete{:ac||'off'} data-emask{:mask}">
+            {{/if}}
+        </div>
+    </div>
+    {{/if}}
+{{/for}}
+</fieldset>
+</form>
+</script>
+
+
+<script>
+
+SCRM._service[ '[[+rq]]' ] = function(sData) {
+    var addScript = [ [[+addScript]] ];
+    sData = $.extend({
+        edata: {}
+    }, addScript[0], sData);
+
+    if (!sData.cfg) {
+        alert('Empty eForm config');
+        return false;
+    }
+    
+    key2obj(sData, 'edata', {});
+    if (this instanceof jQuery) {
+        sData.container = this;
+    } else {
+        sData.container = $(sData.block||sData.container);
+    }
+    
+    function getFields() {
+        var stop = false;
+        return $.map(sData.cfg, function(v, i) {
+            if (stop) return;
+            if (v.name in sData.edata) v.value = sData.edata[ v.name ];
+            if (v.type == 'success') {
+                if ( v.value ) {
+                    stop = true;
+                    return v;
+                } else return;
+            }
+            if (v.system) return;
+            if (v.dbvalues) {
+                v.options = sData.dbvalues[v.dbvalues] || [];
+            }
+            return v;
+        });
+    }
+    sData.fields = getFields();
+
+    if (sData.clubStatus) SCRM.setClubStatus(sData.clubStatus);
+    console.log('sData', sData)
+
+    var eForm = $.templates('#tpl_eFormMain')
+    .link(sData.container, sData, {
+        submitEform: function(e, data) {
+            e.preventDefault();
+            var pd = {}, redirect = false;
+            $.each(sData.fields, function(i, v){
+                if (!v.name || (v.required && !v.value)) return true;
+                pd[v.name] = v.value;
+                if (v.redirect && v.value) redirect = v.redirect;
+            });
+            
+            pJSON('[[++site_url]]eform/'+sData.eform, pd, function(pdata) {
+                if (pdata.edata) {
+                    SCRM.link(sData.edata, pdata.edata);
+                    if (redirect) {
+                        var params = {};
+                        $.each(redirect, function(i, v){
+                            var val = pdata.edata[v];
+                            if (val) params[v] = val;
+                        });
+                        window.location = redirect[0] + $.param(params);
+                    }
+                }
+                SCRM.link(sData, {
+                    fields: getFields()
+                });
+            });
+        }
+    });
+
+    $.observe(sData, 'fields^**', function(e, data) {
+        if (data.path == 'value') {
+            var nd = {btnSendEnabled: true};
+            $.each(sData.fields, function(i, v) {
+                if (v.required && !v.value) nd.btnSendEnabled = false;
+            });
+            SCRM.link(sData, nd);
+        }
+        console.log('observe', sData);
+    });
+    SCRM.loadWSS('mask', function(){
+        $("[data-emask]", eForm).each(function(){
+            var el = $(this);
+            el.mask(el.data('emask'));
+        });
+    });
+}
+</script>

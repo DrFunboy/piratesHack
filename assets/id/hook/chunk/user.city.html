@@ -1,0 +1,28 @@
+<script>
+SCRM._service[ '[[+rq]]' ] = function(invData) {
+    var cityData = $.extend({
+        mdl_id: 'UserCityCh',
+        body: '#tpl_UserCityCh'
+    }, [[dbvalues?mode=`idCity`]]);
+
+    club_Modal(cityData, {
+        chCity: function(e, data){
+            var d = data.linkCtx.data;
+            $.post('/hook/user.city/'+d.id,
+            function(data){
+                window.location = window.location;
+            });
+        }
+    });
+};
+</script>
+
+<script id="tpl_UserCityCh" type="text/x-jsrender">
+    <ul class="list-group list-group-bordered">
+        {^{for idCity}}
+        <a href="#" class="list-group-item list-group-item-action prevent-default" data-link="{on ~chCity}">{{:name}}</a>
+        {{else}}
+        <li class="list-group-item">Loading...</li>
+        {{/for}}
+    </ul>
+</script>

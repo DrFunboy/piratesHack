@@ -1,0 +1,71 @@
+[[!loginWay]]
+<div class="card card-body animated fadeInDown">
+    [[!+rcode:notempty=`
+    <div class="alert alert-danger">Error: [[+rcode]]</div>
+    `]]
+<div class="row flex-column-reverse flex-md-row">
+    <div class="col-md-8">
+        [[-<h3>Вход для родителей или законных представителей</h3>]]
+        <div class="loginBlocks" style="display:none">Вы вошли в систему как <b class="user_fullname"></b>.
+            <a href="/?service=logout">Выйти?</a>
+        </div>
+        <div class="loginBlocks">
+            [[!clubConfig?name=`WelcomeHTMLBlock`]]
+            <a href="/?action=login" class="btn btn-primary showLogin"><i class="fa fa-unlock-alt"></i> Войти в личный кабинет</a>
+        
+<div class="text-center mx-auto mt-2" style="display:none;max-width:480px" id="loginForm">
+    <form method="post" action="?action=login" role="form">
+        [[+errors]]
+        <input type="hidden" name="returnUrl" value="[[+rurl]]">
+        <input type="hidden" name="service" value="login">
+        <div class="form-group">
+          <div class="form-label-group">
+            <input type="text" id="username" name="username" class="form-control placeholder-shown" required="" autofocus="">
+            <label for="username">E-mail</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="form-label-group">
+            <input type="password" id="password" name="password" class="form-control placeholder-shown" required="">
+            <label for="password">********</label>
+          </div>
+        </div>
+        <div class="form-group text-center">
+          <div class="custom-control custom-control-inline custom-checkbox">
+            <input type="checkbox" class="custom-control-input" id="rememberme" value="1" name="rememberme" checked>
+            <label class="custom-control-label" for="rememberme">Запомнить меня</label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block mb-2">Вход</button><br>
+        <a href="/login/forgotpassword.html">Восстановление доступа</a>
+    </form>
+</div>
+
+        </div>
+    </div>
+    <div class="col-md-4 animated fadeInRight mb-3">
+        <img src="[[!++club_logo]]" class="img-fluid mx-auto d-block" />
+    </div>
+</div>
+</div>
+
+<script>
+$(function(){
+    var user = $('#user_fullname');
+    if (user.length>0) {
+        $('.loginBlocks').toggle();
+        $('.user_fullname').text( user.text() );
+    } else {
+        function goLogin(e){
+            if (e) e.preventDefault();
+            $('.showLogin.btn').hide();
+            var lgnfrm = $('#loginForm').show();
+            clubScroll(lgnfrm);
+        }
+        $('.showLogin').click(goLogin);
+        var param = getUrlVars();
+        if (param.action && param.action=='login') goLogin();
+    }
+    $('.form-label-group:eq(0) > input').trigger('focus');
+});
+</script>

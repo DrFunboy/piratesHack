@@ -1,0 +1,54 @@
+<!-- clubReport -->
+<script id="report_tpl" type="text/x-jsrender">
+    <table class="table table-hover m-0">
+        <thead>
+            <tr>
+                <th>Филиал</th>
+                <th>Новые</th>
+                <th>Архив</th>
+                <th>Вернулись</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{for rows}}
+          <tr>
+            <th>{{:name}}</th>
+            <td>
+                {{if cnt_new > 0}}
+                <a href="#" class="show-sportsmen-pnl badge badge-pill badge-primary" data-w="idChanges.newvalue=new;idSportsmen.city={{:id}}">
+                    {{:sportsmen_new}}
+                </a>
+                {{/if}}
+            </td>
+            <td>
+                {{if cnt_arc > 0}}
+                <a href="#" class="show-sportsmen-pnl badge badge-pill badge-primary" title="{{:sportsmen_new}}"
+                    data-w="idChanges.newvalue=Архив;idSportsmen.city={{:id}}">
+                    <span data-toggle="tooltip" title="Количество записей">{{:cnt_arc}}</span> /
+                    <span data-toggle="tooltip" title="Количество спортсменов">{{:sportsmen_arc}}</span>
+                </a>
+                {{/if}}
+            </td>
+            <td>
+                {{if cnt_back > 0}}
+                <a href="#" class="show-sportsmen-pnl badge badge-pill badge-primary" title="{{:sportsmen_new}}"
+                    data-w="idChanges.oldvalue=Архив;idSportsmen.city={{:id}}">
+                    <span data-toggle="tooltip" data-placement="top" title="Количество записей">{{:cnt_back}}</span> /
+                    <span data-toggle="tooltip" title="Количество спортсменов">{{:sportsmen_back}}</span>
+                </a>
+                {{/if}}
+            </td>
+          </tr>
+        {{/for}}
+        </tbody>
+    </table>
+</script>
+
+<script>
+$.observable(clubReport).setProperty('opts', {
+    postData : {
+        table: 'idCity',
+        _report: 'idCity_archive'
+    }
+});
+</script>

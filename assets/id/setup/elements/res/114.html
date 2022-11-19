@@ -1,0 +1,37 @@
+<div class="section-block my-0">
+[[$dbInner?actions=`1`]]
+</div>
+
+<script>
+pJSON(dbvaluesUrl, {mode: 'idCity'}, function(data){
+    $('#grmain')
+    .one('jqGridBeforeInit', function(e, grOpts){
+        grOpts.colModel.push({
+            label: 'Филиал', name: 'city_name', width:150,
+            index: 'idCity.menuindex'
+        },{
+            label: 'Филиал', name: 'city', hidden: true, hidedlg: true,
+            editable: true, editrules: {edithidden:true},
+            editoptions: {value: makeGridOpts(data.idCity)},
+            //searchoptions: {value: makeGridOpts(data.idCity, true)},
+            template: selTemplate
+            //template: lookTemplate,
+            //dbvalues: 'idCity'
+        },{
+            label: 'Возраст', name: 'age'
+        });
+        $.extend(true, grOpts, {
+            showDuedate: true,
+            multiselect: true,
+            sortname: 'saldo asc, name asc',
+            postData: {
+                _report: 'idSportsmen_all'
+            }
+        });
+    })
+    .one('jqGridAfterInit', function(e){
+        $(this).jqGridExport();
+    })
+    .trigger('sportsmenGrid');
+});
+</script>

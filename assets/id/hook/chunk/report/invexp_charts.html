@@ -1,0 +1,215 @@
+<script id="tpl_ReportInvoiceExpense" type="text/x-jsrender">
+    <div class="nav nav-tabs">
+        <a class="nav-link active" data-toggle="tab" href="#tab_InvExpPeriod">Период</a>
+        <a class="nav-link calculate" data-toggle="tab" href="#tab_InvExp6m">Полугодие</a>
+    </div>
+    
+    <div class="tab-content card card-body">
+        <div id="tab_InvExpPeriod" role="tabpanel" class="tab-pane active">
+            <div class="reportDates mb-3"></div>
+            <div class="row"> 
+                <div class="col-6">
+                    <div class="text-center h5">Расход</div>
+                    <div data-link="visible{:periodexpense} id{:aid+'periodexpense'}"></div>
+                    <h5 class="text-center text-muted" data-link="visible{:!periodexpense}">Нет данных</h5>
+                </div>
+                
+                <div class="col-6">
+                    <div class="text-center h5">Доход</div>
+                    <div data-link="visible{:periodprofit} id{:aid+'periodprofit'}"></div>
+                    <h5 class="text-center text-muted" data-link="visible{:!periodprofit}">Нет данных</h5>
+                </div>
+            </div>
+        </div>
+        <div id="tab_InvExp6m" role="tabpanel" class="tab-pane">
+            <div id="{{:aid}}m6"></div>
+            <div class="row"> 
+                <div class="col-6">
+                    <div class="text-center h5">Расход</div>
+                    <div data-link="visible{:m6expense} id{:aid+'m6expense'}"></div>
+                    <h5 class="text-center text-muted" data-link="visible{:!m6expense}">Нет данных</h5>
+                </div>
+                
+                <div class="col-6">
+                    <div class="text-center h5">Доход</div>
+                    <div data-link="visible{:m6profit} id{:aid+'m6profit'}"></div>
+                    <h5 class="text-center text-muted" data-link="visible{:!m6profit}">Нет данных</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="mdl_details" type="text/x-jsrender">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">Название</th>
+                <th scope="col">Итого</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{for rows sort="sum"}}
+                <tr>
+                    <td>{{:name}}</td>
+                    <td class="text-right">{{formatMoney:sum}}</td>
+                </tr>
+            {{/for}}
+        </tbody>
+    </table>
+</script>
+
+[[$panelPeriod]]
+
+<script>
+SCRM._service[ '[[+rq]]' ] = function(param) {
+    function getC3Col(array, name_field, sum_field){
+        var pie = [],
+            pie5 = [],
+            total = 0;
+        
+        $.each(array, function(k, v){
+            v.menuindex = (v.menuindex||0)*1;
+            v.name = v[name_field || 'name'] || '- Аванс -'; //'---'
+            v.sum = (v[sum_field || 'sum'] || 0)*1;
+            total += v.sum;
+        });
+        
+        $.each(array, function(k, v){
+            if (!v.sum) return;
+            if (v.sum < total * 0.05) { // Меньше 5% пирога
+                if (pie5.length) {
+                    pie5[0] = 'Другое';
+                    pie5.push(v.sum);
+                } else {
+                    pie5 = [v.name, v.sum];
+                }
+            } else {
+                pie.push( [v.name, v.sum] );
+            }
+        });
+        if (pie5.length) pie.push(pie5);
+        return pie;
+    };
+    
+    function pieModal(rows){
+        var mdl = {
+            body: "#mdl_details",
+            rows: rows
+        };
+        club_Modal(mdl);
+    };
+    
+    SCRM.loadWSS(['c3'], function(){
+        var app = {
+            aid: SCRM.uniqid(),
+            mon6_id: SCRM.uniqid()
+        };
+
+        function generatePies(d1d2, mode){
+            pDATA('idPay', $.extend({
+                tableadd: 'idInvoiceType'
+            }, d1d2), function(dataPays){
+
+                SCRM.link(app, mode+'profit', dataPays.rows.length);
+                console.log('idPay', app, dataPays);
+                c3.generate({
+                    bindto: '#'+ app.aid +mode+'profit',
+                    data: {
+                        type : 'pie',
+                        columns: getC3Col(dataPays.rows, 'typeinvoice_name', 'pay_sum'),
+                        onclick: function (d, i) {
+                            pieModal(dataPays.rows);
+                        }
+                    }
+                });
+
+                pDATA('idExpense', d1d2, function(dataExpense){
+                    SCRM.link(app, mode+'expense', dataExpense.rows.length);
+                    
+                    c3.generate({
+                        bindto: '#'+ app.aid +mode+'expense',
+                        data: {
+                            type : 'pie',
+                            columns: getC3Col(dataExpense.rows, 'typeexpence_name', 'expense_sum'),
+                            onclick: function (d, i) { 
+                                pieModal( dataExpense.rows );
+                            }
+                        }
+                    });
+
+                });
+            });
+        }
+
+        $.templates('#tpl_ReportInvoiceExpense')
+        .link(param.container, app)
+        .one('shown.bs.tab', '[href="#tab_InvExp6m"]', function(e) {
+            
+            pDATA('idPay', {
+                tableadd: 'period6m'
+            }, function(dataPays){
+                var m6data = [
+                    ["Доход"],
+                    ["Расход"]
+                ],
+                periodName = $.map(dataPays.period, function(p, k) {
+                    return p.name;
+                });
+                    
+                $.each(dataPays.rows, function(i, v) {
+                    $.each(dataPays.period, function(k, p) {
+                        if (i==0) m6data[0][k+1] = 0; // Заполнение доходов нулями
+                        m6data[0][k+1] = m6data[0][k+1] + v['pay_'+k]*1;
+                    });
+                });
+                
+                pDATA('idExpense', {
+                    tableadd: 'period6m'
+                }, function(dataExpense){
+                    
+                    $.each(dataExpense.rows, function(i, v) {
+                        $.each(dataExpense.period, function(k, p) {
+                            if (i==0) m6data[1][k+1] = 0; // Заполнение расходов нулями
+                            m6data[1][k+1] = m6data[1][k+1] + v['expense_'+k]*1;
+                        });
+                    });
+                    
+                    c3.generate({
+                        bindto: '#'+ app.aid +'m6',
+                        data: {
+                            columns: m6data,
+                            type: 'bar',
+                            onclick: function (d, i) {
+                                var period = dataPays.period[d.index],
+                                d1d2 = {
+                                    d1: period.d1,
+                                    d2: period.d2
+                                };
+                                generatePies(d1d2, 'm6');
+                            }
+                        },
+                        bar: {
+                            width: {
+                                ratio: 0.8
+                            }
+                        },
+                        axis: {
+                            x: {
+                                type: 'category',
+                                categories: periodName
+                            }
+                        }
+                    });
+                });
+            });
+        })
+        .find('.reportDates')
+        .on('periodChange', function(e, dates) {
+            console.log(dates);
+            generatePies(dates, 'period');
+        })
+        .panelPeriod('reportDates');
+    });
+};
+</script>

@@ -1,0 +1,630 @@
+<!--
+бэк - assets/clubtools/hook/mcnTelecom.php
+виджет - modules/missCall
+привязка оператора к пользователю  - modules/mcnConnect
+
+модуль Пропущенные звонки - missCall
+модуль Привязка оператора - mcnConnect
+
+связь Conversation - idTalk
+связь Оператор MCN - idUser_mcn
+
+вид статуса Беседы - idTalk
+-->
+
+<style>
+    .dropdown-max {
+        max-height: 30rem;
+        overflow: auto;
+        max-width: 100%;
+    }
+    
+    .btn-input-group{
+        border: 1px solid #c6c9d5;
+    }
+    .input-group-append .btn-input-group {
+        border-left: unset;
+    }
+    .input-group-prepend .btn-input-group {
+        border-right: unset;
+    }
+</style>
+
+<script id="mdl_initCall" type="text/x-jsrender">
+<div class="input-group mb-3 input-group-alt">
+    <div class="input-group-prepend">
+        <button class="btn btn-outline-secondary dropdown-toggle btn-input-group" type="button" data-toggle="dropdown">+{^{:selCntr}}</button>
+        <div class="dropdown-menu dropdown-max">
+            {{for cntrList ~chooseCntr=chooseCntr}}
+                <a class="dropdown-item" href="#" data-link="{on 'click' ~chooseCntr}">{{:name}} <span class="text-muted">+{{:phone}}</span></a>
+            {{/for}}
+        </div>
+    </div>
+    <input type="number" class="form-control" data-link="number">
+</div>
+</script>
+
+<script id="tpl_clubCallOperator" type="text/x-jsrender">
+<div data-link="visible{:loading}" class="text-center">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div>
+</div>
+<div data-link="visible{:!loading}">
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">ФИО</th>
+                <th scope="col">Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {^{for operators sort="extoken" ~isAdmin=isAdmin ~buildOption=buildOption}}
+                <tr>
+                    <th>{{:extoken}}<div class="small text-muted">{{:extended.sip}}</div></th>
+                    <td>
+                        <div  data-link="visible{:!loading}">
+                            {{if ~isAdmin}} <a href="#" class="dashed" data-type="users" data-roinselect="changeOp" data-link="{on 'buildRoinselect' ~buildOption }">{{/if}}
+                                <b>{{:fullname}}</b><br>{{:email}}
+                            {{if ~isAdmin}} </a>{{/if}}
+                        </div>
+                        
+                        <div data-link="visible{:loading}"class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </td>
+                    
+                    <td>
+                        <div data-link="class{:online? 'tile tile-circle bg-success': 'tile tile-circle bg-dunger'}"></div>
+                    </td>
+                </tr>
+            {{/for}}
+        </tbody>
+    </table>
+    
+    <div class="dropdown dropup" data-link="visible{:!addUser && isAdmin && noUser}">
+        <button class="btn btn-success dropdown-toggle" type="button" id="newOpDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Привязать пользователя
+        </button>
+        <div class="dropdown-menu" aria-labelledby="newOpDropdown">
+            <div class="dropdown-arrow"></div>
+            {^{for noUser ~newOp=newOp}}
+                <a class="dropdown-item" href="#" data-link="{on ~newOp}" data-value="{{:#data}}">{{:#data}}</a>
+            {{/for}}
+        </div>
+    </div>
+    
+    <form action="" data-link="visible{:addUser}">
+        <hr>
+        <div class="h5">{^{:addUser^sip}}</div>
+        <div class="form-row">
+            <div class="col-3">
+                <input type="text" type="number" class="form-control" placeholder="Номер" data-link="addUser^num" required>
+            </div>
+            
+            <div class="col-9">
+                <a href="#" class="dashed" data-type="noUser" data-roinselect="newOp" data-link="{on 'buildRoinselect' buildOption }">
+                    email
+                </a>
+            </div>
+            
+        </div>
+    </form>
+    
+</div>
+</script>
+
+<script id="tpl_clubCallAudio" type="text/x-jsrender">
+    <audio controls autoplay class="w-100">
+      <source src="{{url:url}}" type="audio/mp3">
+    </audio>
+</script>
+
+<script id="tpl_clubCallData" type="text/x-jsrender">
+    <div class="mb-2 d-flex align-items-center">
+        <button class="btn btn-sm btn-success mr-2" data-link="{on initCall}"><i class="fa fa-phone"></i></button>
+        <button class="btn btn-sm btn-secondary mr-2" data-link="{on showOperator}"><i class="fa fa-headphones"></i> Операторы</button>
+    </div>
+    <table id="grid_idTalk" data-entity="idTalk"></table>
+</script>
+
+<a href="#" id="missedCallMenu" class="nav-item nav-link prevent-default" data-link="class{merge:(total > 0) toggle='has-notified'} {on topClick}">
+    <i class="fa fa-phone-square"></i>
+</a>
+
+<script>
+$.templates({
+    roinSelectHtml: `<form action="" class="input-group input-group-alt" data-link="{on 'submit reset' ~InplaceSubmit}">         
+        <select class="custom-select" data-link="inplace_value" required>
+            {^{:options}}
+        </select>
+        <div class="input-group-append" data-link="visible{:(inplace_value!=old_value)}" style="display: flex;">
+            <button class="btn btn-subtle-primary btn-input-group" type="submit">
+                <i class="fa fa-check"></i>
+            </button>
+        </div>         
+        <div class="input-group-append">
+            <button class="btn btn-subtle-danger btn-input-group" type="reset">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>        
+    </form>`
+});
+
+SCRM.vpbxCall = function(phone){
+    pJSON("/hook/vpbx", {
+        phone: phone
+    }, function(answer){
+        if (answer.status && answer.status == "success") SCRM.success("Начинаю звонок");
+        else if (answer.errors) {
+            alert( answer.errors[0].description );
+        }
+    });
+}
+
+$(function() {
+    $.fn.roinselect = function (callback) {
+        return this.each(function() {
+            var elm = $(this),
+                data = $.view(this),
+                options = `<option value="">-- Выбрать --</option>`,
+                roInplace = $('<div class="roinplace-container"></div>').insertAfter( elm.hide() );
+            var myArr = {options: options, link: roInplace, inplace_value: "", old_value: ""};
+            $.link.roinSelectHtml(roInplace, myArr, {
+                InplaceSubmit: function(e, data) {
+                    e.preventDefault(); // submit reset
+                    var d = data.linkCtx.data,
+                        ev = elm.data('roinselect') || 'roinselect';
+                    if (e.type=='submit') {
+                        if (callback) callback( d.inplace_value );
+                    }
+                    var myvar = {value: d.inplace_value, type: e.type};
+                    elm.trigger(ev, myvar);
+                    if (myvar.stop) return false;
+                    $('.onDestroyParent', roInplace).trigger('onDestroyParent');
+                    roInplace.remove();
+                    elm.show().focus();
+                }
+            });
+            
+            elm.trigger("buildRoinselect", myArr);
+        });
+    };
+    
+    $('body')
+    .on('click', '[data-roinselect]', function(e){
+        e.preventDefault();
+        $(this).roinselect();
+    });
+    
+    var cntrList = [
+		["Afghanistan (\u202b\u0627\u0641\u063a\u0627\u0646\u0633\u062a\u0627\u0646\u202c\u200e)", "af", "93"],
+		["Albania (Shqip\xebri)", "al", "355"],
+		["Algeria (\u202b\u0627\u0644\u062c\u0632\u0627\u0626\u0631\u202c\u200e)", "dz", "213"],
+		["American Samoa", "as", "1", 5, ["684"]],
+		["Andorra", "ad", "376"],
+		["Angola", "ao", "244"],
+		["Anguilla", "ai", "1", 6, ["264"]],
+		["Antigua and Barbuda", "ag", "1", 7, ["268"]],
+		["Argentina", "ar", "54"],
+		["Armenia (\u0540\u0561\u0575\u0561\u057d\u057f\u0561\u0576)", "am", "374"],
+		["Aruba", "aw", "297"],
+		["Ascension Island", "ac", "247"],
+		["Australia", "au", "61", 0],
+		["Austria (\xd6sterreich)", "at", "43"],
+		["Azerbaijan (Az\u0259rbaycan)", "az", "994"],
+		["Bahamas", "bs", "1", 8, ["242"]],
+		["Bahrain (\u202b\u0627\u0644\u0628\u062d\u0631\u064a\u0646\u202c\u200e)", "bh", "973"],
+		["Bangladesh (\u09ac\u09be\u0982\u09b2\u09be\u09a6\u09c7\u09b6)", "bd", "880"],
+		["Barbados", "bb", "1", 9, ["246"]],
+		["Belarus (\u0411\u0435\u043b\u0430\u0440\u0443\u0441\u044c)", "by", "375"],
+		["Belgium (Belgi\xeb)", "be", "32"],
+		["Belize", "bz", "501"],
+		["Benin (B\xe9nin)", "bj", "229"],
+		["Bermuda", "bm", "1", 10, ["441"]],
+		["Bhutan (\u0f60\u0f56\u0fb2\u0f74\u0f42)", "bt", "975"],
+		["Bolivia", "bo", "591"],
+		["Bosnia and Herzegovina (\u0411\u043e\u0441\u043d\u0430 \u0438 \u0425\u0435\u0440\u0446\u0435\u0433\u043e\u0432\u0438\u043d\u0430)", "ba", "387"],
+		["Botswana", "bw", "267"],
+		["Brazil (Brasil)", "br", "55"],
+		["British Indian Ocean Territory", "io", "246"],
+		["British Virgin Islands", "vg", "1", 11, ["284"]],
+		["Brunei", "bn", "673"],
+		["Bulgaria (\u0411\u044a\u043b\u0433\u0430\u0440\u0438\u044f)", "bg", "359"],
+		["Burkina Faso", "bf", "226"],
+		["Burundi (Uburundi)", "bi", "257"],
+		["Cambodia (\u1780\u1798\u17d2\u1796\u17bb\u1787\u17b6)", "kh", "855"],
+		["Cameroon (Cameroun)", "cm", "237"],
+		["Canada", "ca", "1", 1, ["204", "226", "236", "249", "250", "289", "306", "343", "365", "387", "403", "416", "418", "431", "437", "438", "450", "506", "514", "519", "548", "579", "581", "587", "604", "613", "639", "647", "672", "705", "709", "742", "778", "780", "782", "807", "819", "825", "867", "873", "902", "905"]],
+		["Cape Verde (Kabu Verdi)", "cv", "238"],
+		["Caribbean Netherlands", "bq", "599", 1, ["3", "4", "7"]],
+		["Cayman Islands", "ky", "1", 12, ["345"]],
+		["Central African Republic (R\xe9publique centrafricaine)", "cf", "236"],
+		["Chad (Tchad)", "td", "235"],
+		["Chile", "cl", "56"],
+		["China (\u4e2d\u56fd)", "cn", "86"],
+		["Christmas Island", "cx", "61", 2, ["89164"]],
+		["Cocos (Keeling) Islands", "cc", "61", 1, ["89162"]],
+		["Colombia", "co", "57"],
+		["Comoros (\u202b\u062c\u0632\u0631 \u0627\u0644\u0642\u0645\u0631\u202c\u200e)", "km", "269"],
+		["Congo (DRC) (Jamhuri ya Kidemokrasia ya Kongo)", "cd", "243"],
+		["Congo (Republic) (Congo-Brazzaville)", "cg", "242"],
+		["Cook Islands", "ck", "682"],
+		["Costa Rica", "cr", "506"],
+		["C\xf4te d\u2019Ivoire", "ci", "225"],
+		["Croatia (Hrvatska)", "hr", "385"],
+		["Cuba", "cu", "53"],
+		["Cura\xe7ao", "cw", "599", 0],
+		["Cyprus (\u039a\u03cd\u03c0\u03c1\u03bf\u03c2)", "cy", "357"],
+		["Czech Republic (\u010cesk\xe1 republika)", "cz", "420"],
+		["Denmark (Danmark)", "dk", "45"],
+		["Djibouti", "dj", "253"],
+		["Dominica", "dm", "1", 13, ["767"]],
+		["Dominican Republic (Rep\xfablica Dominicana)", "do", "1", 2, ["809", "829", "849"]],
+		["Ecuador", "ec", "593"],
+		["Egypt (\u202b\u0645\u0635\u0631\u202c\u200e)", "eg", "20"],
+		["El Salvador", "sv", "503"],
+		["Equatorial Guinea (Guinea Ecuatorial)", "gq", "240"],
+		["Eritrea", "er", "291"],
+		["Estonia (Eesti)", "ee", "372"],
+		["Eswatini", "sz", "268"],
+		["Ethiopia", "et", "251"],
+		["Falkland Islands (Islas Malvinas)", "fk", "500"],
+		["Faroe Islands (F\xf8royar)", "fo", "298"],
+		["Fiji", "fj", "679"],
+		["Finland (Suomi)", "fi", "358", 0],
+		["France", "fr", "33"],
+		["French Guiana (Guyane fran\xe7aise)", "gf", "594"],
+		["French Polynesia (Polyn\xe9sie fran\xe7aise)", "pf", "689"],
+		["Gabon", "ga", "241"],
+		["Gambia", "gm", "220"],
+		["Georgia (\u10e1\u10d0\u10e5\u10d0\u10e0\u10d7\u10d5\u10d4\u10da\u10dd)", "ge", "995"],
+		["Germany (Deutschland)", "de", "49"],
+		["Ghana (Gaana)", "gh", "233"],
+		["Gibraltar", "gi", "350"],
+		["Greece (\u0395\u03bb\u03bb\u03ac\u03b4\u03b1)", "gr", "30"],
+		["Greenland (Kalaallit Nunaat)", "gl", "299"],
+		["Grenada", "gd", "1", 14, ["473"]],
+		["Guadeloupe", "gp", "590", 0],
+		["Guam", "gu", "1", 15, ["671"]],
+		["Guatemala", "gt", "502"],
+		["Guernsey", "gg", "44", 1, ["1481", "7781", "7839", "7911"]],
+		["Guinea (Guin\xe9e)", "gn", "224"],
+		["Guinea-Bissau (Guin\xe9 Bissau)", "gw", "245"],
+		["Guyana", "gy", "592"],
+		["Haiti", "ht", "509"],
+		["Honduras", "hn", "504"],
+		["Hong Kong (\u9999\u6e2f)", "hk", "852"],
+		["Hungary (Magyarorsz\xe1g)", "hu", "36"],
+		["Iceland (\xcdsland)", "is", "354"],
+		["India (\u092d\u093e\u0930\u0924)", "in", "91"],
+		["Indonesia", "id", "62"],
+		["Iran (\u202b\u0627\u06cc\u0631\u0627\u0646\u202c\u200e)", "ir", "98"],
+		["Iraq (\u202b\u0627\u0644\u0639\u0631\u0627\u0642\u202c\u200e)", "iq", "964"],
+		["Ireland", "ie", "353"],
+		["Isle of Man", "im", "44", 2, ["1624", "74576", "7524", "7924", "7624"]],
+		["Israel (\u202b\u05d9\u05e9\u05e8\u05d0\u05dc\u202c\u200e)", "il", "972"],
+		["Italy (Italia)", "it", "39", 0],
+		["Jamaica", "jm", "1", 4, ["876", "658"]],
+		["Japan (\u65e5\u672c)", "jp", "81"],
+		["Jersey", "je", "44", 3, ["1534", "7509", "7700", "7797", "7829", "7937"]],
+		["Jordan (\u202b\u0627\u0644\u0623\u0631\u062f\u0646\u202c\u200e)", "jo", "962"],
+		["Kazakhstan (\u041a\u0430\u0437\u0430\u0445\u0441\u0442\u0430\u043d)", "kz", "7", 1, ["33", "7"]],
+		["Kenya", "ke", "254"],
+		["Kiribati", "ki", "686"],
+		["Kosovo", "xk", "383"],
+		["Kuwait (\u202b\u0627\u0644\u0643\u0648\u064a\u062a\u202c\u200e)", "kw", "965"],
+		["Kyrgyzstan (\u041a\u044b\u0440\u0433\u044b\u0437\u0441\u0442\u0430\u043d)", "kg", "996"],
+		["Laos (\u0ea5\u0eb2\u0ea7)", "la", "856"],
+		["Latvia (Latvija)", "lv", "371"],
+		["Lebanon (\u202b\u0644\u0628\u0646\u0627\u0646\u202c\u200e)", "lb", "961"],
+		["Lesotho", "ls", "266"],
+		["Liberia", "lr", "231"],
+		["Libya (\u202b\u0644\u064a\u0628\u064a\u0627\u202c\u200e)", "ly", "218"],
+		["Liechtenstein", "li", "423"],
+		["Lithuania (Lietuva)", "lt", "370"],
+		["Luxembourg", "lu", "352"],
+		["Macau (\u6fb3\u9580)", "mo", "853"],
+		["Macedonia (FYROM) (\u041c\u0430\u043a\u0435\u0434\u043e\u043d\u0438\u0458\u0430)", "mk", "389"],
+		["Madagascar (Madagasikara)", "mg", "261"],
+		["Malawi", "mw", "265"],
+		["Malaysia", "my", "60"],
+		["Maldives", "mv", "960"],
+		["Mali", "ml", "223"],
+		["Malta", "mt", "356"],
+		["Marshall Islands", "mh", "692"],
+		["Martinique", "mq", "596"],
+		["Mauritania (\u202b\u0645\u0648\u0631\u064a\u062a\u0627\u0646\u064a\u0627\u202c\u200e)", "mr", "222"],
+		["Mauritius (Moris)", "mu", "230"],
+		["Mayotte", "yt", "262", 1, ["269", "639"]],
+		["Mexico (M\xe9xico)", "mx", "52"],
+		["Micronesia", "fm", "691"],
+		["Moldova (Republica Moldova)", "md", "373"],
+		["Monaco", "mc", "377"],
+		["Mongolia (\u041c\u043e\u043d\u0433\u043e\u043b)", "mn", "976"],
+		["Montenegro (Crna Gora)", "me", "382"],
+		["Montserrat", "ms", "1", 16, ["664"]],
+		["Morocco (\u202b\u0627\u0644\u0645\u063a\u0631\u0628\u202c\u200e)", "ma", "212", 0],
+		["Mozambique (Mo\xe7ambique)", "mz", "258"],
+		["Myanmar (Burma) (\u1019\u103c\u1014\u103a\u1019\u102c)", "mm", "95"],
+		["Namibia (Namibi\xeb)", "na", "264"],
+		["Nauru", "nr", "674"],
+		["Nepal (\u0928\u0947\u092a\u093e\u0932)", "np", "977"],
+		["Netherlands (Nederland)", "nl", "31"],
+		["New Caledonia (Nouvelle-Cal\xe9donie)", "nc", "687"],
+		["New Zealand", "nz", "64"],
+		["Nicaragua", "ni", "505"],
+		["Niger (Nijar)", "ne", "227"],
+		["Nigeria", "ng", "234"],
+		["Niue", "nu", "683"],
+		["Norfolk Island", "nf", "672"],
+		["North Korea (\uc870\uc120 \ubbfc\uc8fc\uc8fc\uc758 \uc778\ubbfc \uacf5\ud654\uad6d)", "kp", "850"],
+		["Northern Mariana Islands", "mp", "1", 17, ["670"]],
+		["Norway (Norge)", "no", "47", 0],
+		["Oman (\u202b\u0639\u064f\u0645\u0627\u0646\u202c\u200e)", "om", "968"],
+		["Pakistan (\u202b\u067e\u0627\u06a9\u0633\u062a\u0627\u0646\u202c\u200e)", "pk", "92"],
+		["Palau", "pw", "680"],
+		["Palestine (\u202b\u0641\u0644\u0633\u0637\u064a\u0646\u202c\u200e)", "ps", "970"],
+		["Panama (Panam\xe1)", "pa", "507"],
+		["Papua New Guinea", "pg", "675"],
+		["Paraguay", "py", "595"],
+		["Peru (Per\xfa)", "pe", "51"],
+		["Philippines", "ph", "63"],
+		["Poland (Polska)", "pl", "48"],
+		["Portugal", "pt", "351"],
+		["Puerto Rico", "pr", "1", 3, ["787", "939"]],
+		["Qatar (\u202b\u0642\u0637\u0631\u202c\u200e)", "qa", "974"],
+		["R\xe9union (La R\xe9union)", "re", "262", 0],
+		["Romania (Rom\xe2nia)", "ro", "40"],
+		["Russia (\u0420\u043e\u0441\u0441\u0438\u044f)", "ru", "7", 0],
+		["Rwanda", "rw", "250"],
+		["Saint Barth\xe9lemy", "bl", "590", 1],
+		["Saint Helena", "sh", "290"],
+		["Saint Kitts and Nevis", "kn", "1", 18, ["869"]],
+		["Saint Lucia", "lc", "1", 19, ["758"]],
+		["Saint Martin (Saint-Martin (partie fran\xe7aise))", "mf", "590", 2],
+		["Saint Pierre and Miquelon (Saint-Pierre-et-Miquelon)", "pm", "508"],
+		["Saint Vincent and the Grenadines", "vc", "1", 20, ["784"]],
+		["Samoa", "ws", "685"],
+		["San Marino", "sm", "378"],
+		["S\xe3o Tom\xe9 and Pr\xedncipe (S\xe3o Tom\xe9 e Pr\xedncipe)", "st", "239"],
+		["Saudi Arabia (\u202b\u0627\u0644\u0645\u0645\u0644\u0643\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629\u202c\u200e)", "sa", "966"],
+		["Senegal (S\xe9n\xe9gal)", "sn", "221"],
+		["Serbia (\u0421\u0440\u0431\u0438\u0458\u0430)", "rs", "381"],
+		["Seychelles", "sc", "248"],
+		["Sierra Leone", "sl", "232"],
+		["Singapore", "sg", "65"],
+		["Sint Maarten", "sx", "1", 21, ["721"]],
+		["Slovakia (Slovensko)", "sk", "421"],
+		["Slovenia (Slovenija)", "si", "386"],
+		["Solomon Islands", "sb", "677"],
+		["Somalia (Soomaaliya)", "so", "252"],
+		["South Africa", "za", "27"],
+		["South Korea (\ub300\ud55c\ubbfc\uad6d)", "kr", "82"],
+		["South Sudan (\u202b\u062c\u0646\u0648\u0628 \u0627\u0644\u0633\u0648\u062f\u0627\u0646\u202c\u200e)", "ss", "211"],
+		["Spain (Espa\xf1a)", "es", "34"],
+		["Sri Lanka (\u0dc1\u0dca\u200d\u0dbb\u0dd3 \u0dbd\u0d82\u0d9a\u0dcf\u0dc0)", "lk", "94"],
+		["Sudan (\u202b\u0627\u0644\u0633\u0648\u062f\u0627\u0646\u202c\u200e)", "sd", "249"],
+		["Suriname", "sr", "597"],
+		["Svalbard and Jan Mayen", "sj", "47", 1, ["79"]],
+		["Sweden (Sverige)", "se", "46"],
+		["Switzerland (Schweiz)", "ch", "41"],
+		["Syria (\u202b\u0633\u0648\u0631\u064a\u0627\u202c\u200e)", "sy", "963"],
+		["Taiwan (\u53f0\u7063)", "tw", "886"],
+		["Tajikistan", "tj", "992"],
+		["Tanzania", "tz", "255"],
+		["Thailand (\u0e44\u0e17\u0e22)", "th", "66"],
+		["Timor-Leste", "tl", "670"],
+		["Togo", "tg", "228"],
+		["Tokelau", "tk", "690"],
+		["Tonga", "to", "676"],
+		["Trinidad and Tobago", "tt", "1", 22, ["868"]],
+		["Tunisia (\u202b\u062a\u0648\u0646\u0633\u202c\u200e)", "tn", "216"],
+		["Turkey (T\xfcrkiye)", "tr", "90"],
+		["Turkmenistan", "tm", "993"],
+		["Turks and Caicos Islands", "tc", "1", 23, ["649"]],
+		["Tuvalu", "tv", "688"],
+		["U.S. Virgin Islands", "vi", "1", 24, ["340"]],
+		["Uganda", "ug", "256"],
+		["Ukraine (\u0423\u043a\u0440\u0430\u0457\u043d\u0430)", "ua", "380"],
+		["United Arab Emirates (\u202b\u0627\u0644\u0625\u0645\u0627\u0631\u0627\u062a \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0627\u0644\u0645\u062a\u062d\u062f\u0629\u202c\u200e)", "ae", "971"],
+		["United Kingdom", "gb", "44", 0],
+		["United States", "us", "1", 0],
+		["Uruguay", "uy", "598"],
+		["Uzbekistan (O\u02bbzbekiston)", "uz", "998"],
+		["Vanuatu", "vu", "678"],
+		["Vatican City (Citt\xe0 del Vaticano)", "va", "39", 1, ["06698"]],
+		["Venezuela", "ve", "58"],
+		["Vietnam (Vi\u1ec7t Nam)", "vn", "84"],
+		["Wallis and Futuna (Wallis-et-Futuna)", "wf", "681"],
+		["Western Sahara (\u202b\u0627\u0644\u0635\u062d\u0631\u0627\u0621 \u0627\u0644\u063a\u0631\u0628\u064a\u0629\u202c\u200e)", "eh", "212", 1, ["5288", "5289"]],
+		["Yemen (\u202b\u0627\u0644\u064a\u0645\u0646\u202c\u200e)", "ye", "967"],
+		["Zambia", "zm", "260"],
+		["Zimbabwe", "zw", "263"],
+		["\xc5land Islands", "ax", "358", 1, ["18"]]
+	],
+	sortedCntr = $.map(cntrList, function(v){
+	    var elm = {
+	        name: v[0],
+	        iso: v[1],
+	        phone: v[2]
+	    };
+	    if (v[3]) elm.another = [v[3]];
+	    if (v[4]) elm.another.push(v[4]);
+	    return elm;
+	});
+    
+    var callData = [[!runHook?hook=`hook/vpbx/missed`]];
+    
+    callData.topClick = function(e) {
+        if (!callData.tData) {
+            callData.tData = club_Tab({
+                title: 'Звонки',
+                body: '#tpl_clubCallData',
+                showOperator: function(e) {
+                    var operMdl = {
+                        title: 'Операторы',
+                        body: '#tpl_clubCallOperator',
+                        loading: true,
+                        isAdmin: SCRM.app.ugroups.includes("idAdmin"),
+                        newOp: function(e, d){
+                            e.preventDefault();
+                            SCRM.link(operMdl, {addUser: {
+                                num: "",
+                                sip: $(e.target).data("value"),
+                                user: 0
+                            }});
+                            $("[data-type='noUser']").click();
+                        },
+                        buildOption: function(e, d, myarr){
+                            var elm = $(e.target),
+                                data = $.view(e.target),
+                                type = elm.data("type")
+                                options = myarr.options;
+                            if (type == "users") {
+                                $.each(data.parent.parent.parent.data.users, function(k, v){
+                                    options += `<option value="${v.internalKey}">${v.email}</option>`;
+                                });
+                            }
+                            
+                            if (type == "noUser") {
+                                console.log(data);
+                                $.each(data.data.users, function(k, v){
+                                    options += `<option value="${v.internalKey}">${v.email} - ${v.fullname}</option>`;
+                                });
+                            }
+                            SCRM.link(myarr, {options: options});
+                        }
+                    };
+                    
+                    club_Modal(operMdl)
+                    .on("changeOp", function(e, d){
+                        if (d.type != "submit") return false;
+                        var data = $.view(e.target).data;
+                        SCRM.link(data, {loading: true});
+                        pEDIT("idExtid", {
+                            id: data.id,
+                            parent: d.value
+                        }, function(){
+                            pJSON("/hook/vpbx/operators", function(data){
+                                SCRM.link(operMdl, data);
+                            });
+                        });
+                    })
+                    .on("newOp", function(e, data){
+                        operMdl.addUser.user = data.value;
+                        if (data.type == "reset") {
+                            SCRM.link(operMdl, {addUser: false});
+                        } else if (!operMdl.addUser.user || !operMdl.addUser.num) {
+                            data.stop = true;
+                            alert("Неверно заполнены данные");
+                        } else {
+                            var newUser = $.extend({}, operMdl.addUser);
+                            SCRM.link(operMdl, {addUser: false} );
+                            pJSON("/hook/vpbx/operators/newoper", newUser, function(newdata){
+                                if (!newdata.noUser) newdata.noUser = false;
+                                SCRM.link(operMdl, newdata);
+                            })
+                        }
+                    })
+                    
+                    pJSON("/hook/vpbx/operators", function(data){
+                        SCRM.link(operMdl, $.extend(data, {loading: false} ));
+                    });
+                },
+                initCall: function(){
+                    var mdlData = {
+                        title: "Набрать номер",
+                        ok: "Позвонить",
+                        cntrList: sortedCntr,
+                        body: "#mdl_initCall",
+                        chooseCntr: function(e,d){
+                            e.preventDefault();
+                            SCRM.link(mdlData, 'selCntr', d.linkCtx.data.phone);
+                        },
+                        disabledOK: true,
+                        selCntr: "7",
+                        onOK: function(mdl){
+                            SCRM.vpbxCall(mdlData.selCntr+mdlData.number);
+                        }
+                    };
+                    club_Modal(mdlData);
+                    $.observe(mdlData, 'number', function(e,d){
+                        SCRM.link(mdlData, 'disabledOK', mdlData.number.length < 5);
+                    });
+                }
+            });
+            SCRM.loadWSS('grid', function () {
+                var defVal = '';
+                $.each(callData.clubStatus, function(k, v){
+                    if (v.alias == 'callinBegin') defVal = v.id;
+                });
+                $("#grid_idTalk").jqGridInit({
+                    sortname: 'id', sortorder: 'desc',
+                    search: true,
+                    autowidth: true,
+                    colModel: [
+                        {name: 'id', template: idFieldTemplate},
+                        {name:'status', width:180,
+                            searchoptions: {
+                                defaultValue: defVal
+                            },
+                            template: selTemplate,
+                            clubStatus: 'idTalk', lookupKey: 'id'
+                        },
+                        {name:'local', label:'Внутренний', width: 90, hidden: true},
+                        {name:'foreign', label:'Внешний', template: telTemplate},
+                        {name:'fullname', label:'Оператор'},
+                        {template: createdTemplate, hidden: false, label: 'Создано'},
+                        {name:'duration', label:'Продолжительность', width: 65, 
+                            formatter: function(cv, ops, row){
+                                if (!cv || cv=='null') return '';
+                                var sec = cv*1, m = Math.floor(sec/60);
+                                sec = sec % 60;
+                                return '<a href="#" data-talk="'+row.extid+'" class="prevent-default">'+ (''+m).padStart(2,'0') +':'+ (''+sec).padStart(2,'0') +'<i class="ml-2 fa fa-play fa-lg"></i></a>';
+                            }
+                        },
+                        {name: 'info', template: infoTemplate, editable: true},
+                    ],
+                    navOpts: {add: true, edit: true, del: true}
+                })
+                .jqGrid('filterToolbar')
+                .jqGridColumns();
+            });
+        } else {
+            callData.tData.tab.tab('show');
+        }
+    };
+    var updateCallData = function() {
+        setTimeout(function() {
+            pJSON('/hook/vpbx/missed', function(data){
+                SCRM.link(callData, data);
+            });
+            updateCallData();
+        }, SCRM.randInt(5*60*1000, 7*60*1000));
+    };
+    updateCallData();
+    
+    $("#missedCallMenu")
+    .insertBefore('#scrmHelpMenu')
+    .link(true, callData);
+    
+    $(document)
+    .on('click', '[data-talk]', function(e){
+        var link = $(this),
+            callId = link.data('talk');
+            
+        var audioMdl = {
+    		body: '#tpl_clubCallAudio',
+    		url: "/hook/vpbx?call_id="+callId
+    	};
+    	club_Modal(audioMdl);
+    })
+    .on('onInitPopMenu', function(e, d){
+        if (d.ptype == 'tel') d.rows.unshift({
+            href: "javascript:SCRM.vpbxCall('"+d.txt+"')",
+            ico: 'fa-address-card',
+            text: 'ВАТС'
+        });
+    })
+});
+</script>

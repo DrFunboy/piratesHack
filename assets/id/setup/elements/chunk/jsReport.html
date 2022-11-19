@@ -1,0 +1,124 @@
+<header class="d-flex justify-content-between align-items-center mb-2">
+    <button type="button" class="btn btn-light btn-icon mr-2 ml-n2" title="Список" data-link="{on ~showList}">
+        <i class="fa fa-chevron-left"></i>
+    </button>
+    <div class="account-summary1">
+        <h2 class="card-title m-0" data-link="reportName"></h2>
+    </div>
+    <div class="ml-auto d-print-none">
+        <button type="button" class="btn btn-light btn-icon mr-n2" onclick="window.print();"><i class="fa fa-print"></i></button>
+    </div>
+</header>
+[[$panelPeriod]]
+<div class="report-period mb-2" id="reportPeriod" data-link="visible{:period}"></div>
+<div id="reportBody"></div>
+
+<script>
+window.clubReport = {
+    reportName: ''
+};
+
+var $reportWrap = $('#clubReportWrap').addClass('spinner-parent'),
+    $reportBody = $('#reportBody');
+    
+$.link(true, $reportWrap, clubReport, {
+    showList: function(){
+        SCRM.link(clubReport, {
+            //period: false,
+            opts: null,
+            url: null,
+            reportName: ''
+        });
+    }
+});
+
+function reportData(opts) {
+    $('#panelSportsmens').slideUp();
+    var tpl = opts.tpl || "#report_tpl";
+    if (!opts.result) {
+        //console.log('make result div');
+        opts.result = $('<div></div>').prependTo( $reportBody );
+    }
+        
+    spinnr(opts.result);
+    var postData = $.extend({ rows: 1001 },
+        opts.postData,
+        (clubReport.period)? clubReport.dates:null);
+    
+    pJSON(SCRM.dataUrl, postData, function(data){
+        if (opts.callback) {
+            opts.callback(data);
+        } else {
+            opts.result.html( $.templates(tpl).render(data) );
+        }
+        spinnr(false, opts.result);
+    });
+}
+
+$.observe(clubReport, 'opts', 'dates', function(e, data){
+    if (clubReport.opts) reportData(clubReport.opts);
+});
+
+$.observe(clubReport, 'url', function(e, data){
+    //$.observable(clubReport).setProperty('opts', null);
+    if (data.value) $reportBody.load(data.value);
+});
+
+function clubCountsChart(data, allcount) {
+    clubReport.opts.result.html('<div id="reportChart"></div><hr>Всего: <b>'+allcount+'</b>');
+    SCRM.loadWSS('c3', function(){
+        c3.generate({
+            bindto: '#reportChart',
+            data: {
+                columns: data,
+                type : 'pie'
+            },
+            size: {
+                height: 330
+            }
+        });
+    });
+};
+    
+$(function(){
+    var $panelSp = $('#panelSportsmens');
+    if ($panelSp.length > 0) {
+        var reportSpGrid = $('#grmain').SportsmenGridExt();
+        //$(this).jqGrid('hideCol', ['invoiced', 'payed']);
+    
+        $(document)
+        .on('click', '.show-sportsmen-pnl', function(e){
+            e.preventDefault();
+            $panelSp.slideDown();
+            var link = $(this);
+            reportSpGrid.trigger('sportsmenGrid', {
+                postData: $.extend({}, clubReport.opts.postData, clubReport.dates, {
+                    filters: '',
+                    table: 'idSportsmen',
+                    _where: link.data('w'),
+                    _source: 'panel'
+                })
+            });
+            clubScroll('#panelSportsmens');
+        });
+    }
+    
+    $('[data-report]').click(function(e){
+        e.preventDefault();
+        var reportLnk = $(this),
+            href = reportLnk.attr('href');
+        
+        SCRM.link(clubReport, {
+            reportName: reportLnk.text(),
+            period: href.includes('period'),
+            url: href
+        });
+    })
+    .filter('[href*="chart"]').append('<i class="fa fa-bar-chart"></i>');
+    
+    clubReport.reportPeriod = $('#reportPeriod').on('periodChange', function(e, dates){
+        SCRM.link(clubReport, {dates: dates});
+    })
+    .panelPeriod();
+});
+</script>

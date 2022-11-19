@@ -1,0 +1,89 @@
+<style>
+    .club-file-created {
+        display:none;
+    }
+    .club-filerow:hover .club-file-created {
+        display:inline;
+    }
+    .club-photo .user-avatar {
+        width: 7rem;
+        height: 7rem;
+        font-size: 7rem;
+    }
+    .club-photo .user-avatar button {
+        position: absolute;
+        left: 2px;
+        bottom: 2px;
+    }
+</style>
+
+<script id="tpl_files" type="text/x-jsrender">
+<div class="card spinner-parent" data-link="visible{:#data}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between">
+            <h3 class="card-title mb-0">Файлы</h3>
+            <div class="card-title-control mr-n2">
+                {^{if loading}}
+                <span class="spinner-border spinner-border-sm" role="status"></span>
+                {{else add && add^length && !showSelect}}
+                <button class="btn btn-icon btn-light"
+                    data-link="{on ~uploadFileList}"><i class="fa fa-upload"></i></button>
+                {{/if}}
+            </div>
+        </div>
+        <div class="mt-2 d-none" data-link="class{merge:showSelect toggle='d-flex'} class{merge:!showSelect toggle='d-none'}">
+            <select class="form-control flex-grow-1" data-link="post^filetype">
+                <option value="">-- Загрузить файл --</option>
+                {^{for add}}
+                    <option value="{{:alias}}">{{:name}}</option>
+                {{/for}}
+            </select>
+            <button class="btn btn-primary ml-2"
+                data-link="visible{:post^filetype} {on ~uploadFileList}">
+                <i class="fa fa-upload"></i>
+            </button>
+        </div>
+    </div>
+    <div class="list-group list-group-bordered list-group-reflow"
+        data-link="{for rows ~pd=#data tmpl='#tpl_fileRow'}">
+    </div>
+</div>
+</script>
+
+<script id="tpl_fileRow" type="text/x-jsrender">
+<div class="list-group-item club-filerow">
+    <div class="list-group-item-body">
+        {{if filetype_name}}
+        <div class="text-muted small" data-link="visible{:filetype_name}">{{:filetype_name}}
+            <a href="#" class="club-file-created fmtCreated" data-id="{{:id}}" data-tbl="idFiles">{{formatDateTime:created}}</a>
+        </div>
+        {{/if}}
+        <a href="{{:filepath}}" target="_blank" download="{{:name}}.{{:fileext}}" data-permis="{{:permis}}"
+            class="club-file">
+            <i class="fa fa-file-o mr-2"></i>
+            <span class="roinplacetext">{{:name}}</span>.{{:fileext}}</a>
+    </div>
+    {{roDMenu ~hidden=(permis.indexOf('edit') < 0)}}
+        <a href="#" class="dropdown-item prevent-default" data-link="{on ~editFile}">
+            <i class="fa fa-pencil dropdown-icon"></i> Редактировать</a>
+        <div class="dropdown-divider"></div>
+        <a href="#" class="dropdown-item prevent-default" data-link="{on ~delFile}">
+            <i class="fa fa-trash dropdown-icon"></i> Удалить</a>
+    {{/roDMenu}}
+</div>
+</script>
+
+<script id="tpl_filePhoto1" type="text/x-jsrender">
+    <div class="text-center spinner-parent mb-2 club-photo">
+        <figure class="user-avatar d-block m-auto" data-link="data-imgkey{:file1^key}">
+            <a href="#" data-link="href{:file1^md||'#'} {on ~clickPhoto1}" accept="image/*">
+                <img src="" alt="" data-link="src{:file1^sm||~S.emptyImg(gender)}">
+            </a>
+            <button class="lb-element btn btn-icon btn-secondary"
+                data-link="{on ~S.uploadFile} visible{:file1^modify}" accept="image/*">
+                <span class="spinner-border spinner-border-sm" role="status" data-link="visible{:loading}"></span>
+                <i class="fa fa-camera" data-link="visible{:!loading}"></i>
+            </button>
+        </figure>
+    </div>
+</script>

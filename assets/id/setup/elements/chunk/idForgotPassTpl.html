@@ -1,0 +1,15 @@
+<p>Для восстановления пароля, нам нужен Ваш адрес электронной почты, указанный при регистрации.</p>
+[[+loginfp.errors:notempty=`<div class="alert alert-warning">[[+loginfp.errors]]</div>`]]
+<form class="form-inline1" action="[[~[[*id]]]]" method="post">
+    <input type="hidden" name="returnUrl" value="[[+loginfp.request_uri]]" />
+    <input type="hidden" name="login_fp_service" value="forgotpassword" />
+    <div class="form-row">
+        <div class="col-12 col-sm-auto">
+            <input type="email" name="email" name="email" value="[[+loginfp.post.email:default=`[[!#GET.email]]`]]" 
+                placeholder="Ваш e-mail" class="form-control mb-2" />
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" type="submit">Сбросить пароль</button>
+        </div>
+    </div>
+</form>

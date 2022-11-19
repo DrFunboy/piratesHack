@@ -1,0 +1,179 @@
+[[-<style>
+@media print {
+    .modal-drawer .modal-body,
+    .modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        margin: 0;
+        padding: 0;
+        overflow: visible!important;
+    }
+}
+</style>]]
+[[$panelPeriod]]
+<script>
+SCRM._service[ '[[+rq]]' ] = function(){
+    var sp = SCRM.idSportsmen;
+    var printRevise = {
+        sp: sp,
+        dates: {},
+        title: '#tpl_printReviseTitle',
+        body: '#tpl_printRevise',
+        cm_size: 'lg',
+        printReviseReport: function(e, data) {
+            SCRM.loadWSS('printThis', function(){
+                $('.modal-body', printRevise.mdl)
+                .printThis({
+                    pageTitle: 'Акт сверки - '+printRevise.sp.name,
+                    printContainer: true,
+                    //debug: true,
+                    //importCSS: true,
+                    //importStyle: true,
+                    //loadCSS: "../css/style.css",
+                    //removeInline: false,
+                    //header: null,
+                    //formValues: true,
+                    printDelay: 500
+                });
+            });
+        }
+    };
+    
+    club_Drawer(printRevise);
+    function refreshData(delta) { // вычислить дельту от сегодня до последней даты
+        console.log('refreshData', delta)
+        function addFilters(pd, field) {
+            if (printRevise.period) {
+                var datequery = (delta)? printRevise.dates.d2 + ' +1 day;today' : printRevise.dates.d1+ ';' +printRevise.dates.d2;
+                pd.filters = SCRM.obj2Filter({}, {
+                    rules: [{field: field, op: 'db', data: datequery}]
+                });
+            }
+            pd.rows = 1001;
+            return pd;
+        }
+        
+
+        pDATA('idInvoice', addFilters({
+            _where: {sportsmen: sp.id}
+        }, 'dateinvoice'), function(inv_data){
+            pDATA('idPay', addFilters({
+                _where: {payd:1, sportsmen: sp.id}
+            }, 'datepay'), function(pay_data){
+                if (!delta) {
+                    var nd = {
+                        created: pay_data.created,
+                        rows: [],
+                        total_inv: 0,
+                        total_pay: 0,
+                        saldo_d1: null,
+                        saldo_d2: null
+                    };
+                    $.each(inv_data.rows, function(i, v){
+                        nd.total_inv += v.sum*1;
+                        nd.rows.push({
+                            name: v.name_typeinvoice,
+                            info: v.info,
+                            sum_inv: v.sum,
+                            date: v.dateinvoice
+                        });
+                    });
+                    $.each(pay_data.rows, function(i, v){
+                        nd.total_pay += v.sum*1;
+                        nd.rows.push({
+                            info: v.info,
+                            sum_pay: v.sum,
+                            date: v.datepay
+                        });
+                    });
+                    if (printRevise.period) refreshData(true); // считать дельту
+                } else { // delta
+                    var nd = {
+                        saldo_d2: sp.saldo*1
+                    };
+                    $.each(inv_data.rows, function(i, v){
+                        nd.saldo_d2 += v.sum*1
+                    });
+                    $.each(pay_data.rows, function(i, v){
+                        nd.saldo_d2 -= v.sum*1
+                    });
+                    
+                    nd.saldo_d1 = nd.saldo_d2 + printRevise.total_inv - printRevise.total_pay;
+                }
+                console.log(nd);
+                SCRM.link(printRevise, nd);
+            });
+        });
+    }
+    $('#revisePeriod').on('periodChange', function(e, dates) {
+        SCRM.link(printRevise, {dates: dates});
+        refreshData();
+    })
+    .panelPeriod();
+    
+    $.observe(printRevise, 'period', function(){ //включение кнопки
+        refreshData();
+    });
+};
+</script>
+
+<script id="tpl_printReviseTitle" type="text/x-jsrender">
+<button class="btn btn-subtle-primary rounded-pill btn-sm" data-link="{on printReviseReport}">
+    <i class="fa fa-print"></i> Напечатать
+</button>
+<div class="btn-group btn-group-toggle" data-toggle="buttons">
+    <label class="btn btn-secondary1 btn-subtle-primary rounded-pill btn-sm">
+    <input type="checkbox" data-link="period">
+    <i class="fa fa-calendar-o"></i>
+    </label>
+</div>
+<div id="revisePeriod" class="mt-2" data-link="visible{:period}"></div>
+</script>
+
+<script id="tpl_printRevise" type="text/x-jsrender">
+    <h2 class="h4 mt-2">Акт Сверки<span data-link="visible{:period}"> {^{formatDate:dates^d1}} &mdash; {^{formatDate:dates^d2}}</span></h2>
+    <h3 class="h5">{{:sp.name}}</h3>
+    <p>Договор: <b>{{:sp.contract}}</b> от <b>{{formatDate:sp.contractdate}}</b></p>
+    {^{if period ~date=dates^d1 ~saldo=saldo_d1 tmpl="#tpl_printReviseSaldo" /}}
+    <table class="table table-bordered1 table-sm">
+    <thead>
+    <tr>
+    <th>Дата</th>
+    <th>Расшифровка</th>
+    <th>Начислено</th>
+    <th>Оплачено</th>
+    </tr>
+    </thead>
+    <tbody>
+    {^{for rows sort="date"}}
+        <tr>
+        <td>{{formatDate:date}}</td>
+        <td>{{if name}}<b>{{:name}}</b><br>{{/if}}{{:info}}</td>
+        <td>{{formatMoney:sum_inv}}</td>
+        <td>{{formatMoney:sum_pay}}</td>
+        </tr>
+    {{/for}}
+    </tbody>
+    <tfoot>
+    <tr>
+    <td></td>
+    <th>Итого</th>
+    <td>{^{formatMoney:total_inv}}</td>
+    <td>{^{formatMoney:total_pay}}</td>
+    </tr>
+    </tfoot>
+    </table>
+    <hr>
+    {^{if period ~date=dates^d2 ~saldo=saldo_d2 tmpl="#tpl_printReviseSaldo"}}
+    {{else ~date=created ~saldo=sp.saldo tmpl="#tpl_printReviseSaldo"}}
+    {{/if}}
+</script>
+
+<script id="tpl_printReviseSaldo" type="text/x-jsrender">
+<p>
+    Сальдо на {^{formatDate:~date}}:
+    <b data-link="visible{:!~saldo}">0</b>
+    <b data-link="class{:(~saldo < 0)? 'text-danger':'text-success'} text{formatMoney:~saldo} visible{:~saldo}"></b>
+</p>
+</script>

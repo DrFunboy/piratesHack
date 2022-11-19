@@ -1,0 +1,82 @@
+<!-- clubReport -->
+<script id="report_tpl" type="text/x-jsrender">
+    <div class="row">
+    <div class="col-md-5">
+        <table class="table table-bordered m-0">
+            <thead>
+                <tr>
+                    <th>Наименование</th>
+                    <th>Количество</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{for rows}}
+              <tr>
+                <th>
+                <a href="#" data-chfield="{{:chfield}}">{{:~spFieldName(chfield)}}</a>
+                </th>
+                <td class="text-right">
+                    <a href="#" class="show-sportsmen-pnl badge badge-primary" data-w="idChanges.chfield={{:chfield}}">
+                    <span data-toggle="tooltip" title="Количество записей">{{:cnt}}</span> / <span data-toggle="tooltip" title="Количество спортсменов">{{:cntsportsmen}}</span>
+                    </a>
+                </td>
+              </tr>
+            {{/for}}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-7" id="an_tchanges_detail">
+    </div>
+</div>
+</script>
+
+<script id="an_tchanges_detail_tpl" type="text/x-jsrender">
+<table class="table table-bordered m-0">
+    <thead>
+        <tr>
+            <th>Наименование</th>
+            <th>К-во</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{for rows}}
+      <tr>
+        <th>
+        {{:newvalue}}
+        </th>
+        <td class="text-right">
+            <a href="#"  data-w="idChanges.chfield={{:~root.chfield}};idChanges.newvalue={{:newvalue}}" class="badge badge-primary show-sportsmen-pnl">{{:cnt}} / {{:cntsportsmen}}</a>
+        </td>
+      </tr>
+    {{/for}}
+    </tbody>
+</table>
+</script>
+
+<script>
+
+var reportOpts = {
+    table: 'idChanges',
+    _report: 'idSportsmen_changes'
+};
+SCRM._runLoader('spCard')(null, function(){
+    $.views.helpers("spFieldName", SCRM._fieldName);
+    $.observable(clubReport).setProperty('opts', {
+        postData : reportOpts
+    });
+});
+
+
+$(document).off('click.chfield').on('click.chfield', 'a[data-chfield]', function(e){
+    e.preventDefault();
+    var chfield = $(this).data('chfield');
+    reportData({
+        postData: $.extend({field: chfield}, reportOpts),
+        callback: function(data) {
+            data.chfield = chfield;
+            $('#an_tchanges_detail')
+                .html( $.templates("#an_tchanges_detail_tpl").render(data) );
+        }
+    });
+});
+</script>

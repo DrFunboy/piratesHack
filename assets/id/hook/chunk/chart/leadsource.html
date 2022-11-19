@@ -1,0 +1,48 @@
+<script id="tpl_ReportLeadSourceChart" type="text/x-jsrender">
+    <div class="reportDates mb-3"></div>
+    <p data-link="{:introtext}"></p>
+    <div class="reportChart"></div>
+    <hr>
+    <div>Всего: <b data-link="cnt"></b></div>
+</script>
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    SCRM.loadWSS('c3', function(){
+        var report = $.templates('#tpl_ReportLeadSourceChart')
+        .link(param.container, param);
+        
+        report.find('.reportDates')
+        .on('periodChange', function(e, dates) {
+            pDATA('idLead', $.extend({
+                rows: 1001,
+                _report: 'idLead_group'
+            }, dates), function(data) {
+                var nd = {
+                    cnt: 0
+                },
+                dataChart = [ ];
+
+                $.each(data.rows, function(k, v){
+                    dataChart.push([v.label+' ('+ v.data +')',  v.data]);
+                    nd.cnt += v.data*1;
+                });
+
+                SCRM.link(param, nd);
+
+                c3.generate({
+                    bindto: report.find('.reportChart')[0],
+                    data: {
+                        columns: dataChart,
+                        type : 'pie'
+                    },
+                    size: {
+                        height: 330
+                    }
+                });
+            });
+        })
+        .panelPeriod('reportDates');
+    });
+};
+</script>

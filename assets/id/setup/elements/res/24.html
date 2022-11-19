@@ -1,0 +1,23 @@
+<style>
+    #schBox .flt_trainer {
+        display:none;
+    }
+</style>
+<div class="card spinner-parent">
+    <div class="card-body" id="schBox" data-mode="trainer">
+</div>
+
+[[$schedInner]]
+
+<script>
+$(function() {
+    $('#schBox')
+    .on('clubSchedule.reload', function() {
+        spinnr(true, $(this));
+    })
+    .on('clubSchedule.onload', function() {
+        spinnr(false, $(this));
+    })
+    .clubSchedule();
+});
+</script>

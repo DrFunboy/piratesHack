@@ -1,0 +1,121 @@
+<script id="tpl_birthMdl" type="text/x-jsrender">
+    <select class="custom-select d-block" id="birthPeriodSel" data-link="birthPeriodSel">
+        <option value="today">Сегодня</option>
+        <option value="tomorrow">Завтра</option>
+        <option value="thisweek">На этой неделе</option>
+        <option value="nextweek">На следующей неделе </option>
+        <option value="thismonth">В этом месяце</option>
+        <option value="nextmonth">В следующем месяце </option>
+    </select>
+    <div class="form-group mt-3" data-link="{radiogroup selectedAction}">
+        <div class="custom-control custom-radio">
+            <input type="radio" class="custom-control-input" id="cbFltr" value="cbFltr"> 
+            <label class="custom-control-label" for="cbFltr">Применить фильтр</label>
+        </div>
+        <div class="custom-control custom-radio">
+            <input type="radio" class="custom-control-input" id="cbPrint" value="cbPrint"> 
+            <label class="custom-control-label" for="cbPrint">Распечатать</label>
+        </div>
+    </div>
+</script>
+
+<script id="tpl_birthTitlePrint" type="text/x-jsrender">
+    Ближайшие дни рождения
+    <button class="btn btn-light d-print-none my-n2" data-link="{on printThis}">
+        <i class="fa fa-print"></i></button>
+</script>
+
+<script id="tpl_birthMdlPrint" type="text/x-jsrender">
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Группа</th>
+            <th scope="col">День рождения</th>
+            <th scope="col">ФИО</th>
+        </tr>
+    </thead>
+    {^{props data sort="key"}}
+        <thead>
+            <tr>
+                <th colspan="3" class="h5">{{:key}}</th>
+            </tr>
+            [[-<tr>
+                <th scope="col">Группа</th>
+                <th scope="col">День рождения</th>
+                <th scope="col">ФИО</th>
+            </tr>]]
+        </thead>
+        <tbody>
+            {{for prop sort="club_name"}}
+                <tr>
+                    <td>{{:club_name}}, {{:squad_name}} </td>
+                    <td>{{formatDate:birth}}</td>
+                    <td>{{:name}}</td>
+                </tr>
+            {{/for}}
+        </tbody>
+    {{/props}}
+</table>
+</script>
+
+
+<script>
+SCRM._service['[[+rq]]'] = function(data) {
+    var _link = $(this.target),
+        spData = data.linkCtx.data,
+        title = _link.text();
+    
+    function printgrid() {
+        var printmdl = {
+            cm_size: 'lg',
+            data: {},
+            title: '#tpl_birthTitlePrint',
+            body: '#tpl_birthMdlPrint',
+            printThis: function(){
+                SCRM.loadWSS('printThis', function(){
+                    $('.modal-body', printmdl.mdl)
+                    .printThis({
+                        pageTitle: title,
+                        printContainer: true,
+                        //debug: true,
+                        //importCSS: true,
+                        //importStyle: true,
+                        //loadCSS: "../css/style.css",
+                        //removeInline: false,
+                        //header: null,
+                        //formValues: true,
+                        printDelay: 500
+                    });
+                });
+            }
+        };
+        club_Drawer(printmdl);
+        
+        var pd = spData.grid.jqGrid('getGridParam', 'postData');
+        pDATA('idSportsmen', $.extend(pd, {rows:1001}), function(data){
+            var nd = {};
+            $.each(data.rows, function(i, v) {
+                var b = v.birth.split('-'),
+                    key = [ b[2],b[1] ].join('.');
+                key2obj(nd, key).push(v);
+            });
+            SCRM.link(printmdl, {data: nd});
+        });
+    }
+    
+    club_Modal({
+        title: title,
+        body: '#tpl_birthMdl',
+        birthPeriodSel: 'thisweek',
+        selectedAction: 'cbFltr',
+        onOK: function(e, md){
+            spData.spFilter('birth:'+md.birthPeriodSel);
+            md.mdl_hide();
+            if (md.selectedAction == 'cbPrint') {
+                printgrid();
+                //setTimeout(printgrid, 300);
+            };
+        }
+    });
+}
+</script>

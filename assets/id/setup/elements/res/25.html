@@ -1,0 +1,44 @@
+[[!UpdateProfile?
+    &submitVar=`updprof`
+    [[-&syncUsername=`[[-!+modx.user.id:memberof=`idParent`:then=`email`]]`]]
+    &syncUsername=`email`
+    &validate=`fullname:required,
+        mobilephone:required,
+        email:email:required`
+    &reloadOnSuccess=`1`
+    &postHooks=`clubUpdProfile`
+    &errTpl=`<p class="text-danger">[[+error]]</p>`
+    &successMsg1=`<div class="alert alert-info">Профиль успешно обновлен</div>`
+]]
+
+
+<div class="row">
+    <div class="col-lg-6 col-md-9">
+        <form action="[[~[[*id]]]]" class="section-block mt-0" method="post">
+            
+    [[!#GET.updpsuccess:notempty=`<div class="alert alert-info">Профиль успешно обновлен</div>`]]
+  <div class="form-group">
+    <label for="fullname">Ваше имя</label>
+    <input type="text" name="fullname" id="fullname" class="form-control" value="[[+fullname]]" />[[!+error.fullname]]
+  </div>
+  <div class="form-group">
+    <label for="city">Город</label>
+    <input type="text" name="city" id="city" class="form-control" value="[[+city]]" />[[!+error.city]]
+  </div>
+  <div class="form-group">
+    <label for="email">E-mail (Имя пользователя)</label>
+    <input type="email" name="email" id="email" class="form-control" value="[[+email]]" />[[!+error.email]]
+  </div>
+  <div class="form-group">
+    <label for="mobilephone">Телефон</label>
+    <input type="text" name="mobilephone" id="mobilephone" class="form-control" value="[[+mobilephone]]" />
+    [[!+error.mobilephone]]
+  </div>
+  <div class="form-group">
+  <input type="submit" name="updprof" value="Сохранить" class="btn btn-primary">
+  </div>
+  <p><a href="/login/change-password.html">Сменить пароль</a></p>
+  
+        </form>
+    </div>
+</div>

@@ -1,0 +1,491 @@
+<style>
+    .table-wo-border tr:first-child td,
+    .table-wo-border tr:first-child th {
+        border-top: 0;
+    }
+    b.lessonmark {display:none;}
+    .showmarks b.lessonmark {display:block;}
+    .showmarks i {display:none;}
+    @page {
+        size: landscape;
+    }
+</style>
+
+[[$panelPeriod]]
+
+<div id="tableTabs" class="card">
+    <div class="ml-auto top2Nav">
+        <a href="javascript:window.print();" class="btn btn-light btn-icon"><i class="fa fa-print"></i></a>
+    </div>
+    <div class="card-header" id="tablePeriod"></div>
+    <div class="tab-content card-body">
+        <div id="tbl_counts" class="tab-pane active table-responsive "
+            data-link="{if sum tmpl='#tpl_counts'}">
+            Loading ...
+        </div>
+        <div id="tbl_byday" class="tab-pane" data-link="{if tbl_params tmpl='#tpl_byday'}"></div>
+        <div id="tbl_lessonevent" class="tab-pane hidePanelPeriod"></div>
+    </div>
+</div>
+
+<script id="tpl_counts" type="text/x-jsrender">
+<table class="table table-bordered1 table-hover m-0 w-auto">
+<thead>
+    <tr>
+        <th class="px-0">
+        <select class="form-control form-control-sm custom-select1 custom-select-sm1" data-link="sum_type">
+        {{props sum_types }}
+            <option value="{{>key}}">{{:~root.rate_types[key]}}</option>
+        {{/props}}
+        </select>
+        </th>
+        <th>
+            <a href="#" data-link="{on ~showDetails} {:rate_types[ sum_types[sum_type] ]}"></a>
+        </th>
+    </tr>
+</thead>
+<tbody>
+    {^{props sum[sum_type] sort="prop.name"}}
+    <tr>
+        <td>
+            <a href="#" data-link="{on ~selRow ''}" class="d-flex">
+                <span class="mr-auto">{{:prop.name}}</span>
+                <span>
+                    <span class="badge badge-primary ml-3">{{>prop.cnt}}</span>
+                </span>
+            </a>
+        </td>
+        <td>
+            {^{props prop^rows sort="prop.name" ~k=key}}
+                <a href="#" class="d-flex" data-link="{on ~selRow ~k} class{merge:#index>0 toggle='border-top pt-2 mt-2'}">
+                    <span class="mr-auto">{{:prop.name}}</span>
+                    <span>
+                        <span class="badge badge-success ml-3">{{>prop.cnt}}</span>
+                    </span>
+                </a>
+            {{else}}
+                <a href="#" class="pull-right badge badge-success" data-link="{on ~showDetails}">{{:~S.countProps(prop.details)}}</a>
+            {{/props}}
+        </td>
+        [[-<td>{{>prop.cnt_y}}</td>
+        <td>{{>prop.cnt_lesson}}</td>]]
+    </tr>
+    {{/props}}
+</tbody>
+<tfoot>
+    <tr>
+    <td colspan="2">Итого: <b data-link="sum^cnt"></b></td>
+    </tr>
+</tfoot>
+</table>
+</script>
+
+<script id="tpl_byday" type="text/x-jsrender">
+<table class="table table-wo-border w-auto">
+    <tbody>
+    {^{for tbl_params ~sqtype=sqtype}}
+        <tr>
+            <th data-id="{{:id}}" data-key="{{:key}}">{{:~root.rate_types[key]}}</th>
+            <td>
+                {{:name}}
+                <div data-link="{radiogroup ~sqtype} visible{:key=='squad'}" class="mt-1">
+                    <div class="custom-control custom-control-inline custom-radio">
+                        <input type="radio" class="custom-control-input" name="sqtype" id="sqtype1" value="idSchedule.squad">
+                        <label class="custom-control-label" for="sqtype1">По расписанию</label>
+                    </div>
+                    <div class="custom-control custom-control-inline custom-radio">
+                        <input type="radio" class="custom-control-input" name="sqtype" id="sqtype2" value="idSportsmen.squad">
+                        <label class="custom-control-label" for="sqtype2">По спортсменам</label>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    {{/for}}
+    </tbody>
+</table>
+
+{^{if tdata=='loading' tmpl='Loading'}}
+{{else ~td=tdata ~tdsp=tdata.sp ~dm=tdata.dm ~spfld=sp_field ~showMark=(ttype=='mark')}}
+<div class="table-responsive mb-3">
+    <table class="table table-bordered table-sm table-hover text-center w-auto m-0">
+        <thead>
+            <tr>
+                <td colspan="2">
+                    <select class="custom-select custom-select-sm" data-link="ttype">
+                        <option value="lesson">Посещаемость</option>
+                        <option value="mark">Оценки</option>
+                    </select>
+                </td>
+                {{props ~dm sort="prop.datestart"}}
+                    <th colspan="{{:prop.sch.length}}">{{>key}}</th>
+                {{/props}}
+                <th colspan="2" data-link="visible{:~showMark}">Оценки</th>
+                <th rowspan="2">{{fmtStatus:'y' tbl='idLesson'}}</th>
+                <th rowspan="2">Всего</th>
+            </tr>
+            <tr>
+                <th>N</th>
+                <th>Ф.И.О.</th>
+                {{props ~dm sort="prop.datestart" }}
+                    {{for prop.sch sort="datestart"}}
+                        <th class="small">{{:ssportname}}<br>{{:d_s}}</th>
+                    {{/for}}
+                {{/props}}
+                <th data-link="visible{:~showMark}">Сум</th>
+                <th data-link="visible{:~showMark}">Ср</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{props ~tdsp sort="prop.name" itemVar="~sp"}} 
+            <tr>
+                <td class="text-right" data-id="{{:key}}">{{:#index+1}}</td>
+                <td class="text-left">
+                    <b>{{:prop.name}}</b>
+                    <div data-link="{for ~spflds(~spfld, ~tdsp, key) tmpl='#tpl_spflds'}"></div>
+                </td>
+                
+                [[-{{props ~dm sort="prop.datestart"}}
+                    {{for prop.sch sort="datestart" tmpl="#tpl_tableCell" /}}
+                {{/props}}]]
+                {^{for ~tableCells(prop.sch, ~showMark) sort="datestart" tmpl="#tpl_tableCell" /}}
+                
+                <td data-link="visible{:~showMark} {:~sp.prop.mark_sum||''}"></td>
+                <td data-link="visible{:~showMark} {:~sp.prop.mark_cnt? ~S.round2(~sp.prop.mark_sum/~sp.prop.mark_cnt):''}"></td>
+                <td>{{:~sp.prop.cnt_y}}</td>
+                <td>{{:~sp.prop.cnt}}</td>
+            </tr>
+            {{/props}}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th class="text-right" colspan="2">{{fmtStatus:'y' tbl='idLesson'}}</th>
+                {{props ~dm sort="prop.datestart"}}
+                    {{for prop.sch sort="datestart"}}
+                    <td>{{:~td['sch'+schedule+'y']}}</td>
+                    {{/for}}
+                {{/props}}
+                <th rowspan="2" colspan="2" data-link="visible{:~showMark}"></th>
+                <th class="bg-secondary">{{:cnt_y}}</th>
+                <th></th>
+            </tr>
+            <tr>
+                <th class="text-right" colspan="2">Всего</th>
+                {{props ~dm sort="prop.datestart"}}
+                    {{for prop.sch sort="datestart"}}
+                    <td>{{:~td['sch_cnt'+schedule]}}</td>
+                    {{/for}}
+                {{/props}}
+                <th></th>
+                <th class="bg-secondary">{{:cnt}}</th>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+    
+<div class="text-muted d-print-none" data-link="{checkboxgroup sp_field}">
+    {{props sp_fields}}
+        <div class="custom-control custom-control-inline custom-checkbox">
+            <input type="checkbox" class="custom-control-input"
+                id="spf_{{:key}}" name="spf_{{:key}}" value="{{:key}}">
+            <label class="custom-control-label" for="spf_{{:key}}">
+                {{:prop}}
+            </label>
+        </div>
+    {{/props}}
+</div>
+{{/if}}
+</script>
+
+<script id="tpl_tableCell" type="text/x-jsrender">
+    <td class="{{:cls}}">{{:html}}</td>
+</script>
+
+<script id="tpl_spflds" type="text/x-jsrender">
+    <div class="mt-1 small">
+        {{if field=='status'}}
+            {{:~S.statusName('idSportsmen', value, 'name', true)}}
+        {{else field=='saldo'}}
+            {{include sp tmpl='#tpl_spSaldo' /}}
+        {{else field=='email'}}
+            <a href="mailto:{{:value}}" target="_blank">{{:value}}</a>
+        {{else field=='tel'}}
+            <a href="#" class="telPopover">{{:value}}</a>
+        {{else}}
+            {{:value}}
+        {{/if}}
+    </div>
+</script>
+
+[[$tpl_spSaldo]]
+
+<script>
+
+SCRM.link(SCRM.app, {
+    topNavTabs: [
+        {href: '#tbl_counts', html: 'Посещаемость', active: true, hook: 'dates'},
+        {href: '#tbl_byday', html: 'Табель', hidden: true, hook: 'dates,tbl_params,sqtype'},
+        {href: '#tbl_lessonevent', html: 'Результаты', url: '/chunk/lessoneventreport'}
+    ]
+});
+
+SCRM.setClubStatus([[!clubStatus?tbl=`idLesson,idSportsmen`]]);
+
+SCRM.tableData = {
+    sum: {},
+    sum_type: 'trainer',
+    sum_types: {
+        trainer: 'squad',
+        squad: 'trainer'
+    },
+    rate_type: 'squad',
+    rate_types: {
+        squad: 'Зал, Группа',
+        trainer: 'Тренер'
+    },
+    sp: {},
+    sp_field: [],
+    sp_fields: {
+        status: 'Статус',
+        contract: 'Договор',
+        saldo: 'Баланс',
+        tel: 'Телефон',
+        email: 'E-mail',
+        contact: 'Контакт'
+    },
+    sqtype: 'idSchedule.squad',
+    ttype: 'lesson'
+};
+
+$(function(){
+    function _dateStart(v) {
+        var t = v.datestart.split(/[- :T]/);
+        v.dm = t[2]+'.'+t[1];
+        //v.dt = t[3]+':'+t[4];
+    }
+    
+    var tData = SCRM.tableData;
+    
+    $.link(true, '#tableTabs', tData, {
+        tableCells: function(sch, mode) {
+            //console.log('tableCells', sch, mode)
+            var cells = [];
+            $.each(tData.tdata.dm, function(idm, dm) {
+                $.each(dm.sch, function(i, s) {
+                    var c = sch[s.schedule]||{
+                        datestart: s.datestart
+                    },
+                    cls = c.wo_invoice? ['table-warning'] : [];
+                    if (mode && c.mark && c.mark!='0') {
+                        c.html = c.mark;
+                    } else if (c.status) {
+                        c.html = SCRM.statusFmt('idLesson', c.status);
+                        cls.push('small');
+                    }
+                    c.cls = cls.join(' ');
+                    cells.push(c);
+                });
+            });
+            return cells;
+        },
+        spflds: function(spflds, tdsp, key) {
+            // Много параметров потому что спортсмены догружаются
+            //console.log('spflds', spflds, tdsp, key);
+            var sp = tdsp[key];
+            return $.map(spflds, function(v, i){
+                if (sp[v]) return {field: v, value: sp[v], sp: sp};
+            });
+            
+        },
+        selRow: function(parent, e, data){
+            e.preventDefault();
+
+            var d = data.linkCtx.data;
+            var tbl_params = [{
+                key: (parent)? tData.sum_types[tData.sum_type] : tData.sum_type,
+                id: d.key,
+                name: d.prop.name
+            }];
+            
+            if (parent) {
+                tbl_params.unshift({
+                    key: tData.sum_type,
+                    id: parent,
+                    name: tData.sum[tData.sum_type][parent].name
+                });
+            }
+            SCRM.link(tData, {tbl_params: tbl_params});
+            $('[href="#tbl_byday"]').tab('show');
+            
+            /*var tab = $('a[href="#tbl_byday"]').view();*/
+        },
+        showDetails: function(e, data) {
+            e.preventDefault();
+            var d = data.linkCtx.data;
+            var key = tData.sum_type, detail_key = tData.sum_types[key];
+            $.each(tData.sum[key], function(i, v){
+                if (!d.key || d.key == i) {
+                    $.each(v.details, function(n, drow) {
+                        drow.name = tData.sum[detail_key][n].name;
+                    });
+                    SCRM.link(v, {rows: v.details});
+                }
+            });
+        }
+    });
+
+    $(document)
+    .on('calculate', '[href="#tbl_counts"]', function(e) {
+        var tbl = spinnr('#tbl_counts');
+        pDATA('idSchedule', $.extend({
+            rows: 1001,
+            _report: 'idSchedule_table'
+        }, tData.dates), function(data){
+            var sum = {
+                trainer: {},
+                squad: {},
+                cnt_y: 0, 
+                cnt_lesson: 0,
+                cnt: 0
+            };
+            
+            function default_obj(name) {
+                return {
+                    name: name,
+                    details: {},
+                    cnt: 0
+                };
+            }
+
+            $.each(data.rows, function(i, v) {
+                var sq_name = (v.squad=='0')? '-' : v.clubname+'<br>' + joinStr([v.levelname, v.squadname]);
+                var row_sq = key2obj(sum.squad, v.squad, default_obj(sq_name));
+                row_sq.cnt += 1;
+                
+                var row_tr = key2obj(sum.trainer, v.trainer, default_obj(v.trainer_name));
+                row_tr.cnt += 1;
+                key2obj(row_tr.details, v.squad, {cnt: 0}).cnt += 1;
+                key2obj(row_sq.details, v.trainer, {cnt: 0}).cnt += 1;
+                
+                if (v.trainer2 != '0' && v.trainer2 != v.trainer) {
+                    row_tr = key2obj(sum.trainer, v.trainer2, default_obj(v.trainer2_name));
+                    row_tr.cnt += 1;
+                    key2obj(row_tr.details, v.squad, {cnt: 0}).cnt += 1;
+                    key2obj(row_sq.details, v.trainer2, {cnt: 0}).cnt += 1;
+                }
+                
+                sum.cnt += 1;
+                sum.cnt_y += v.cnt_y*1;
+                sum.cnt_lesson += v.cnt_lesson*1;
+            });
+            //console.log(sum);
+            SCRM.link(tData, {sum: sum});
+            spinnr(false, tbl);
+        });
+    })
+    .on('calculate', '[href="#tbl_byday"]', function(e) {
+        SCRM.link(tData, {tdata: 'loading'});
+        
+        var _where = {};
+        $.each(tData.tbl_params, function(i, param) {
+            var key = (param.key=='squad')? tData.sqtype : 'idSchedule.'+ param.key;
+            _where[key] = param.id;
+        });
+        
+        pDATA('idLesson', $.extend({
+            rows: 1001,
+            _report: 'idLesson_table',
+            _where: _where
+        }, tData.dates), function(data){
+            var tdata = {dm: {}, sp: {}, cnt: 0};
+            $.each(data.rows, function(i, v){
+                if (!v.schedule) v.schedule = v.schedule_id;
+                
+                if (v.status) {
+                    var status_key = 'cnt_'+v.status;
+                    tdata['sch'+v.schedule+v.status] = (tdata['sch'+v.schedule+v.status] || 0) + 1;
+                    tdata['sch_cnt'+v.schedule] = (tdata['sch_cnt'+v.schedule] || 0) + 1;
+    
+                    var sp = key2obj(tdata.sp, v.sportsmen, {name: v.sportsmen_name, sch:{}, cnt: 0, mark_sum: 0, mark_cnt: 0});
+                    v.wo_invoice = ((v.cfg_value||'').indexOf(v.status) > -1) && !v.dateinvoice;
+                    if (v.mark) v.mark *= 1;
+                    sp.mark_sum += v.mark;
+                    if (v.mark) sp.mark_cnt++;
+
+                    sp.sch[v.schedule] = v;
+                    sp.cnt += 1;
+                    sp[status_key] = (sp[status_key] || 0) + 1;
+
+                    tdata.cnt += 1;
+                    tdata[status_key] = (tdata[status_key] || 0) + 1;
+                }
+                
+                _dateStart(v);
+                var dm = key2obj(tdata.dm, v.dm, {datestart: v.datestart, sch:[], sch_keys:{}});
+                if (!dm.sch_keys[v.schedule]) {
+                    dm.sch_keys[v.schedule] = true;
+                    dm.sch.push(v);
+                }
+            });
+            
+            SCRM.link(tData, {tdata: tdata});
+            //console.log(tdata)
+            /*if (_where['idSportsmen.squad']) {
+                _where['idSchedule.squad'] = _where['idSportsmen.squad'];
+                delete _where['idSportsmen.squad'];
+            }
+            // Если на занятии не было людей, то не будет записи в idLesson
+            pDATA('idSchedule', $.extend({
+                rows: 1001,
+                _report: 'idSchedule_table',
+                _where: _where
+            }, tData.dates), function(data){
+                $.each(data.rows, function(i, v){
+                    _dateStart(v);
+                    key2obj(tdata.dm, v.dm, {datestart: v.datestart, sch:[]}).sch.push(v);
+                });
+                SCRM.link(tData, {tdata: tdata});
+                //console.log('idSchedule_table', tdata);
+            });*/
+                
+            
+            var sp_keys = array_keys(tdata.sp);
+            if (sp_keys.length > 0) pDATA('idSportsmen', {
+                rows: 1001,
+                _where: {id: sp_keys}
+            }, function(data) {
+                var nspd = {};
+                $.each(data.rows, function(i, v) {
+                    //nspd[v.id] = $.extend({}, v, tdata.sp[v.id]); //'tdata.sp.'+
+                    nspd[v.id] = $.extend({}, v, tdata.sp[v.id]);
+                });
+                console.log(nspd)
+                SCRM.link(tData.tdata, {sp: nspd});
+            });
+        });
+    });
+    
+    $.observe(tData, 'dates', 'tbl_params', 'sqtype', function(e, data){
+        $.each(SCRM.app.topNavTabs, function(i, v){
+            var hook = (v.hook||'').split(','),
+                el = $('a[href="'+ v.href +'"]');
+            if (el.length && ($.inArray(data.path, hook) >= 0)) {
+                el.reCalculate();
+            }
+        });
+    });
+
+    var tablePeriod = $('#tablePeriod')
+    .on('periodChange', function(e, dates){
+        SCRM.link(tData, {dates: dates});
+    })
+    .panelPeriod();
+    
+    $('#topNavTabs')
+    .on('shown.bs.tab', '[data-toggle="tab"]', function(e) {
+        var href = $(this).attr('href');
+        tablePeriod.toggle( !$(href).hasClass('hidePanelPeriod') ); 
+    });
+
+    $('#tableTabs .top2Nav').appendTo('header.page-navs');
+});
+</script>

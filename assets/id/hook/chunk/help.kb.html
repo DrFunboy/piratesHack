@@ -1,0 +1,126 @@
+<script>
+SCRM._service['[[+rq]]'] = function(data) {
+    var mdl = {
+        title: '#hlp_kb_title',
+        body: '#hlp_kb',
+        cm_size: 'lg',
+        kb: {
+            relative: [],
+            all: []
+        },
+        doc: null,
+        printHelpTopic: function(e) {
+            SCRM.loadWSS('printThis', function(){
+                $(mdl.mdl)
+                .printThis({
+                    pageTitle: 'SportCRM - '+mdl.doc.name,
+                    printContainer: true,
+                    printDelay: 500
+                });
+            });
+        }
+    };
+    club_Drawer(mdl, {
+        showDoc: function(e, data) {
+            var d = data.linkCtx.data;
+            if (d.cls=='link') return true;
+            e.preventDefault();
+            SCRM.scrmYTloaded = function(e) {
+                SCRM.link(mdl, {
+                    loaded: true
+                });
+            };
+            SCRM.link(mdl, {
+                doc: d
+            });
+        },
+        showList: function(e, data) {
+            SCRM.link(mdl, {
+                doc: null
+            });
+        }
+    });
+    pJSON('/data/status/idHelp', function(data){
+        var helpRows = [], current;
+        $.each(data.rows, function(i, v){
+            const icons = {
+                youtube: 'fa-video-camera',
+                link: 'fa-external-link'
+            };
+            v.ico = icons[v.cls] || 'fa-book';
+            
+            if (v.cls=='=') {
+                helpRows.push(v);
+                v.rows = [];
+                current = v;
+            } else {
+                current.rows.push(v);
+            }
+        });
+        SCRM.link(mdl, {
+            all: data.rows,
+            helpRows: helpRows
+        });
+        $('.scrm-kb-title:eq(0) button', mdl.mdl).click();
+    });
+};
+</script>
+
+<script id="hlp_kb_title" type="text/x-jsrender">
+    {^{if doc}}
+    <button type="button" class="btn btn-subtle-primary rounded-pill btn-sm" title="Список" data-link="{on ~showList}">
+        <i class="fa fa-chevron-left"></i>
+    </button>
+    <button class="btn btn-subtle-primary rounded-pill btn-sm" data-link="{on printHelpTopic}">
+    <i class="fa fa-print"></i> Напечатать
+    </button>
+    {{else}}
+    База знаний
+    {{/if}}
+</script>
+
+<script id="hlp_kb" type="text/x-jsrender">
+<div data-link="visible{:!doc}">
+    {^{for helpRows}}
+        <h4 class="section-title scrm-kb-title" id="headingKb{{:id}}">
+        <button class="btn btn-reset" data-toggle="collapse" data-target="#listKb{{:id}}" aria-controls="listKb{{:id}}">
+            <span class="collapse-indicator mr-2"><i class="fa fa-fw fa-caret-right"></i></span>
+            <span>{{:name}}</span>
+        </button>
+        </h4>
+        <div id="listKb{{:id}}" class="collapse list-group list-group-bordered mb-2" aria-labelledby="headingKb{{:id}}"
+            data-link="{for rows tmpl='#hlp_kb_item'}"></div>
+    {{/for}}
+</div>
+<div data-link="{if doc tmpl='#hlp_kb_doc'}"></div>
+</script>
+
+<script id="hlp_kb_doc" type="text/x-jsrender">
+{^{if doc^cls=='youtube'}}
+    <h2 data-link="doc.name"></h2>
+    <div class="mb-2" data-link="doc.info"></div>
+    <div class="alert alert-info" data-link="visible{:!loaded}">YouTube loading...</div>
+    <div class="embed-responsive embed-responsive-16by9">
+        <iframe src="https://www.youtube.com/embed/{{:doc.alias}}?autoplay=1&test=1"
+            width="853" height="480" allowfullscreen allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            id="scrm-kb-yt" onload="SCRM.scrmYTloaded(this);"></iframe>
+    </div>
+{{else doc^cls=='notion'}}
+    <iframe src="https://dev.sportcrm.club/assets/notion/{{:doc.alias}}.html"
+        scrolling="no" frameborder="0" style="height:300px;width:100%" name="scrm-notion"></iframe>
+{{else}}
+    <iframe src="https://dev.sportcrm.club/hook/kb/{{:doc.alias}}?club=[[++club_key]]"
+        scrolling="no" frameborder="0" style="height:300px;width:100%" name="scrm-kb"></iframe>
+{{/if}}
+</script>
+
+<script id="hlp_kb_item" type="text/x-jsrender">
+    <a href="#" class="list-group-item list-group-item-action" target="_blank"
+        data-link="href{:(cls=='link')? info : '#'} {on ~showDoc}">
+        <span class="list-group-item-figure">
+            <i class="fa {{:ico}}"></i>
+        </span>
+        <span class="list-group-item-body">{{:name}}</span>
+    </a>
+</script>
+

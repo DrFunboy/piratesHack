@@ -1,0 +1,15 @@
+<script>
+var leadStatuses = [[!clubStatus?tbl=`idLead` &keyfield=`alias`]];
+
+function leadFmt(cellValue, options, rowObject) {
+    var status = $.extend({
+        name: cellValue,
+        ico: 'fa-question',
+        cls: ''
+    }, leadStatuses[cellValue]);
+    return '<i class="fa '+ status.ico +' fa-lg" data-status="'+ cellValue +'"></i> '+ status.name;
+}
+$.views.converters({
+    leadFmt: leadFmt
+});
+</script>

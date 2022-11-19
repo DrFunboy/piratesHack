@@ -1,0 +1,17 @@
+<div class="row">
+    <div class="col-md-6" id="fileManager" data-link="{on postData.fid ~S.linkFile '#tpl_files'}" data-linkfile=""></div>
+    </div>
+</div>
+
+[[$tplFiles]]
+
+<script>
+SCRM.loadWSS(['ready','files'], function(){
+    var files = [[!clubFiles?uid=`files_idManager`]];
+    $('#fileManager')
+    .link(true, files)
+    .trigger(files.postData.fid, $.extend({
+        post: {filetype: 'file'}
+    }, files));
+});
+</script>

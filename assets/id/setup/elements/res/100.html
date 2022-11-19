@@ -1,0 +1,86 @@
+<div class="card-expansion" id="accordion"></div>
+
+<script id="tpl_row" type="text/x-jsrender">
+{{for rows}}
+    <div class="card card-expansion-item">
+        <div class="card-header border-0" id="heading{{:#index}}">
+            <button class="btn btn-reset d-flex justify-content-between w-100"
+                data-toggle="collapse" data-target="#collapse{{:#index}}"aria-controls="collapse{{:#index}}">
+                <span>{{:title}}</span>
+                <span class="collapse-indicator"><i class="fa fa-fw fa-chevron-down"></i></span>
+            </button>
+        </div>
+        <div id="collapse{{:#index}}" class="collapse card-body" aria-labelledby="heading{{:#index}}" data-parent="#accordion">
+        {{include tmpl='#inc_'+#index /}}
+        </div>
+    </div>
+{{/for}}
+</script>
+
+<pre data-faq="JSON с данными справочников">[[!++site_url]]data/dbvalues
+[[!++site_url]]data/dbvalues?mode=idClub,idSport</pre>
+
+<!-- // --------------- // -->
+
+<script id="city_row" type="text/x-jsrender">
+<tr><td>{{:id}}</td><td>{{:alias}}</td><td>{{:name}}</td></tr>
+</script>
+
+<table class="table table-striped table-bordered" data-faq="Список филиалов" style="width:auto">
+    <thead>
+        <tr><th>ID</th><th>Alias</th><th>Название</th></tr>
+    </thead>
+    <tbody data-link="{for ~root^dbvalues^idCity tmpl='#city_row'}"></tbody>
+</table>
+
+<!-- // --------------- // -->
+
+<pre data-faq="WebHook для сбора Кандидатов">[[!++site_url]]hook/leadform/</pre>
+
+<!-- // --------------- // -->
+
+<textarea data-faq="Интеграция расписания">
+<iframe src="[[!++site_url]]handlers/schedule.html?key=spb" scrolling="no" width="100%" height="500" frameborder="0" onload="window.addEventListener('message',(function(e){if(e.data.i_h)this.style.height=e.data.i_h+'px'}).bind(this));"></iframe></textarea>
+
+<!-- // --------------- // -->
+
+<textarea data-faq="Форма сбора заявок">
+<iframe src="[[!++site_url]]sportsmens/request.html?club_city=spb" scrolling="no" width="100%" height="500" frameborder="0" onload="window.addEventListener('message',(function(e){if(e.data.i_h)this.style.height=e.data.i_h+'px'}).bind(this));"></iframe></textarea>
+
+<!-- // --------------- // -->
+
+<ol data-faq="Выгрузка из 1С">
+    <li><a href="[[++crm_url]]setup/1с/export1c_1.1_.epf">Скачайте внешнюю обработку</a> для 1С</li>
+    <li>Установите в 1С по инструкции</li>
+    <li>Используйте API Код</li>
+    <li>Неопределенные платежи можно подгрузить в разделе <a href="/options/load-pays.html">загрузка платежей</a></li>
+</ol>
+
+<!-- // --------------- // -->
+
+<script>
+$(function(){
+    var incData = {
+        rows: $.map( $('[data-faq]'), function(v,i){
+            var el = $(v).wrap('<script id="inc_' +i+ '" type="text/x-jsrender"></scr'+'ipt>');
+            return {title: el.data('faq')};
+        }),
+        dbvalues: [[!dbvalues?mode=`idCity`]]
+    };
+
+    $.templates('#tpl_row').link('#accordion', incData);
+
+    SCRM.loadWSS('ace', function() {
+        $('textarea').each(function(i,v){
+            var editor = ace.edit(this);
+            editor.setTheme("ace/theme/chrome");
+            editor.session.setMode("ace/mode/html");
+            editor.setOptions({
+                maxLines: Infinity,
+                useWorker: false,
+                wrap: true
+            });
+        });
+    });
+});
+</script>

@@ -1,0 +1,163 @@
+<div class="tab-content section-block my-0">
+    <div id="tab_idFiles" class="tab-pane active">
+        <div class="d-flex">
+            <div class="flex-grow-1" data-link="{include tmpl='#selectTypeTmpl'}">
+                
+            </div>
+            <div class="dropdown ml-2" data-link="visible{:isAdmin&&selFT}" style="display:none">
+                <button type="button" class="btn btn-secondary" data-toggle="dropdown">
+                    <i class="fa fa-gear"></i>
+                </button> 
+                <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-arrow"></div>
+                    <div class="custom-control custom-control-inline custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="admset-city" data-link="allCity"> 
+                        <label class="custom-control-label" for="admset-city">По всем филиалам</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <table id="grid_idFiles" data-entity="idFiles"></table>
+    </div>
+    <div id="tab_idSportsmen" class="tab-pane">
+        [[$dbInner]]
+    </div>
+</div>
+
+<script id="selectTypeTmpl" type="text/x-jsrender">
+    <select class="custom-select mb-2" data-link="selFT">
+        <option value="">-- Тип файла --</option>
+        {{for ~S.clubStatus.idFileType}}
+            <option value="{{:alias}}">{{:name}}</option>
+        {{/for}}
+    </select>
+</script>
+
+<script>
+SCRM.link(SCRM.app, {
+    topNavTabs: [
+        {href: '#tab_idFiles', html: 'Файлы', active: true},
+        {href: '#tab_idSportsmen', html: 'Спортсмены'}
+    ]
+});
+SCRM.setClubStatus([[!clubStatus?tbl=`idFileType`]]);
+SCRM.loadWSS('grid', function () {
+    var filetypeData = {
+        selFT: '',
+        isAdmin: SCRM.app.ugroups.includes('idAdmin')
+    };
+    
+    var gridFiles = $("#grid_idFiles")
+    .jqGridInit({
+        postData: {
+            _process: 'idFiles',
+            allCity: function() {
+                return filetypeData.allCity||'';
+            },
+            cls: function() {
+                return (filetypeData.selFileType||{}).cls||'';
+            }
+        },
+        multiselect: true,
+        sortname: 'created', sortorder: 'desc',
+        autowidth: true,
+        colModel:[
+            {template: idFieldTemplate},
+            {template: createdTemplate},
+            {name: 'key', width: 100, editable: true,
+                template: editRowLinkTemplate
+            },
+            {name: 'uid', width: 100, editable: true},
+            {name: 'name', width: 110, editable: true,
+                formatter: function(cv, r, d) {
+                    return '<a href="'+ d.path+ '" class="club-file" target="_blank"><i class="fa fa-file-o mr-2"></i>'+cv+'</a>';
+                },
+                unformat: function(cellValue, options, cell) {
+                    return $(cell).text();
+                }
+            },
+            {name: 'sportsmen_name', index: 'idSportsmen.name', width:200, hidden: true,
+                formatter: function(cellvalue, i, row){
+                    return (cellvalue)?
+                    '<a href="#" data-sportsmen="'+row.uid+'"><i class="fa fa-id-card-o mr-2"></i>'+ cellvalue+'</a>'
+                    : '';
+                }
+            },
+            {name: 'duedate', hidden: true,
+                template: dateTemplate,
+                cellattr: cellInsuranceColor
+            },
+            {name: 'filetype', width: 80, editable: true,
+                searchoptions: {
+                    sopt: ['cn', 'eq']
+                }
+            },
+            {name: 'fileext', width:50, editable: true},
+            {name: 'incloud', width: 40, editable: true},
+            {name: 'file_exists', template: 'booleanCheckboxFa',
+                search: false, sortable: false,
+                stype: null
+            }
+        ],
+        navOpts: {add: false, edit: true, del: false},
+        fltrToolbar: true
+    })
+    .jqGridColumns();
+    
+    $.link(true, "#tab_idFiles", filetypeData);
+    
+    $.observe(filetypeData, "selFT", "allCity", function(e,d) {
+        var oper = 'eq';
+        if (filetypeData.selFT != "") {
+            gridFiles.hideCol("filetype");
+        } else {
+            oper = 'cn';
+            gridFiles.showCol("filetype");
+        }
+        if (d.path == "selFT") {
+            filetypeData.selFileType = SCRM.getClubStatus('idFileType', filetypeData.selFT);
+            if (filetypeData.selFileType.extended.duedate) {
+                gridFiles.showCol("duedate");
+            } else {
+                gridFiles.hideCol("duedate");
+            }
+            if (filetypeData.selFileType.cls == 'idSportsmen') {
+                gridFiles.showCol("sportsmen_name");
+            } else {
+                gridFiles.hideCol("sportsmen_name");
+            }
+        }
+        gridFiles.setGridFilter('filetype', filetypeData.selFT, oper);
+    });
+    
+    $(document)
+    .one('shown.bs.tab', 'a[href="#tab_idSportsmen"]', function (e) {
+        $('#grmain')
+        .on('jqGridBeforeInit', function(e, grOpts){
+            var spFileTypes = $.map(SCRM.clubStatus.idFileType, function (v) {
+                if (v.cls == "idSportsmen") {
+                    return $.extend({ }, v, {
+                        id: v.alias
+                    });
+                }
+            })
+            grOpts.colModel.splice(4, 0, {
+                name: 'filedate', label: 'Тип файла', width: 80,
+                formatter: 'date',
+                searchoptions: {
+                    value: makeGridOpts(spFileTypes, true)
+                },
+                template: selTemplate
+            });
+        })
+        .trigger('sportsmenGrid', {
+            sortname: 'filedate', sortorder: 'desc',
+            postData: {
+                tableadd: 'idFiles'
+            }
+        });
+    })
+    
+});
+</script>

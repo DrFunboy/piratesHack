@@ -1,0 +1,1105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model package="idDB" version="21.09.14.3" baseClass="xPDOObject" platform="mysql" defaultEngine="InnoDB">
+    <object class="idSportsmen" table="sportsmen" extends="xPDOSimpleObject">
+        <field key="gender" dbtype="smallint" phptype="integer" null="false" default="0" />
+        
+		<field key="num" dbtype="int" phptype="integer" null="false" default="0" />
+		<field key="status" dbtype="varchar" precision="25" phptype="string" null="false" default="Действует" index="index" club_log="1" />
+		
+		<field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" index="index" club_log="1" />
+		<alias key="fio" field="name" />
+
+		<field key="contract" dbtype="varchar" precision="50" phptype="string" null="false" default="" index="index" club_log="1" />
+		<field key="contractdate" dbtype="date" phptype="date" null="true" club_log="1" />
+		<field key="birth" dbtype="date" phptype="date" null="true" club_log="1" />
+		<field key="height" dbtype="smallint" phptype="integer" null="false" default="0" club_log="1" />
+		<field key="weight" dbtype="smallint" phptype="integer" null="false" default="0" club_log="1" />
+		
+		<field key="doc" dbtype="varchar" precision="150" phptype="string" null="false" default="" club_log="1"  />
+		<field key="contact" dbtype="varchar" precision="250" phptype="string" null="true" default="" club_log="1" />
+		<field key="tel" dbtype="varchar" precision="50" phptype="string" null="true" default="" club_log="1" />
+		<field key="email" dbtype="varchar" precision="150" phptype="string" null="true" default="" club_log="1" />
+
+		<field key="pasp" dbtype="smallint" phptype="integer" null="false" default="0" />
+		
+		<!-- field key="inpass" dbtype="smallint" phptype="integer" null="false" default="0" / -->
+		<!-- field key="orderdate" dbtype="date" phptype="date" null="true" / -->
+		
+		<field key="insdate" dbtype="date" phptype="date" null="true" club_log="1" />
+		<field key="meddate" dbtype="date" phptype="date" null="true" club_log="1" />
+
+		<field key="price" dbtype="int" phptype="integer" null="false" default="0" club_log="1" />
+		<field key="discount" dbtype="varchar" precision="50" phptype="string" null="true" club_log="1" />
+		<field key="saldo" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+		
+		<field key="razr" dbtype="varchar" precision="10" phptype="string" null="true" default="" club_log="1" />
+
+		<field key="squad" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="trainer" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" club_log="1" />
+		<field key="city" dbtype="int" phptype="integer" null="false" default="0" index="index" />
+        <!-- field key="sport" dbtype="int" phptype="integer" null="false" default="1" / -->
+
+		<field key="info" dbtype="text" phptype="string" null="true" />
+		
+		<field key="code1c" dbtype="char" precision="36" phptype="string" null="true" default="" index="index" />
+		<field key="key" dbtype="char" precision="36" phptype="string" null="false" default="" index="index" />
+		
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0"/>
+		<field key="iduser" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+
+		<aggregate alias="idStatus" class="idStatus" local="status" foreign="name" cardinality="one" owner="foreign">
+    		<criteria target="local"><![CDATA[ {
+    		    "0":"idStatus.tbl='idSportsmen'",
+    		    "1":"idStatus.published=1"
+            } ]]></criteria>
+    	</aggregate>
+    	
+    	<aggregate alias="Gender" class="idStatus" local="gender" foreign="alias" cardinality="one" owner="foreign">
+    		<criteria target="local"><![CDATA[ {
+    		    "0":"Gender.tbl='Gender'",
+    		    "1":"Gender.published=1"
+            } ]]></criteria>
+    	</aggregate>
+    	
+		<aggregate alias="idUser" class="modUser" local="iduser" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		
+		<aggregate alias="idSquad" class="idSquad" local="squad" foreign="id" cardinality="one" owner="foreign" />
+    	
+		<aggregate alias="idTrainer" class="idTrainer" local="trainer" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idCity" class="idCity" local="city" foreign="id" cardinality="one" owner="foreign" />
+		
+		<composite alias="idChanges" class="idChanges" local="id" foreign="sportsmen" cardinality="many" owner="local" />
+		<composite alias="idContact" class="idContact" local="id" foreign="sportsmen" cardinality="many" owner="local" />
+		
+		<composite alias="idSportsmenSquad" class="idSportsmenSquad" local="id" foreign="sportsmen" cardinality="many" owner="local" />
+		<composite alias="idInvoice" class="idInvoice" local="id" foreign="sportsmen" cardinality="many" owner="local" />
+		<composite alias="idPay" class="idPay" local="id" foreign="sportsmen" cardinality="many" owner="local" />
+		<composite alias="idLesson" class="idLesson" local="id" foreign="sportsmen" cardinality="many" owner="local" />
+		<composite alias="idFiles" class="idFiles" local="key" foreign="uid" cardinality="many" owner="local" />
+		<composite alias="idEventMember" class="idEventMember" local="id" foreign="sportsmen" cardinality="many" owner="local" />
+		<index name="status" primary="false" unique="false" type="BTREE">
+            <column key="status" length="" collation="A" null="false" />
+        </index>
+		<index name="city" primary="false" unique="false" type="BTREE">
+            <column key="city" length="" collation="A" null="false" />
+        </index>
+		<index name="squad" primary="false" unique="false" type="BTREE">
+            <column key="squad" length="" collation="A" null="false" />
+        </index>
+		<index name="name" primary="false" unique="false" type="BTREE">
+            <column key="name" length="" collation="A" null="false" />
+        </index>
+        <index name="contract" primary="false" unique="false" type="BTREE">
+            <column key="contract" length="" collation="A" null="false" />
+        </index>
+        <index name="code1c" primary="false" unique="false" type="BTREE">
+            <column key="code1c" length="" collation="A" null="false" />
+        </index>
+        <index name="key" primary="false" unique="false" type="BTREE">
+            <column key="key" length="" collation="A" null="false" />
+        </index>
+        <index name="iduser" primary="false" unique="false" type="BTREE">
+            <column key="iduser" length="" collation="A" null="false" />
+        </index>
+	</object>
+
+    <object class="idSquad" table="squad" extends="xPDOSimpleObject">
+        <field key="name" dbtype="varchar" precision="150" phptype="string" null="false" default="" index="index" />
+
+        <field key="sport" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="lvl" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="trainer" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="club" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="limits" dbtype="int" phptype="integer" null="false" default="0" />
+		
+		<field key="published" dbtype="smallint" phptype="integer" null="false" default="1" index="index" />
+		<field key="lead" dbtype="smallint" phptype="integer" null="false" default="1" index="index" />
+		
+
+		<aggregate alias="idSport" class="idSport" local="sport" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idLevel" class="idLevel" local="lvl" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idTrainer" class="idTrainer" local="trainer" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idClub" class="idClub" local="club" foreign="id" cardinality="one" owner="foreign" />
+		<composite alias="idSportsmenSquad" class="idSportsmenSquad" local="id" foreign="squad" cardinality="many" owner="local" />
+		
+		<index name="club" primary="false" unique="false" type="BTREE">
+            <column key="club" length="" collation="A" null="false" />
+        </index>
+        <index name="name" primary="false" unique="false" type="BTREE">
+            <column key="name" length="" collation="A" null="false" />
+        </index>
+        <index name="published_lead" primary="false" unique="false" type="BTREE">
+            <column key="published" length="" collation="A" null="false" />
+            <column key="lead" length="" collation="A" null="false" />
+        </index>
+	</object>
+
+	<object class="idSportsmenSquad" table="sportsmensquad" extends="xPDOSimpleObject">
+	    <field key="published" dbtype="smallint" phptype="integer" null="true" default="1" index="index" />
+	    
+		<field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="squad" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" index="index" />
+		<field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+		
+		<field key="dateend" dbtype="datetime" phptype="datetime" null="true" index="index" />
+		<field key="editedby" dbtype="int" phptype="integer" null="false" default="0" />
+		<field key="ismain" dbtype="smallint" phptype="integer" null="false" default="0" />
+		
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSquad" class="idSquad" local="squad" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+		<index name="uq_spsq_published" primary="false" unique="true" type="BTREE">
+		    <column key="squad" length="" collation="A" null="false" />
+            <column key="sportsmen" length="" collation="A" null="false" />
+            <column key="published" length="" collation="A" null="true" />
+        </index>
+        
+        <index name="sportsmen" primary="false" unique="false" type="BTREE">
+            <column key="sportsmen" length="" collation="A" null="false" />
+        </index>
+		<index name="created" primary="false" unique="false" type="BTREE">
+            <column key="created" length="" collation="A" null="false" />
+        </index>
+		<index name="dateend" primary="false" unique="false" type="BTREE">
+            <column key="dateend" length="" collation="A" null="true" />
+        </index>
+	</object>
+	
+	<object class="idContact" table="contact" extends="xPDOSimpleObject">
+		<field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" index="index" />
+		<field key="tel" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="email" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+		
+		<aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+
+		<index name="name" primary="false" unique="false" type="BTREE">
+            <column key="name" length="" collation="A" null="false" />
+        </index>
+	</object>
+
+    <object class="idChanges" table="changes" extends="xPDOSimpleObject">
+		<field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+
+		<field key="chfield" dbtype="varchar" precision="50" phptype="string" null="true" default="status" />
+		<field key="chid" dbtype="int" phptype="integer" null="true" default="0" />
+		
+		<field key="trainer" dbtype="int" phptype="integer" null="true" default="0" />
+
+		<field key="newvalue" dbtype="varchar" precision="250" phptype="string" null="false" default="" />
+		<field key="oldvalue" dbtype="varchar" precision="250" phptype="string" null="true" default="" />
+		<field key="info" dbtype="text" phptype="string" null="true" />
+		
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" index="index" />
+		<field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+		
+		<aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idTrainer" class="idTrainer" local="trainer" foreign="id" cardinality="one" owner="foreign" />
+		
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		
+        <index name="sportsmen" primary="false" unique="false" type="BTREE">
+            <column key="sportsmen" length="" collation="A" null="false" />
+        </index>
+        <index name="created" primary="false" unique="false" type="BTREE">
+            <column key="created" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+    <object class="idPay" table="pay" extends="xPDOSimpleObject">
+        <field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="datepay" dbtype="date" phptype="date" null="true" index="index" />
+		<field key="sum" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+		<field key="numpay" dbtype="varchar" precision="25" phptype="string" null="false" default="" />
+		<field key="sumbank" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+		<field key="payd" dbtype="smallint" phptype="integer" null="true" default="1" />
+
+		<field key="receipt" dbtype="int" phptype="integer" attributes="unsigned" null="true" />
+		
+		<field key="code1c" dbtype="char" precision="36" phptype="string" null="true" default="" />
+
+        <field key="info" dbtype="text" phptype="string" null="true" />
+        
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+		
+		<aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		
+		<index name="datepay" primary="false" unique="false" type="BTREE">
+            <column key="datepay" length="" collation="A" null="false" />
+        </index>
+        <index name="sportsmen" primary="false" unique="false" type="BTREE">
+            <column key="sportsmen" length="" collation="A" null="false" />
+        </index>
+    </object>
+
+    <object class="idInvoice" table="invoice" extends="xPDOSimpleObject">
+        <field key="sportsmen" dbtype="int" phptype="integer" null="false" default="0" index="index" />
+        <field key="typeinvoice" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+        <field key="dateinvoice" dbtype="date" phptype="date" null="true" index="index" />
+        <field key="duedate" dbtype="datetime" phptype="datetime" null="true" index="index" />
+
+        <field key="sum" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+
+		<field key="status" dbtype="varchar" precision="125" phptype="string" null="false" default="" />
+        <field key="isauto" dbtype="smallint" phptype="integer" null="false" default="0" />
+        <field key="lesson_amount" dbtype="int" phptype="integer" null="false" default="0" />
+        <!-- field key="residue" dbtype="int" phptype="integer" null="false" default="0" index="index" / -->
+        
+
+        <field key="info" dbtype="text" phptype="string" null="true" />
+        
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+        <field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+		<field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+		<field key="editedby" dbtype="int" phptype="integer" null="false" default="0" />
+		
+		<aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idInvoiceType" class="idInvoiceType" local="typeinvoice" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSInvType" class="idSInvType" local="typeinvoice" foreign="typeinvoice" cardinality="one" owner="foreign" />
+		
+		<!-- aggregate alias="idPeriod" class="idPeriod" local="period" foreign="id" cardinality="one" owner="foreign" /-->
+		
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		
+		<composite alias="idInvoicePay" class="idInvoicePay" local="id" foreign="idinvoice" cardinality="many" owner="local" />
+		
+		<index name="sportsmen" primary="false" unique="false" type="BTREE">
+            <column key="sportsmen" length="" collation="A" null="false" />
+        </index>
+        <index name="typeinvoice" primary="false" unique="false" type="BTREE">
+            <column key="typeinvoice" length="" collation="A" null="false" />
+        </index>
+        <index name="dateinvoice" primary="false" unique="false" type="BTREE">
+            <column key="dateinvoice" length="" collation="A" null="false" />
+        </index>
+        <index name="duedate" primary="false" unique="false" type="BTREE">
+            <column key="duedate" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idInvoicePay" table="invoicepay" extends="xPDOSimpleObject">
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+        <field key="sum" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+		<field key="idinvoice" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="idpay" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		
+		<aggregate alias="idInvoice" class="idInvoice" local="idinvoice" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idPay" class="idPay" local="idpay" foreign="id" cardinality="one" owner="foreign" />
+		
+		<index name="uq_invoicepay" primary="false" unique="true" type="BTREE">
+            <column key="idpay" length="" collation="A" null="false" />
+            <column key="idinvoice" length="" collation="A" null="false" />
+        </index>
+        <index name="idinvoice" primary="false" unique="false" type="BTREE">
+            <column key="idinvoice" length="" collation="A" null="false" />
+        </index>
+    </object>    
+    
+    <object class="idInvoiceType" table="invoicetype" extends="xPDOSimpleObject">
+		<field key="name" dbtype="varchar" precision="150" phptype="string" null="false" default="" />
+		<field key="amount" dbtype="int" phptype="integer" null="false" default="0" />
+		<field key="period" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="price" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+		
+		<field key="menuindex" dbtype="int" phptype="integer" null="false" default="10" index="index" />
+		<field key="published" dbtype="smallint" phptype="integer" null="false" default="1" index="index" />
+		
+		<composite alias="idSInvType" class="idSInvType" local="id" foreign="typeinvoice" cardinality="many" owner="local" />
+		
+        <index name="menuindex" primary="false" unique="false" type="BTREE">
+            <column key="menuindex" length="" collation="A" null="false" />
+        </index>
+        <index name="published" primary="false" unique="false" type="BTREE">
+            <column key="published" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idSInvType" table="sinvtype" extends="xPDOSimpleObject">
+        <field key="stype" dbtype="char" precision="10" phptype="string" null="false" index="index" />
+        <field key="typeinvoice" dbtype="int" phptype="integer" null="false" default="0" />
+
+        <aggregate alias="idInvoiceType" class="idInvoiceType" local="typeinvoice" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idStatus" class="idStatus" local="stype" foreign="alias" cardinality="one" owner="foreign">
+    		<criteria target="local"><![CDATA[ {
+    		    "0":"idStatus.tbl='idSchedule'",
+    		    "1":"idStatus.published=1"
+    		} ]]></criteria>
+    	</aggregate>
+
+        <index name="uq_sinvtype" primary="false" unique="true" type="BTREE">
+            <column key="typeinvoice" length="" collation="A" null="false" />
+            <column key="stype" length="" collation="A" null="false" />
+        </index>
+        <index name="stype" primary="false" unique="false" type="BTREE">
+            <column key="stype" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idTrainer" table="trainer" extends="xPDOSimpleObject">
+        <field key="gender" dbtype="smallint" phptype="integer" null="false" default="0" />
+        <field key="uid" dbtype="char" precision="36" phptype="string" null="false" default="" index="index" />
+        <field key="sport" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="1" />
+        <field key="name" dbtype="varchar" precision="250" phptype="string" null="false" default="" />
+        <alias key="fio" field="name" />
+        <field key="birth" dbtype="date" phptype="date" null="true" />
+        
+        <!-- field key="res" dbtype="int" phptype="integer" null="false" default="0" / -->
+		<field key="city" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+
+		<field key="begindate" dbtype="date" phptype="date" null="true" />
+		<field key="meddate" dbtype="date" phptype="date" null="true" />
+		<field key="tel" dbtype="varchar" precision="50" phptype="string" null="false" default="" />
+		<field key="email" dbtype="varchar" precision="150" phptype="string" null="false" default="" />
+		<field key="categ" dbtype="varchar" precision="100" phptype="string" null="false" default="" />
+		<field key="referee" dbtype="varchar" precision="50" phptype="string" null="false" default="-" />
+		<field key="content" dbtype="mediumtext" phptype="string" />
+		
+		<field key="iduser" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="published" dbtype="smallint" phptype="integer" null="false" default="1" index="index" />
+		
+		<aggregate alias="idUser" class="modUser" local="iduser" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idCity" class="idCity" local="city" foreign="id" cardinality="one" owner="foreign" />
+		<composite alias="idFiles" class="idFiles" local="uid" foreign="uid" cardinality="many" owner="local" />
+		
+		<index name="city" primary="false" unique="false" type="BTREE">
+            <column key="city" length="" collation="A" null="false" />
+        </index>
+        <index name="iduser" primary="false" unique="false" type="BTREE">
+            <column key="iduser" length="" collation="A" null="false" />
+        </index>
+        <index name="uid" primary="false" unique="false" type="BTREE">
+            <column key="uid" length="" collation="A" null="false" />
+        </index>
+
+        <index name="published" primary="false" unique="false" type="BTREE">
+            <column key="published" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idClub" table="club" extends="xPDOSimpleObject">
+        <field key="name" dbtype="varchar" precision="250" phptype="string" null="false" default="" />
+        <!-- field key="res" dbtype="int" phptype="integer" null="false" default="0" / -->
+		<field key="city" dbtype="int" phptype="integer" null="false" attributes="unsigned" default="0" index="index" />
+		<field key="address" dbtype="varchar" precision="255" phptype="string" null="true" />
+		
+		<field key="published" dbtype="int" phptype="integer" null="false" default="1" index="index"  />
+		
+		<aggregate alias="idCity" class="idCity" local="city" foreign="id" cardinality="one" owner="foreign" />
+		<index name="city" primary="false" unique="false" type="BTREE">
+            <column key="city" length="" collation="A" null="false" />
+        </index>
+        <index name="published" primary="false" unique="false" type="BTREE">
+            <column key="published" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idCity" table="city" extends="xPDOSimpleObject">
+        <field key="name" dbtype="varchar" precision="250" phptype="string" null="false" default="" />
+        
+        
+        <!-- field key="res" dbtype="int" phptype="integer" null="false" default="0" / -->
+        
+        <field key="extended" dbtype="text" phptype="json" null="true" />
+        <field key="alias" dbtype="varchar" precision="100" phptype="string" null="false" default="" index="index" />
+        
+        <field key="fullname" dbtype="varchar" precision="250" phptype="string" null="true" />
+        <field key="address" dbtype="varchar" precision="250" phptype="string" null="true" />
+        <field key="chief" dbtype="varchar" precision="250" phptype="string" null="true" />
+        <field key="inn" dbtype="varchar" precision="50" phptype="string" null="true" />
+        <field key="ogrn" dbtype="varchar" precision="50" phptype="string" null="true" />
+        <field key="kpp" dbtype="varchar" precision="50" phptype="string" null="true" />
+        
+        <field key="tel" dbtype="varchar" precision="20" phptype="string" null="true" />
+        <field key="email" dbtype="varchar" precision="150" phptype="string" null="true" />
+        
+        <field key="bankname" dbtype="varchar" precision="250" phptype="string" null="true" />
+        <field key="bankbik" dbtype="varchar" precision="20" phptype="string" null="true" />
+        <field key="bankks" dbtype="varchar" precision="50" phptype="string" null="true" />
+        <field key="bankrs" dbtype="varchar" precision="50" phptype="string" null="true" />
+        
+        <field key="menuindex" dbtype="int" phptype="integer" null="false" default="10" index="index" />
+        <field key="published" dbtype="int" phptype="integer" null="false" default="1" index="index" />
+        
+        <!-- aggregate alias="modResource" class="modResource" local="res" foreign="id" cardinality="one" owner="foreign" / -->
+        <composite alias="idSportsmen" class="idSportsmen" local="id" foreign="city" cardinality="many" owner="local" />
+        
+        <index name="alias" primary="false" unique="false" type="BTREE">
+            <column key="alias" length="" collation="A" null="false" />
+        </index>
+        <index name="menuindex" primary="false" unique="false" type="BTREE">
+            <column key="menuindex" length="" collation="A" null="false" />
+        </index>
+        <index name="published" primary="false" unique="false" type="BTREE">
+            <column key="published" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idLevel" table="levels" extends="xPDOSimpleObject">
+        <field key="name" dbtype="varchar" precision="250" phptype="string" null="false" default="" />
+    </object>
+    
+    <object class="idSport" table="sports" extends="xPDOSimpleObject">
+        <field key="name" dbtype="varchar" precision="250" phptype="string" null="false" default="" />
+        <field key="shortname" dbtype="varchar" precision="25" phptype="string" null="false" default="" />
+        <field key="color" dbtype="varchar" precision="12" phptype="string" null="false" default="" />
+        
+        <field key="menuindex" dbtype="int" phptype="integer" null="false" default="10" index="index" />
+        <field key="published" dbtype="smallint" phptype="integer" null="false" default="1" index="index" />
+        
+        <index name="menuindex" primary="false" unique="false" type="BTREE">
+            <column key="menuindex" length="" collation="A" null="false" />
+        </index>
+        <index name="published" primary="false" unique="false" type="BTREE">
+            <column key="published" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idSchedule" table="schedule" extends="xPDOSimpleObject">
+        <field key="stype" dbtype="char" precision="1" phptype="string" null="false" default="a" index="index" />
+        <field key="planfact" dbtype="smallint" phptype="integer" null="false" default="0" />
+        <field key="repeat" dbtype="smallint" phptype="integer" null="false" default="0" index="index"  />
+        <field key="parent" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index"  />
+        
+        <field key="datestart" dbtype="datetime" phptype="datetime" null="false" index="index" />
+		<field key="dateend" dbtype="datetime" phptype="datetime" null="false" />
+		
+		<field key="trainer" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="trainer2" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="squad" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="club" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="sport" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="1" />
+		
+		<field key="location" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="link" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="idevent" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+
+        <field key="info" dbtype="text" phptype="string" null="true" />
+        
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+        <field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+        
+        <aggregate alias="idTrainer" class="idTrainer" local="trainer" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idSquad" class="idSquad" local="squad" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idClub" class="idClub" local="club" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idSport" class="idSport" local="sport" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idStatus" class="idStatus" local="stype" foreign="alias" cardinality="one" owner="foreign">
+            <criteria target="local"><![CDATA[ {
+                "0":"idStatus.tbl='idSchedule'",
+                "1":"idStatus.published=1"
+            } ]]></criteria>
+        </aggregate>
+    	
+    	<aggregate alias="idEvent" class="idEvent" local="idevent" foreign="id" cardinality="one" owner="foreign" />
+        
+        <composite alias="idLesson" class="idLesson" local="id" foreign="schedule" cardinality="many" owner="local" />
+        <composite alias="idRate" class="idRate" local="id" foreign="schedule" cardinality="many" owner="local" />
+        
+        <index name="repeat" primary="false" unique="false" type="BTREE">
+            <column key="repeat" length="" collation="A" null="false" />
+        </index>
+        <index name="parent" primary="false" unique="false" type="BTREE">
+            <column key="parent" length="" collation="A" null="false" />
+        </index>
+        <index name="datestart" primary="false" unique="false" type="BTREE">
+            <column key="datestart" length="" collation="A" null="false" />
+        </index>
+        <index name="trainer" primary="false" unique="false" type="BTREE">
+            <column key="trainer" length="" collation="A" null="false" />
+        </index>
+        <index name="trainer2" primary="false" unique="false" type="BTREE">
+            <column key="trainer2" length="" collation="A" null="false" />
+        </index>
+        <index name="squad" primary="false" unique="false" type="BTREE">
+            <column key="squad" length="" collation="A" null="false" />
+        </index>
+        <index name="stype" primary="false" unique="false" type="BTREE">
+            <column key="stype" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idLesson" table="lesson" extends="xPDOSimpleObject">
+        <field key="status" dbtype="char" precision="1" phptype="string" null="false" default="y" />
+        <field key="mark" dbtype="smallint" phptype="integer" null="true" />
+        
+        <field key="schedule" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+        <field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+	    <field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+	    <field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+	    <field key="editedby" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+	    <field key="info" dbtype="text" phptype="string" null="true" />
+	    
+	    <field key="idinvoice" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+
+	    <aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+	    <aggregate alias="idSchedule" class="idSchedule" local="schedule" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idInvoice" class="idInvoice" local="idinvoice" foreign="id" cardinality="one" owner="foreign" />
+
+		<index name="uq_schedule_sportsmen" primary="false" unique="true" type="BTREE">
+            <column key="schedule" length="" collation="A" null="false" />
+            <column key="sportsmen" length="" collation="A" null="false" />
+        </index>
+        
+	    <index name="sportsmen" primary="false" unique="false" type="BTREE">
+            <column key="sportsmen" length="" collation="A" null="false" />
+        </index>
+        <index name="idinvoice" primary="false" unique="false" type="BTREE">
+            <column key="idinvoice" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <!-- object class="idInvoiceLesson" table="invoicelesson" extends="xPDOSimpleObject">
+        <field key="sportsmen" dbtype="int" phptype="integer" null="false" default="0" />
+        <field key="idinvoice" dbtype="int" phptype="integer" null="false" default="0" index="index" />
+        <field key="idlesson" dbtype="int" phptype="integer" null="true" index="index" />
+        <field key="amount" dbtype="int" phptype="integer" null="false" default="0" />
+
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+
+	    <aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idInvoice" class="idInvoice" local="idinvoice" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="idLesson" class="idLesson" local="idlesson" foreign="id" cardinality="one" owner="foreign" />
+        
+        <index name="idinvoice" primary="false" unique="false" type="BTREE">
+            <column key="idinvoice" length="" collation="A" null="false" />
+        </index>
+        
+        <index name="uq_idlesson" primary="false" unique="true" type="BTREE">
+            <column key="idlesson" length="" collation="A" null="true" />
+        </index>
+    </object -->
+    
+    <object class="idFiles" table="files" extends="xPDOSimpleObject">
+        <field key="key" dbtype="char" precision="36" phptype="string" null="false" default="" index="index" />
+        <field key="uid" dbtype="char" precision="36" phptype="string" null="false" default="" index="index" />
+        
+		<field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="filetype" dbtype="varchar" precision="50" phptype="string" null="false" default=""/>
+		<field key="fileext" dbtype="varchar" precision="12" phptype="string" null="false" default=""/>
+		
+		<field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" index="index" />
+		
+		<field key="incloud" dbtype="smallint" phptype="integer" null="false" default="0" index="index" />
+
+        <index name="incloud" primary="false" unique="false" type="BTREE">
+            <column key="incloud" length="" collation="A" null="false" />
+        </index>
+		
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		
+		<index name="key" primary="false" unique="false" type="BTREE">
+            <column key="key" length="" collation="A" null="false" />
+        </index>
+		<index name="uid" primary="false" unique="false" type="BTREE">
+            <column key="uid" length="" collation="A" null="false" />
+        </index>
+        <index name="created" primary="false" unique="false" type="BTREE">
+            <column key="created" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+	<object class="idShopItem" table="shopitem" extends="xPDOSimpleObject">
+	    <field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+	    <field key="category" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+
+		<field key="price" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+		<field key="info" dbtype="text" phptype="string" null="true" />
+		<field key="opts" dbtype="text" phptype="string" null="true" />
+		
+		<field key="menuindex" dbtype="int" phptype="integer" null="false" default="10" index="index" />
+		<field key="published" dbtype="smallint" phptype="integer" null="false" default="1" index="index" />
+		
+		
+		<field key="status" dbtype="char" precision="1" phptype="string" null="false" default="c" index="index" />
+		
+		<index name="status" primary="false" unique="false" type="BTREE">
+            <column key="status" length="" collation="A" null="false" />
+        </index>
+        <index name="menuindex" primary="false" unique="false" type="BTREE">
+            <column key="menuindex" length="" collation="A" null="false" />
+        </index>
+        <index name="published" primary="false" unique="false" type="BTREE">
+            <column key="published" length="" collation="A" null="false" />
+        </index>
+	</object>
+
+	<object class="idOrderItems" table="orderitems" extends="xPDOSimpleObject">
+		<field key="status" dbtype="varchar" precision="50" phptype="string" null="false" default="cart" index="index" />
+
+		<field key="shopitem" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+
+		<field key="price" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+		<field key="amount" dbtype="int" phptype="integer" null="false" default="0" />
+		<field key="total" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+
+		<field key="opts" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" index="index" />
+		<field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+		<field key="editedby" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+
+		<field key="info" dbtype="text" phptype="string" null="true" />
+		<field key="extended" dbtype="text" phptype="json" null="true" />
+		
+		<field key="orderpack" dbtype="int" phptype="integer" null="false" default="0" index="index" />
+		
+		<aggregate alias="idShopItem" class="idShopItem" local="shopitem" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idOrderPack" class="idOrderPack" local="orderpack" foreign="id" cardinality="one" owner="foreign" />
+		
+		<index name="status" primary="false" unique="false" type="BTREE">
+            <column key="status" length="" collation="A" null="false" />
+        </index>
+		
+        <index name="orderpack" primary="false" unique="false" type="BTREE">
+            <column key="orderpack" length="" collation="A" null="false" />
+        </index>
+        <index name="author" primary="false" unique="false" type="BTREE">
+            <column key="author" length="" collation="A" null="false" />
+        </index>
+        <index name="created" primary="false" unique="false" type="BTREE">
+            <column key="created" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+	<object class="idOrderPack" table="orderpack" extends="xPDOSimpleObject">
+	    <field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+	    <field key="tel" dbtype="varchar" precision="50" phptype="string" null="false" default="" />
+		<field key="datepay" dbtype="datetime" phptype="datetime" null="true" />
+		<field key="receipt" dbtype="int" phptype="integer" attributes="unsigned" null="true" />
+
+		<field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="city" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="club" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+        <field key="address" dbtype="text" phptype="string" null="true" />
+        
+		<field key="info" dbtype="text" phptype="string" null="true" />
+		<field key="extended" dbtype="text" phptype="json" null="true" />
+		
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+		<field key="editedby" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		
+		<aggregate alias="idClub" class="idClub" local="club" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idCity" class="idCity" local="city" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+		<composite alias="idOrderItems" class="idOrderItems" local="id" foreign="orderpack" cardinality="many" owner="local" />
+
+        <index name="author" primary="false" unique="false" type="BTREE">
+            <column key="author" length="" collation="A" null="false" />
+        </index>
+        <index name="city" primary="false" unique="false" type="BTREE">
+            <column key="city" length="" collation="A" null="false" />
+        </index>
+	</object>
+
+	<object class="idEvent" table="event" extends="xPDOSimpleObject">
+		<field key="status" dbtype="varchar" precision="70" phptype="string" null="false" default="" />
+		
+		<field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" index="index" />
+        <field key="datestart" dbtype="datetime" phptype="datetime" null="false" index="index" />
+		<field key="dateend" dbtype="datetime" phptype="datetime" null="false" index="index" />
+
+        <field key="place" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+        <field key="info" dbtype="text" phptype="string" null="true" />
+		
+		<field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+		<field key="editedby" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		
+		<field key="extended" dbtype="text" phptype="json" null="true" />
+		
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		<composite alias="idEventMember" class="idEventMember" local="id" foreign="idevent" cardinality="many" owner="local" />
+		<composite alias="idEventCategory" class="idEventCategory" local="id" foreign="idevent" cardinality="many" owner="local" />
+		
+		<index name="name" primary="false" unique="false" type="BTREE">
+            <column key="name" length="" collation="A" null="false" />
+        </index>
+		<index name="datestart" primary="false" unique="false" type="BTREE">
+            <column key="datestart" length="" collation="A" null="false" />
+        </index>
+        <index name="dateend" primary="false" unique="false" type="BTREE">
+            <column key="dateend" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+	<object class="idEventCategory" table="eventcategory" extends="xPDOSimpleObject">
+	    <field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="idevent" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="alias" dbtype="varchar" precision="100" phptype="string" null="false" default="" />
+		<field key="menuindex" dbtype="int" phptype="integer" null="false" default="10" />
+		<field key="extended" dbtype="text" phptype="json" null="true" />
+		
+		<aggregate alias="idEvent" class="idEvent" local="idevent" foreign="id" cardinality="one" owner="foreign" />
+		<composite alias="idEventMember" class="idEventMember" local="id" foreign="ideventcategory" cardinality="many" owner="local" />
+		
+		<index name="idevent" primary="false" unique="false" type="BTREE">
+            <column key="idevent" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+	<object class="idEventMember" table="eventmember" extends="xPDOSimpleObject">
+		<field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="idevent" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		<field key="ideventcategory" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="place" dbtype="int" phptype="integer" null="true" />
+		<field key="result" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+		<field key="team" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		
+		<aggregate alias="idEvent" class="idEvent" local="idevent" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idEventCategory" class="idEventCategory" local="ideventcategory" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+		
+		<index name="uq_evc_member" primary="false" unique="true" type="BTREE">
+            <column key="sportsmen" length="" collation="A" null="false" />
+            <column key="idevent" length="" collation="A" null="false" />
+            <column key="ideventcategory" length="" collation="A" null="false" />
+        </index>
+        <index name="idevent" primary="false" unique="false" type="BTREE">
+            <column key="idevent" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+    <object class="idLead" table="lead" extends="xPDOSimpleObject">
+        <field key="gender" dbtype="smallint" phptype="integer" null="false" default="0" />
+		<field key="status" dbtype="char" precision="1" phptype="string" null="false" default="c" index="index" />
+		
+		<field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+
+		<field key="birth" dbtype="date" phptype="date" null="true" />
+		<!-- field key="height" dbtype="smallint" phptype="integer" null="false" default="0" />
+		<field key="weight" dbtype="smallint" phptype="integer" null="false" default="0" / -->
+		
+		<field key="contact" dbtype="varchar" precision="255" phptype="string" null="true" default="" />
+		<field key="tel" dbtype="varchar" precision="50" phptype="string" null="true" default="" />
+		<field key="email" dbtype="varchar" precision="150" phptype="string" null="true" default="" />
+		
+		<field key="source" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+
+		<field key="trainer" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+        <field key="sport" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+        <field key="club" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+        <field key="squad" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+        <field key="datestart" dbtype="datetime" phptype="datetime" null="true" />
+
+		<field key="info" dbtype="text" phptype="string" null="true" />
+		
+		<field key="key" dbtype="char" precision="36" phptype="string" null="false" default="" />
+		<field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+		
+		<field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+		<field key="editedby" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+
+		<field key="extid" dbtype="char" precision="50" phptype="string" null="false" default="" index="index" />
+
+        <aggregate alias="idStatus" class="idStatus" local="status" foreign="alias" cardinality="one" owner="foreign">
+            <criteria target="local"><![CDATA[ {
+                "0":"idStatus.tbl='idLead'",
+                "1":"idStatus.published=1"
+            } ]]></criteria>
+        </aggregate>
+        <aggregate alias="Gender" class="idStatus" local="gender" foreign="alias" cardinality="one" owner="foreign">
+            <criteria target="local"><![CDATA[ {
+                "0":"Gender.tbl='Gender'",
+                "1":"Gender.published=1"
+            } ]]></criteria>
+        </aggregate>
+
+		<aggregate alias="idTrainer" class="idTrainer" local="trainer" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSport" class="idSport" local="sport" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+		
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+
+		<aggregate alias="idClub" class="idClub" local="club" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSquad" class="idSquad" local="squad" foreign="id" cardinality="one" owner="foreign" />
+
+		<composite alias="idTascom" class="idTascom" local="key" foreign="uid" cardinality="many" owner="local" />
+		
+		<index name="lead_status" primary="false" unique="false" type="BTREE">
+            <column key="status" length="" collation="A" null="false" />
+        </index>
+		<index name="lead_club" primary="false" unique="false" type="BTREE">
+            <column key="club" length="" collation="A" null="false" />
+        </index>
+        <index name="extid" primary="false" unique="false" type="BTREE">
+            <column key="extid" length="" collation="A" null="false" />
+        </index>
+		<!-- composite alias="idFiles" class="idFiles" local="key" foreign="uid" cardinality="many" owner="local" /-->
+	</object>
+
+	<object class="idTascom" table="tascom" extends="xPDOSimpleObject">
+        <field key="uid" dbtype="char" precision="36" phptype="string" null="false" default="" index="index" />
+        
+        <field key="tbl" dbtype="varchar" precision="100" phptype="string" null="false" default="" />
+        <field key="action" dbtype="varchar" precision="100" phptype="string" null="false" default="info" />
+        
+		<field key="name" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="datestart" dbtype="datetime" phptype="datetime" null="false" />
+
+		<field key="info" dbtype="text" phptype="string" null="true" />
+		
+		<field key="extid" dbtype="char" precision="50" phptype="string" null="false" default="" index="index" />
+
+		<field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		
+		<field key="extended" dbtype="text" phptype="json" null="true" />
+		
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		
+		<index name="uid" primary="false" unique="false" type="BTREE">
+            <column key="uid" length="" collation="A" null="false" />
+        </index>
+        
+        <index name="extid" primary="false" unique="false" type="BTREE">
+            <column key="extid" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+	<object class="idStatus" table="status" extends="xPDOSimpleObject">
+		<field key="name" dbtype="varchar" precision="100" phptype="string" null="false" default="" index="index" />
+
+		<field key="tbl" dbtype="varchar" precision="100" phptype="string" null="false" default="idSportsmen" />
+		<field key="alias" dbtype="varchar" precision="100" phptype="string" null="false" default="" index="index" />
+		<field key="cls" dbtype="varchar" precision="100" phptype="string" null="true" default="" />
+		<field key="ico" dbtype="varchar" precision="100" phptype="string" null="true" default="" />
+		<!-- field key="ismain" dbtype="smallint" phptype="integer" null="false" default="0" / -->
+		
+		<field key="menuindex" dbtype="int" phptype="integer" null="false" default="10" index="index" />
+		<field key="published" dbtype="smallint" phptype="integer" null="false" default="1" index="index" />
+		
+		<field key="info" dbtype="text" phptype="string" null="true" />		
+		<field key="extended" dbtype="text" phptype="json" null="true" />
+		
+		<field key="club_id" dbtype="int" phptype="integer" null="false" default="0" />
+		
+		<field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+		<field key="editedby" dbtype="int" phptype="integer" null="false" default="0" />
+		
+		<index name="uq_status_alias" primary="false" unique="true" type="BTREE">
+            <column key="tbl" length="" collation="A" null="false" />
+            <column key="alias" length="" collation="A" null="false" />
+            <column key="published" length="" collation="A" null="false" />
+        </index>
+        <index name="name" primary="false" unique="false" type="BTREE">
+            <column key="name" length="" collation="A" null="false" />
+        </index>
+        <index name="alias" primary="false" unique="false" type="BTREE">
+            <column key="alias" length="" collation="A" null="false" />
+        </index>
+        <index name="menuindex" primary="false" unique="false" type="BTREE">
+            <column key="menuindex" length="" collation="A" null="false" />
+        </index>
+        <index name="published" primary="false" unique="false" type="BTREE">
+            <column key="published" length="" collation="A" null="false" />
+        </index>
+        <index name="cls" primary="false" unique="false" type="BTREE">
+            <column key="cls" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+	<object class="idTmpl" table="tmpl" extends="xPDOSimpleObject">
+	    <field key="type" dbtype="char" precision="5" phptype="string" null="false" default="email" />
+		<field key="name" dbtype="varchar" precision="100" phptype="string" null="false" default="" />
+		
+		<field key="subj" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="content" dbtype="text" phptype="string" null="true" />
+		<field key="handler" dbtype="varchar" precision="255" phptype="string" null="false" default="" index="index" />
+		
+		<index name="handler" primary="false" unique="false" type="BTREE">
+            <column key="handler" length="" collation="A" null="false" />
+        </index>
+	</object>	
+	
+	<object class="idMsg" table="msg" extends="xPDOSimpleObject">
+		<field key="type" dbtype="char" precision="5" phptype="string" null="false" default="email" />
+		<field key="msg_to" dbtype="varchar" precision="255" phptype="string" null="false" default="" />
+		<field key="msg_subj" dbtype="varchar" precision="255" phptype="string" null="true" />
+        <field key="info" dbtype="text" phptype="string" null="false" />
+        <field key="ready" dbtype="smallint" phptype="integer" null="false" default="0" index="index" />
+        <field key="attempt" dbtype="smallint" phptype="integer" null="false" default="0" />
+        <field key="datestart" dbtype="datetime" phptype="datetime" null="true" index="index" />
+        
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="author" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" />
+		
+		<field key="extended" dbtype="text" phptype="json" null="true" />
+		
+		<aggregate alias="idAuthor" class="modUser" local="author" foreign="id" cardinality="one" owner="foreign" />
+		
+		<index name="ready" primary="false" unique="false" type="BTREE">
+            <column key="ready" length="" collation="A" null="false" />
+        </index>
+        <index name="datestart" primary="false" unique="false" type="BTREE">
+            <column key="datestart" length="" collation="A" null="false" />
+        </index>
+	</object>
+
+	<object class="idExtid" table="extid" extends="xPDOSimpleObject">
+	    <field key="parent" dbtype="int" phptype="integer" null="false" default="0" attributes="unsigned" index="index" />
+		<field key="extype" dbtype="int" phptype="integer" null="false" default="0" index="index" />
+		<field key="extid" dbtype="bigint" phptype="integer" attributes="unsigned" null="true" index="index" />
+		<field key="extoken" dbtype="varchar" precision="200" phptype="string" null="true" index="index" />
+
+		<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+		<field key="duedate" dbtype="datetime" phptype="datetime" null="true" index="index" />
+
+		<field key="extended" dbtype="text" phptype="json" null="true" />
+		
+		<aggregate alias="exType" class="idStatus" local="extype" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idSportsmen" class="idSportsmen" local="parent" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idCity" class="idCity" local="parent" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idUser" class="modUser" local="parent" foreign="id" cardinality="one" owner="foreign" />
+
+        <index name="uq_extparent" primary="false" unique="true" type="BTREE">
+		    <column key="parent" collation="A" null="false" />
+		    <column key="extype" collation="A" null="false" />
+		    <column key="extid" collation="A" null="true" />
+		    <column key="extoken" collation="A" null="true" />
+        </index>
+        <index name="extid" primary="false" unique="false" type="BTREE">
+            <column key="extid" collation="A" null="true" />
+            <column key="extype" collation="A" null="false" />
+        </index>
+        <index name="extoken" primary="false" unique="false" type="BTREE">
+            <column key="extoken" collation="A" null="true" />
+            <column key="extype" collation="A" null="false" />
+        </index>
+        <index name="duedate" primary="false" unique="false" type="BTREE">
+            <column key="duedate" length="" collation="A" null="false" />
+        </index>
+	</object>
+	
+	<object class="idConfig" table="config" extends="xPDOSimpleObject">
+		<field key="name" dbtype="varchar" precision="150" phptype="string" null="false" default="" index="index" />
+		<field key="val" dbtype="mediumtext" phptype="string" null="false" default="" />
+
+		<field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+		<field key="editedby" dbtype="int" phptype="integer" null="false" default="0" />
+		<index name="uq_config" primary="false" unique="true" type="BTREE">
+            <column key="name" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idTalk" table="talk" extends="xPDOSimpleObject">
+        <field key="status" dbtype="int" phptype="integer" null="false" default="0" index="index"  />
+        <field key="local" dbtype="varchar" precision="50" phptype="string" null="false" default="" />
+        <field key="foreign" dbtype="varchar" precision="50" phptype="string" null="false" default="" index="index" />
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" index="index" />
+        <field key="duration" dbtype="int" phptype="integer" null="true" />
+
+		<field key="info" dbtype="text" phptype="string" null="true" />
+		
+		<field key="iduser" dbtype="int" phptype="integer" null="false" default="0" />
+		<field key="extid" dbtype="char" precision="50" phptype="string" null="true" index="index" />
+		
+		<aggregate alias="idUser" class="modUser" local="iduser" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="idStatus" class="idStatus" local="status" foreign="id" cardinality="one" owner="foreign" />
+        <index name="extid" primary="false" unique="false" type="BTREE">
+            <column key="extid" length="" collation="A" null="false" />
+        </index>
+		
+		<index name="created" primary="false" unique="false" type="BTREE">
+            <column key="created" length="" collation="A" null="false" />
+        </index>
+        <index name="foreign" primary="false" unique="false" type="BTREE">
+            <column key="foreign" length="" collation="A" null="false" />
+        </index>
+        <index name="status" primary="false" unique="false" type="BTREE">
+            <column key="status" length="" collation="A" null="false" />
+        </index>
+	</object>
+    
+    <object class="idRate" table="rate" extends="xPDOSimpleObject">
+        <field key="schedule" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+        <field key="sportsmen" dbtype="int" phptype="integer" attributes="unsigned" null="false" default="0" index="index" />
+        <field key="status" dbtype="int" phptype="integer" null="false" default="0" />
+        
+        <field key="value" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+        <field key="info" dbtype="varchar" precision="255" phptype="string" null="true" />
+
+        <field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+	    <field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+	    <field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+	    <field key="editedby" dbtype="int" phptype="integer" null="false" default="0" />
+
+	    <aggregate alias="idSportsmen" class="idSportsmen" local="sportsmen" foreign="id" cardinality="one" owner="foreign" />
+	    <aggregate alias="idSchedule" class="idSchedule" local="schedule" foreign="id" cardinality="one" owner="foreign" />
+	    <aggregate alias="idStatus" class="idStatus" local="status" foreign="id" cardinality="one" owner="foreign" />
+	    
+	    <index name="uq_rate" primary="false" unique="true" type="BTREE">
+            <column key="schedule" length="" collation="A" null="false" />
+            <column key="sportsmen" length="" collation="A" null="false" />
+            <column key="status" length="" collation="A" null="false" />
+        </index>
+        
+	    <index name="sportsmen" primary="false" unique="false" type="BTREE">
+            <column key="sportsmen" length="" collation="A" null="false" />
+        </index>
+    </object>
+    
+    <object class="idExpense" table="expense" extends="xPDOSimpleObject">
+        <field key="dateexpence" dbtype="date" phptype="date" null="false" index="index" />
+        <field key="sum" dbtype="decimal" precision="10,2" phptype="float" null="false" default="0" />
+        <field key="typeexpence" dbtype="int" phptype="integer" null="false" default="0" index="index"/>
+        <field key="info" dbtype="text" phptype="string" null="true" />
+        
+        <field key="plan" dbtype="enum" precision="'fact','1m'" phptype="string" null="false" default="fact"/> <!-- fact - факт, 1m - повторять каждый месяц-->
+    	<field key="created" dbtype="timestamp" phptype="timestamp" null="false" default="CURRENT_TIMESTAMP" />
+    	<field key="author" dbtype="int" phptype="integer" null="false" default="0" />
+    	<field key="edited" dbtype="datetime" phptype="datetime" null="true" />
+    	<field key="editedby" dbtype="int" phptype="integer" null="false" default="0" />
+    	
+    	<index name="dateexpence" primary="false" unique="false" type="BTREE">
+            <column key="dateexpence" length="" collation="A" null="false" />
+        </index>
+        <index name="typeexpence" primary="false" unique="false" type="BTREE">
+            <column key="typeexpence" length="" collation="A" null="false" />
+        </index>
+
+        <aggregate alias="TypeExpence" class="idStatus" local="typeexpence" foreign="id" cardinality="one" owner="foreign" />
+    </object>
+    
+    <!-- object class="idLink" table="link" extends="xPDOSimpleObject">
+		<field key="tbl1" dbtype="enum"
+		    precision="'idSportsmen','idLead','idTrainer','idGoal','modUser'"
+		    phptype="string" null="false" />
+		<field key="id1" dbtype="int" phptype="integer" null="false" default="0" index="index" />
+		
+		<field key="tbl2" dbtype="enum"
+		    precision="'idSportsmen','idLead','idTrainer','idGoal','idCity','idLabel'"
+		    phptype="string" null="false" />
+		<field key="id2" dbtype="int" phptype="integer" null="false" default="0" index="index" />
+        
+        <index name="uq_link" primary="false" unique="true" type="BTREE">
+		    <column key="id1" length="" collation="A" null="false" />
+		    <column key="tbl1" length="" collation="A" null="false" />
+		    <column key="id2" length="" collation="A" null="false" />
+		    <column key="tbl2" length="" collation="A" null="false" />
+        </index>
+        <index name="link2" primary="false" unique="false" type="BTREE">
+            <column key="id2" length="" collation="A" null="false" />
+        </index>
+	</object -->
+</model>

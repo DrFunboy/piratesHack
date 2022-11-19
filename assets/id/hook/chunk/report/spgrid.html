@@ -1,0 +1,28 @@
+[[$dbInner]]
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    if (!param.grid) {
+        if (!param.container) return;
+        var container = $(param.container);
+        param.grid = container.data('spgrid');
+        if (!param.grid) {
+            param.grid = $('<table></table>').attr({id: SCRM.uniqid()}).appendTo(container);
+            container.data('spgrid', param.grid);
+        }
+    }
+    var grid = $(param.grid);
+    if (param.callback) param.callback(grid);
+    if (param.postData) grid.one('jqGridSerializeGridData', function(e, pd) {
+        $.extend(pd, {
+            _report: '',
+            _where: '',
+        }, param.postData);
+    });
+    
+    grid
+    .trigger('sportsmenGrid', param.initOpts)
+    .trigger('show');
+};
+</script>
+

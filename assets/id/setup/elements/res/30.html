@@ -1,0 +1,35 @@
+<div class="section-block my-0">
+[[$dbInner?actions=`1`]]
+</div>
+
+<script>
+$('#grmain')
+.one('jqGridBeforeInit', function(e, grOpts){
+    grOpts.colModel.push({
+        name:'photo', label:'Фото',
+        width:30, editable: false,
+        search: false,
+        align: 'center',
+        formatter: hasPhoto
+    });
+})
+.one('jqGridAfterLoadComplete', function(e, data){
+    var spGrid = $(this).jqGridExport(),
+        param = getUrlVars();
+
+    if (param.filter) setTimeout(function() {
+        spGrid.data('spData').spFilter(param.filter);
+    }, 500);
+})
+.trigger('sportsmenGrid', {
+    showDuedate: true,
+    multiselect: true,
+    sortname: 'saldo asc, name asc',
+    postData: { tableadd: 'idPhoto' }
+});
+
+[[-$(document).one('OnLoadSpData', function(e, data){
+    $.observable(SCRM.idSportsmen.titleMenu).insert('<a href="#" class="dropdown-item">Hello</a>');
+    console.log('OnLoadSpData', e, data)
+})]]
+</script>

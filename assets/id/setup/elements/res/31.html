@@ -1,0 +1,91 @@
+<div class="section-block my-0">
+    <div class="form-group row">
+        <div class="col-lg-3 col-md-4 col-sm-6">
+        <select class="form-control" id="selInvoice"><option>Loading...</option></select>
+        </div>
+    </div>
+    [[$dbInner?actions=`1`]]
+</div>
+
+<script>
+
+function cellSaldoColor2(rowId, cellValue, rawObject, cm, rdata){
+    return rawObject.tmp_cls;
+}
+
+function saldoFormat(cellValue, options, rowObject) {
+    var num = options.colModel.name.replace('saldo_','');
+    var inv = rowObject['invoice_'+num] || 0;
+    var value = cellValue || 0;
+
+    //var diff = value-inv;
+    if (value > 0) {
+        value = 0-value;
+        rowObject['tmp_cls'] = ' style="color:red;"';
+    } else {
+        value = inv;
+        rowObject['tmp_cls'] = '';
+    }
+    if (value==0) value='';
+    var status = rowObject['status_'+num] || '';
+    status = $.map(status.split(','), function(v, i) {
+        return (v!='')? statusFmt(v)+' ' : null;
+    }).join('');
+    return status + value;
+}
+
+$(function(){
+    var dbvalues = [[!dbvalues?mode=`idInvoiceType`]];
+    var selInvoice = $('#selInvoice')
+    .html(
+        $.map(dbvalues.idInvoiceType, function(v, i){
+            return '<option value="'+ v.id +'">'+ v.name +'</option>';
+        }).join('')
+    );
+
+    $('#grmain')
+    .one('jqGridBeforeInit', function(e, grOpts){
+        var hideCols = "contractdate,doc,orderdate,meddate,insdate,sp_photo,pasp,inpass,razr,level,levelclass,trainer_name,club,sport".split(',');
+        $.each(grOpts.colModel, function(i, v){
+            if ( $.inArray(v.name, hideCols) >= 0 ) {
+                v.hidden = true;
+            }
+        });
+        
+        for (var i=0; i < 12; i++) {
+            grOpts.colModel.push({
+                name: 'saldo_' + i,
+                width: 85,
+                search: false,
+                template: numberTemplate,
+                formatter: saldoFormat,
+                cellattr: cellSaldoColor2,
+                inCard: true
+            });
+        }
+        $.extend(true, grOpts, {
+            postData: {
+                _report: 'idSportsmen_idPeriod'
+            }
+        });
+    })
+    .one('jqGridAfterInit', function(e){
+        var grid = $(this);
+        selInvoice.on('change', function(){
+            grid.trigger('reloadGrid');
+        });
+    })
+    .on('jqGridSerializeGridData', function(e, postData) {
+        postData.typeinvoice = selInvoice.val();
+    })
+    .one('jqGridLoadComplete.period', function(e, data){
+        if (data.period) {
+            var grid = $(this);
+            $.each(data.period, function(i, v){
+                grid.jqGrid('setLabel', 'saldo_'+i, v.name);
+            });
+        }
+    })
+    .trigger('sportsmenGrid');
+});
+</script>

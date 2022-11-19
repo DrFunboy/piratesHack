@@ -1,0 +1,146 @@
+<!-- Использует /hook/logs.viewer -->
+<div class="ml-auto" id="deletePanel">
+    <div class="dropdown d-inline-block">
+        <button type="button" class="btn btn-light btn-icon" data-toggle="dropdown" data-display="static" aria-haspopup="true" aria-expanded="false">
+            <i class="fa fa-trash-o"></i>
+        </button> 
+        <div class="dropdown-menu dropdown-menu-right">
+            <div class="dropdown-arrow"></div>
+            <a href="#" class="dropdown-item" data-period="1" data-all="false" data-link="{on deleteLogs}">1 мес (только эта)</a>
+            <a href="#" class="dropdown-item" data-period="3" data-all="false" data-link="{on deleteLogs}">3 мес (только эта)</a>
+            <hr>
+            <a href="#" class="dropdown-item" data-period="1" data-all="true" data-link="{on deleteLogs}">1 мес (все)</a>
+            <a href="#" class="dropdown-item" data-period="3" data-all="true" data-link="{on deleteLogs}">3 мес (все)</a>
+        </div>
+    </div>
+</div>
+
+<div class="tab-content section-block my-0" id="logCard">
+    <div id="tab_idLog" class="tab-pane active">
+    	<div class="mb-3">
+    	   <table id="grid_params"></table>
+    	</div>
+    	<pre class="mb-3" data-link="visible{:code}">
+            <code class="language-json Tomorrow" data-link="text{:code}"></code>
+        </pre>
+    </div>
+    <div id="tab_idExtid" class="tab-pane">
+        <table id="grExtid" data-entity="idExtid"></table>
+    </div>
+</div>
+
+<script>
+$("header").append( $("#deletePanel") );
+
+SCRM.link(SCRM.app, {
+    topNavTabs: [
+        {href: '#tab_idLog', html: '.log', active: true},
+        {href: '#tab_idExtid', html: 'idExtid'}
+    ]
+});
+
+SCRM.wssRes['highlight'] = [
+    'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/github.min.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js'
+];
+
+load_wss(['grid'], function(){
+    pJSON('/hook/logs.viewer', function(data) {
+        app
+        .gr_logs = $("#grid_params").jqGridInit({
+            sortname: 'key', sortorder: 'desc',
+            datatype: 'local',
+            data: data.files,
+            autowidth: true,
+            multiSort: true,
+            sortname: 'date desc, name desc',
+            //sortname: 'date', sortorder: 'desc',
+            colModel: [
+                {
+                    name:'date',
+                    label:"Дата",
+                    editable: false,
+                    template: selTemplate,
+                    searchoptions: {
+                        value: makeGridOpts(data.dates, {add_all: true}),
+                    }
+                },
+                {
+                    name:'type',
+                    label:"Тип",
+                    editable: false,
+                    template: selTemplate,
+                    searchoptions: {
+                        value: makeGridOpts(data.types, {add_all: true}),
+                    }
+                },
+                {
+                    name:'name',
+                    label:"Имя файла",
+                    editable: false
+                }
+            ],
+            searching: {
+    			loadFilterDefaults: true,
+    			multipleSearch: true,
+    			closeOnEscape: true,
+    			searchOperators: true,
+    			searchOnEnter: true
+    		},
+            onSelectRow: function(rid,rr,ee){
+                var rowData = $(this).jqGrid('getRowData', rid);
+                $.post("/hook/logs.viewer", rowData, function(data) {
+                    SCRM.loadWSS('highlight', function(e){
+                        SCRM.link(app, {code: data});
+                        hljs.highlightAll();
+                    });
+                });
+            },
+            navOpts: {add: false, edit: false, del: false},
+            fltrToolbar: true
+        });
+    });
+    
+    var app = {
+        deleteLogs: function(e,d){
+            e.preventDefault();
+            pJSON('/hook/logs.viewer', {
+                all: e.target.dataset.all,
+                period: e.target.dataset.period
+            }, function(data){
+                app.gr_logs
+                .jqGrid('clearGridData')
+                .jqGrid('setGridParam', {
+                    data: data.files
+                })
+                .trigger('reloadGrid', [{ page: 1}]);
+            });
+        }
+    };
+    $('#logCard,#deletePanel').link(true, app);
+
+    $(document)
+    .one('shown.bs.tab', 'a[href="#tab_idExtid"]', function (e) {
+        $('#grExtid')
+        .jqGridInit({
+            sortname: 'created', sortorder: 'desc',
+            colModel:[
+                {name:'id', hidden: true, template: idFieldTemplate},
+                {name:'name', index: 'wExtype.name',
+                    template: editRowLinkTemplate
+                },
+                {name:'cls', index:'wExtype.cls', width:100},
+                {name:'parent', width:100, editable: true, template:numberTemplate},
+                {name:'extid', editable: true, template:numberTemplate},
+                {name:'extoken', editable: true},
+                {name:'duedate', editable: true, template: dateTimeTemplate},
+                {name:'extended', label: 'extended', editable: true, template: infoTemplate},
+                {name:'created', hidden: false, label:'Создано', template: createdTemplate}
+            ],
+            navOpts: {add:false, edit:true, search:false}
+        })
+        .jqGrid('filterToolbar')
+        .jqGridColumns();
+    })
+});
+</script>

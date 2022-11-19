@@ -1,0 +1,373 @@
+<div id="loadPays">
+    <div class="nav nav-tabs" role="tablist">
+        <a class="nav-item nav-link active" data-toggle="tab" href="#tab_grnf">Не найдены</a>
+        <a class="nav-item nav-link" data-toggle="tab" href="#tab_idLog">Журнал</a>
+        <li class="nav-item dropdown">
+            <a class="nav-link" data-toggle="dropdown" href="#" role="button">Загрузить <span class="caret"></span></a>
+            <div class="dropdown-menu">
+                <div class="dropdown-arrow"></div>
+                <button class="dropdown-item" href="#" data-link="{on ~loadPays}">csv</button>
+                <button class="dropdown-item" href="#" data-link="{on ~loadPays}">1C</button>
+            </div>
+        </li>
+    </div>
+    
+    <div class="tab-content card card-body">
+        <div id="tab_grnf" class="tab-pane active">
+            <div data-link="visible{:nfvisible>0}" style="display:none">
+                <table id="grnf"></table>
+            </div>
+            <div class="alert alert-info" data-link="visible{:nfvisible==-1}">
+                Загрузка...
+            </div>
+            <div class="alert alert-success" data-link="visible{:nfvisible==0} {on 'dblclick' ~showSpGrid}" style="display:none">
+                Неопределенные платежи отсутствуют
+            </div>
+            <div class="mt-2" data-link="visible{:nfvisible>0||showSpGrid}" style="display:none">
+                [[$dbInner]]
+            </div>
+        </div>
+        <div id="tab_idLog" class="tab-pane">
+            <table id="grid_idLog" data-entity="idLog"></table>
+        </div>
+    </div>
+</div>
+
+<script id="tpl_idContact" type="text/x-jsrender">
+<p>Зачислить <b>{^{:addData.sum}}</b> для <b>{^{:sp_row.name}}</b>?</p>
+<div class="list-group list-group-flush list-group-bordered">
+{^{for idContact}}
+    <div class="list-group-item">
+      <div class="list-group-item-body">
+        {{:#data}}
+      </div>
+      <div class="list-group-item-figure">
+        <a href="#" class="btn btn-sm btn-icon btn-secondary"
+            data-link="{on ~syncData}"><i class="fa fa-link"></i></a>
+      </div>
+    </div>
+{{/for}}
+</div>
+</script>
+
+<script>
+var nfUrl = '/hook/nfpays';
+var loadData = {
+    nfvisible: -1
+};
+
+SCRM.loadWSS('grid', function(){
+    
+    $.link(true, '#loadPays', loadData, {
+        loadPays: function(e, data) {
+            var btn = $(e.target);
+            $('#club_fupload').remove();
+            $('<input type="file" name="club_fupload" id="club_fupload" style="display:none">')
+            .appendTo('body')
+            .on('change', function(ev) {
+                spinnr(true, btn);
+                var updata = new FormData();
+                $.each(ev.target.files, function(key, value){
+                    updata.append(key, value);
+                });
+                updata.append('mode', btn.text().toLowerCase());
+                
+                $.ajax({
+                    url: '/hook/import_bank',
+                    type: 'POST',
+                    data: updata,
+                    cache: false,
+                    dataType: 'json',
+                    processData: false, // Dont process the files
+                    contentType: false, // Set to false as jQuery will tell the server its a query string request
+                    success: function(data, textStatus, jqXHR){
+                        nfData(data);
+                    },
+                    error: failXHR,
+                    complete: function() {
+                        spinnr(false, btn);
+                    }
+                });
+            })
+            .click();
+        },
+        showSpGrid: function(e, data) {
+            e.preventDefault();
+            $.observable(loadData).setProperty('showSpGrid', true);
+        }
+    });
+    
+    
+
+    [[- grids.grnf = $("#grnf").jqGrid({
+        datatype: "local",
+        sortname: 'datepay', sortorder: 'desc',
+        search:true,
+        //multiselect: false,
+        rownumbers: true,
+        //loadonce: true,
+        autowidth:true,
+        forceClientSorting: true,
+        colModel:[
+            {name:'id', hidden: true, template: idFieldTemplate},
+            {name:'datepay', label:'Дата', hidden:false, template: dateTemplate},
+            {name:'date', hidden:true, formatter: function(c,i,r){
+                return r.datepay;
+            }},
+            //{name:'sp_name', label:'ФИО', width:200, formatter: rowSearch},
+            {name:'numpay', label:'Номер', width:70},
+            {name:'sum', label:'Сумма', template:numberTemplate},
+            {name:'info', label:'Комментарий', width:450,
+                cellattr: function (rowId, tv, rawObject, cm, rdata) { 
+                    return 'style="white-space: pre-wrap"';
+                }
+            },
+            {name:'cnt', width:40, hidden: false},
+            {name:'file', hidden:true}
+        ],
+        rowattr: function(data) {
+            if (data.cnt == 1){
+                return {'class': 'rowYes'};
+            } else if (data.cnt>1) {
+                return {'class': 'rowWarn'};    
+            }
+        },
+        onSelectRow: function(rid,rr,ee){
+            window.nfID = rid;
+            syncData.nf_row = $(this).jqGrid('getRowData', rid);
+        }                        
+    })
+    .jqGrid('navGrid', {add:false, edit:false, del:false, search:false})
+    .jqGrid('filterToolbar')
+    .jqGridColumns();
+    
+    function rowApply(cellvalue, options, rowObject) {
+        return '<a href="#" class="rowApply dashed" data-id="'+ rowObject.id +'"><i class="fa fa-check-square"></i> '+ cellvalue+'</a>';
+    }]]
+    
+    grids.grnf = $('#grnf')
+    .jqGridInit({
+        //url: nfUrl,
+        datatype: 'local',
+        sortname: 'datepay', sortorder: 'desc',
+        search:true,
+        //multiselect: false,
+        rownumbers: true,
+        loadonce: true,
+        autowidth:true,
+        forceClientSorting: true,
+        colModel:[
+            {name:'id', hidden:true, template: idFieldTemplate},
+            {name:'datepay', label:'Дата', hidden:false, template: dateTimeTemplate},
+            {name:'date', hidden:true, formatter: function(c,i,r){
+                return r.datepay;
+            }},
+            {name:'numpay', label:'Номер', width:70},
+            {name:'sum', label:'Сумма', template: numberTemplate},
+            {name:'name', label:'ФИО', width:200,
+                formatter: rowSearch,
+                unformat: unformatSearch
+            },
+            {name:'contract', label:'Договор', width:70,
+                formatter: rowSearch,
+                unformat: unformatSearch
+            },
+            {name:'info', label:'Инфо', width:400, template: infoTemplate},
+            {name:'error', label:'Ошибка', width:120,
+                formatter: function(cv, r, data) {
+                    var found = $.map(data.cnt||[], function(v, i){
+                        return '<a href="#" class="badge badge-primary ml-1" data-sportsmen="'+ v +'">'+ (i+1) +'</a>';
+                    });
+                    return 'Нашел: '+ (found.length? found.join('') : ' 0');
+                }
+            },
+            {name:'email', width:150, hidden: true},
+            {name:'code1c', hidden: true}, //, key:true
+            {name:'sp_code1c', width:200, hidden: false,
+                formatter: rowSearch,
+                unformat: unformatSearch
+            },
+            {name:'file', hidden:true}
+        ],
+        onSelectRow: function(rid,rr,ee){
+            window.nfRow = $(this).jqGrid('getRowData', rid);
+            //console.log(nfRow);
+        },
+        navOpts: {add:false, edit:false, del:false, search:false},
+        fltrToolbar: true
+    })
+    .jqGridColumns();
+    
+    function nfData(data){
+        var nfvisible = data.rows.length;
+        SCRM.link(loadData, 'nfvisible', nfvisible);
+        if (nfvisible>0) {
+            grids.grnf
+            .jqGrid('clearGridData')
+            .jqGrid('setGridParam', {
+                data: data.rows
+            })
+            .trigger('reloadGrid', [{ page: 1}]);
+        }
+    }
+    
+    function loadNfData(){
+        pJSON(nfUrl, {}, nfData);
+    }
+    
+    loadNfData();
+    
+    function rowSearch(cellvalue, options, rowObject) {
+        return (cellvalue)?
+            '<a href="#" class="rowSearch dashed" data-field="'+ options.colModel.name +'"><i class="fa fa-search"></i> '+ cellvalue+'</a>'
+            : '';
+    }
+    
+    function unformatSearch(cv, options, cell) {
+        return $.trim( $(cell).text() );
+    }
+    
+    function rowApply(cellvalue, options, rowObject) {
+        return '<a href="#" class="rowApply dashed" data-id="'+ rowObject.id +'"><i class="fa fa-check-square"></i> '+ cellvalue+'</a>';
+    }
+    
+    var gr_sp = $('#grmain')
+    .data('start_status', '*')
+    .one('jqGridBeforeInit', function(e, grOpts){
+        var hideCols = "doc,orderdate,meddate,insdate,file_photo,pasp,inpass,razr,trainer,club,sport".split(',');
+        $.each(grOpts.colModel, function(i, fld){
+            if (fld.name == 'name') {
+                $.extend(fld, {
+                    formatter: rowApply,
+                    unformat: unformatSearch
+                });
+            }
+            if ($.inArray(fld.name, hideCols) > -1) {
+                fld.hidden = true;
+            }
+        });
+        grOpts.colModel.push({
+            name: 'code1c', width:250, editable:true
+        });
+    })
+    .trigger('sportsmenGrid');
+	
+	$(document)
+	.on('click', '.rowSearch', function(e) {
+        e.preventDefault();
+        var lnk = $(this),
+            field = lnk.data('field'),
+            nid = lnk.closest('tr').attr('id');
+        if (field == 'sp_code1c') field = 'code1c';
+        grids.grnf.jqGrid('setSelection', nid);
+        gr_sp.setGridFilter(field, $.trim(lnk.text()), 'cn').trigger('reloadGrid');
+    })
+    .on('click', '.rowApply', function(e) {
+        e.preventDefault();
+        var lnk = $(this),
+            sportsmen_id = lnk.data('id'),
+            spRow = gr_sp.jqGrid('getRowData', sportsmen_id);
+        if (!window.nfRow) {
+            SCRM.alert('Не выбран платеж');
+        } else {
+            //console.log(nfRow, lnk.data('id'));
+            if (window.nfRow && spRow) {
+                var addData = {
+                    oper: 'add',
+                    sum: nfRow.sum,
+                    datepay: nfRow.date,
+                    numpay: nfRow.numpay,
+                    info: nfRow.info,
+                    sportsmen: sportsmen_id
+                };
+                if (nfRow.code1c) {
+                    addData.code1c = nfRow.code1c;
+                    rocnfrm('Зачислить '+ addData.sum +' для '+ spRow.name +'?',
+                    function() {
+                        var edData = {
+                            oper: 'edit',
+                            code1c: nfRow.sp_code1c,
+                            id: sportsmen_id
+                        };
+                        pEDIT('idSportsmen', edData, function(adata) {
+                            //
+                        });
+                        pEDIT('idPay', addData, function(adata) {
+                            pJSON(nfUrl, {
+                                file: nfRow.file
+                            }, function(file_data){
+                                grids.grnf.jqGrid('delRowData', nfRow.id); //Должны быть отдельно
+                                grids.grnf.trigger('reloadGrid');
+                                $(document).trigger('clubUpdateSpData', edData); // Обновить (используя id) платежи или начисления и показать что данные в таблице обн.
+                                //gr_sp.trigger('reloadGrid');
+                            });
+                        });
+                    });
+                } else {
+
+                    /* Нет кода 1С */
+                    var dontAdd = { };
+                    var syncData = {
+                        sp_row: spRow,
+                        body: '#tpl_idContact',
+                        addData: addData
+                    };
+                    
+                    syncData.idContact = unique_ar(
+                        $.map(nfRow.info.split(/[;\/\n]+/), function(v,i){
+                            var txt = $.trim(v);
+                            if (txt) return txt.toUpperCase();
+                        })
+                    );
+
+                    club_Modal(syncData, {
+                        syncData: function(e, data) {
+                            e.preventDefault();
+                            var name = data.linkCtx.data;
+                            pEDIT('idPay', addData, function(adata){
+                                if (name in dontAdd === false) {
+                                    pEDIT('idContact', {
+                                        oper: 'add',
+                                        sportsmen: spRow.id,
+                                        name: name
+                                    });
+                                }
+                                grids.grnf.jqGrid('delRowData', nfRow.id); //Должны быть отдельно
+                                grids.grnf.trigger('reloadGrid');
+                                
+                                $(document).trigger('clubUpdateSpData', spRow);
+                                syncData.mdl_hide();
+                            });
+                        }
+                    });
+                    
+                    pDATA('idContact', {
+                        _where: {sportsmen: spRow.id}
+                    }, function(data){
+                        $.each(data.rows, function(i, v){
+                            dontAdd[v.name.toUpperCase()] = 1;
+                        });
+                    });
+                }
+            }
+        }
+    });
+    
+    /* idLog */
+
+    grids.idLog = $("#grid_idLog").jqGridInit({
+        sortname: 'created', sortorder: 'desc',
+        colModel:[
+            {name:'id', hidden: true, template: idFieldTemplate},
+            {name:'created',  template: dateTimeTemplate,
+                formatter: fmtCreated,
+                _tbl: 'idLog'
+            },
+            {name:'name', width:100},
+            {name:'extended', width:500}
+        ],
+        navOpts: {add:false, edit:true, del: false}
+    })
+    .jqGridColumns();
+});
+</script>

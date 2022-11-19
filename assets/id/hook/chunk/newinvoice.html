@@ -1,0 +1,127 @@
+<script>
+$.extend(SCRM.dbValues, [[!dbvalues?mode=`idInvoiceType`]]);
+
+SCRM._service[ '[[+rq]]' ] = function(invData) {
+    var rows = [];
+    if (invData.paymode) {
+        rows.push({price: '', name: '-- Аванс --'});
+    }
+    
+    $.extend(true, invData, {
+        idInvoiceType: $.merge(rows, SCRM.dbValues.idInvoiceType),
+        invType: '0', paym: [],
+        post: {
+            oper: 'add'
+        },
+        body: '#tpl_newInvoice',
+        mdl_footer: '#tpl_copyPayLnk',
+        onOK: function(e, md) {
+            SCRM.link(md, {loading: true});
+            var table = 'idPay';
+            if (invData.post.typeinvoice) {
+                table = 'idInvoice';
+                invData.post.addpay = (invData.payd && invData.post.sum>0)? 1 : 0;
+            }
+            //console.log(table, invData.post)
+            pEDIT(table, invData.post, function() {
+                md.mdl.trigger('clubUpdateSpData', {id: invData.post.sportsmen});
+                md.mdl_hide();
+            });
+            //return false;
+        }
+    }, invData.modal);
+
+    club_Modal(invData, {
+        copyPayLink: function(e, data) {
+            console.log(e, data);
+            var d = data.linkCtx.data;
+            var txt = '[[++site_url]]pay/' +invData.key+ '/' +d.id+ '?total='+invData.post.sum;
+            var input = $('<input />').insertAfter(e.target).val(txt).focus().select();
+            document.execCommand('copy');
+            input.remove();
+            SCRM.success('<a href="'+txt+'" target="_blank" class="d-block mb-2">Ссылка на оплату</a> скопирована');
+        }
+    });
+    
+    function setInvType() {
+        var invoiceType = invData.idInvoiceType[invData.invType*1];
+        SCRM.link(invData.post, {
+            sum: invoiceType.price,
+            typeinvoice: invoiceType.id
+        });
+        //console.log('setInvType', invData)
+    }
+    setInvType();
+
+    $.observe(invData, 'invType', setInvType);
+    
+    $('.datefield', invData.mdl)
+    .on('onChangeDateEdit', function(e, data) {
+        $.extend(invData.post, {
+            datepay: data.dateStr,
+            dateinvoice: data.dateStr
+        });
+    })
+    .initDateEdit({
+        defaultDate: 'today'
+    });
+
+    if (invData.key) {
+        pJSON('/data/sportsmen', {
+            key: invData.key
+        }, function(data) {
+            //console.log('/data/sportsmen', data);
+            SCRM.link(invData, {
+                paym: data.idPayMethod,
+                'post.sportsmen': data.id
+            });
+            if (data.saldo < 0 && invData.paymode) {
+                SCRM.link(invData.idInvoiceType).insert(0, {price: Math.abs(data.saldo), name: 'Задолженность ' + data.saldo});
+                setInvType();
+            }
+            console.log('invData', invData);
+        });
+    }
+
+    return invData.mdl;
+}
+</script>
+
+<script id="tpl_newInvoice" type="text/x-jsrender">
+    <div class="form-group">
+        <select class="form-control" data-link="invType">
+        {^{for idInvoiceType}}
+            <option data-link="value{:#index} {:name}"></option>
+        {{/for}}
+        </select>
+    </div>
+    <div class="form-group"><div class="input-group">
+        <label class="input-group-prepend" for="ni_date"><span class="input-group-text"><i class="fa fa-calendar"></i></span></label>
+        <input type="text" class="form-control datefield" id="ni_date">
+    </div></div>
+    <div class="form-group">
+        <div class="input-group">
+            <label class="input-group-prepend" for="ni_sum"><span class="input-group-text"><i class="fa fa-money"></i></span></label>
+            <input type="text" class="form-control clubmodal-focus" id="ni_sum" placeholder="0.00" data-link="post^sum">
+        </div>
+        <label data-link="visible{:post^typeinvoice}">
+            <input type="checkbox" data-link="payd"> Оплачено
+        </label>
+    </div>
+
+    <div class="form-group m-0">
+        <textarea rows="2" class="form-control" data-link="post^info" placeholder="Комментарий"></textarea>
+    </div>
+</script>
+
+<script id="tpl_copyPayLnk" type="text/x-jsrender">
+<div class="dropup" data-link="visible{:paym^length}">
+    <button data-toggle="dropdown" class="btn btn-secondary"><i class="fa fa-link"></i></button>
+    <div class="dropdown-menu">
+        <div class="dropdown-arrow"></div>
+        {^{for paym}}
+        <a href="#" class="dropdown-item prevent-default" data-link="{on ~copyPayLink} {:name}"></a>
+        {{/for}}
+    </div>
+</div>
+</script>

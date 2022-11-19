@@ -1,0 +1,33 @@
+<script>
+console.log('[[+rq]]')
+SCRM._service['/chunk/about'] = function(param) {
+    var mdl = {
+        mdl_id: 'AboutSCRM',
+        title: 'Система управления спортивными клубами',
+        body: '#hlp_about',
+        ugroups: SCRM.app.ugroups.join(','),
+        mxq: $('body').data('mxq')
+    };
+    club_Modal(mdl);
+}
+
+/* Замена логотипа и подписи в окне About
+$(document)
+.on('show.bs.modal', '#cmAboutSCRM',function(e) {
+    var mdl = $(e.target);
+    $('.modal-title', mdl).text('[[++site_fullname]]');
+    $('.scrm-about', mdl).html('<img class="mx-auto d-block img-fluid" src="[[++club_logo]]" />');
+});
+*/
+</script>
+
+<script id="hlp_about" type="text/x-jsrender">
+    <p class="mb-4 text-center scrm-about">
+    <a href="https://sportcrm.club?utm_source=about-logo" target="_blank">
+    <img class="mx-auto d-block img-fluid" src="[[++crm_url]]images/sportcrm_logo.png" alt="SportCRM">
+        https://sportcrm.club</a></p>
+    
+    <p class="small text-muted">vers: {{:~S.vers}}, q: {{:mxq}}, city: {{:~S.app.club_city}}, club_id: {{:~S.app.club_id}}</p>
+    <p class="small text-muted">{{:ugroups}}</p>
+    [[-!#SESSION.club_debug]]
+</script>

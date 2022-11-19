@@ -1,0 +1,35 @@
+<div class="section-block my-0">
+[[$dbInner?actions=`1`]]
+</div>
+
+<script>
+var sportsmen_trainer = null;
+$('#grmain')
+.on('jqGridSerializeGridData', function(e, postData) {
+    key2obj(postData, '_where', {}).trainer = 'me';
+})
+.one('jqGridBeforeInit', function(e, grOpts){
+    grOpts.colModel.push({
+        name: 'sp_photo', label: 'Фото',
+        width: 30, editable: false,
+        search: false,
+        align: 'center',
+        formatter: hasPhoto
+    });
+})
+.one('jqGridAfterInit', function(e){
+    $(this).jqGridExport();
+})
+.one('jqGridAfterLoadComplete', function(e, data){
+    if (data.sportsmen_trainer) sportsmen_trainer = data.sportsmen_trainer;
+})
+.on('jqGridAddEditInitializeForm', function(e, form, oper){
+    if (oper=='add' && sportsmen_trainer) $('#trainer', form).val(sportsmen_trainer);
+})
+.trigger('sportsmenGrid', {
+    showDuedate: true,
+    multiselect: true,
+    sortname: 'saldo asc, name asc',
+    postData: { tableadd: 'idPhoto' }
+});
+</script>

@@ -1,0 +1,12 @@
+<script>
+var Lstatus = [[!clubStatus?tbl=`idLesson` &keyfield=`alias`]],
+fmtLstatus = function(status) {
+    return makeIco( (status)? Lstatus[status].ico : false, {
+        //add: ' data-toggle="tooltip" title="'+ Lstatus[status].name +'"',
+        big: 1
+    });
+};
+$.views.converters({
+    fmtLstatus: fmtLstatus
+});
+</script>

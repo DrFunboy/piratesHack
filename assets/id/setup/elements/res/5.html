@@ -1,0 +1,205 @@
+<div class="card" id="importData">
+    <nav class="nav-scroller card-header">
+        <div class="nav nav-tabs card-header-tabs" role="tablist">
+            <a class="nav-item nav-link active" data-toggle="tab" href="#tdata">Данные</a>
+            <a class="nav-item nav-link" data-toggle="tab" href="#timport" data-link="visible{:rows}" style="display:none">Импорт</a>
+        </div>
+    </nav>
+
+    <div class="tab-content">
+        <div id="tdata" class="tab-pane card-body active">
+            <div class="form-group">
+                <textarea name="text" id="text" class="form-control" rows="12" data-link="imText"></textarea>
+                <small class="form-text text-muted">Скопируйте из excel, word или аналогичных редакторов и вставьте данные в это поле. Каждая запись на отдельной строке, разделители - 
+                    <span class="badge badge-secondary">Tab</span>
+                </small>
+            </div>
+            <div class="form-group d-none">
+                <label for="att">Приложить файл (В разработке)</label>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="att" name="att" disabled>
+                    <label class="custom-file-label" for="tf3">Выбрать</label>
+                </div>
+            </div>
+            <div class="form-group" data-link="{include ~link=imTable ~rows=imTables tmpl='#tpl_Select'}"></div>
+            <button type="button" class="btn btn-primary btn-sm" data-link="disabled{:!imText} {on ~prepareImport}">Далее &raquo;</button>
+        </div>
+        <div id="timport" class="tab-pane">
+            <div class="alert alert-success border-0 d-flex" id="importOpts" data-link="{include tmpl='#tpl_addFiels'}">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm" data-link="{if cols tmpl='#tpl_iTable'}"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="tpl_addFiels" type="text/x-jsrender">
+{^{props addF itemVar="~tbl" ~dbv=dbValues ~addF=addF}}
+    <select class="custom-select custom-select-sm mr-2"
+        data-link="id{:'sel_'+key} {:prop.value:} visible{:prop^visible}">
+        <option value="">-- {{:prop.name}} --</option>
+        {^{for ~dbv[key] tmpl="#tpl_selectOption" /}}
+    </select>
+{{/props}}
+<button type="button" class="btn btn-primary btn-sm" data-link="{on ~goImport}">Импорт</button>
+</script>
+
+<script id="tpl_iTable" type="text/x-jsrender">
+    <thead>
+        <tr>
+        {^{for cols ~flds=tableFields}}
+        <td>
+            <select data-link="value">
+                <option value="">-</option>
+                {^{for ~flds}}
+                <option value="{{:id}}">{{:name}}</option>
+                {{/for}}
+            </select>
+        </td>
+        {{/for}}
+        </tr>
+    </thead>
+    <tbody>
+    {^{for rows itemVar='~r' ~cols=cols}}
+        <tr>
+        {^{for ~cols}}
+        <td>{{:~r[#index]}}</td>
+        {{/for}}
+        </tr>
+    {{/for}}
+    </tbody>
+</script>
+
+<script id="tpl_optTrainer" type="text/x-jsrender">
+    <select data-field="trainer" class="custom-select custom-select-sm">
+        <option value="">-- Тренер --</option>
+        {^{for dbValues^idTrainer}}
+            <option value="{{:id}}">{{:name}}</option>
+        {{/for}}
+    </select>
+</script>
+
+<script>
+var imData = {
+    fields: {
+        gender: 'Пол',
+        name: 'Ф.И.О.',
+        birth: 'Дата рождения',
+        contract: 'Договор',
+        doc: 'Документ',
+        email: 'E-mail',
+        tel: 'Телефон',
+        contract: 'Договор',
+        contact: 'Контакт (ФИО)',
+        price: 'Тариф',
+        info: 'Заметки',
+        id: 'xx',
+        key: 'xx',
+        status: 'xx',
+        author: 'xx',
+        iduser: 'xx',
+        saldo: 'xx',
+        sportsmen: 'xx',
+        city: 'xx',
+        published: 'xx',
+        uid: 'xx'
+    },
+    tableFields: [ ],
+    cols: [ ],
+    imTable : 'idSportsmen',
+    imTables : [
+        {id: 'idSportsmen', name: 'Спортсмен'},
+        {id: 'idLead', name: 'Кандидат'},
+        {id: 'idTrainer', name: 'Тренер'}
+        //{id: 'idClub', name: 'Зал'}
+    ],
+    addFields: {
+        idSportsmen: ['idTrainer','idSquad'],
+        idLead: ['idTrainer','idSquad','idClub','idSport'],
+        idTrainer: ['idSport']
+    },
+    addF: {
+        idTrainer: {name: 'Тренер', field: 'trainer'},
+        idSquad: {name: 'Группа', field: 'squad'},
+        idClub: {name: 'Зал', field: 'club'},
+        idSport: {name: 'Дисциплина', field: 'sport'}
+    }
+};
+
+$(function(){
+    $.link(true, '#importData', imData, {
+        prepareImport: function(){
+            $('a[href="#timport"]').tab('show');
+            var nd = {
+                rows: $.map(imData.imText.split('\n'), function(r, i){
+                    return [ r.split('\t') ];
+                })
+            };
+            $.each(imData.addF, function(k, v){
+                nd['addF.'+k+'.visible'] = $.inArray(k, imData.addFields[imData.imTable]) != -1;
+            });
+            SCRM.link(imData, nd);
+
+            pDATA(imData.imTable, {_where: {id: 'xx'}}, function(data){
+                var tableFields = $.map(data.fields, function(v, key){
+                    var fname = imData.fields[key] || key;
+                    if (fname=='xx') return null;
+                    return {id: key, name: fname};
+                });
+                SCRM.link(imData, {
+                    tableFields: tableFields,
+                    cols: $.map(nd.rows[0], function(v, i) {
+                        return {value: (imData.cols[i])? imData.cols[i].value : ''};
+                    })
+                });
+                if (!imData.dbValues) pJSON(dbvaluesUrl, {mode:'idTrainer,idClub,idSport', city:'my', lesdata:1}, function(data){
+                    data.idSquad = [];
+                    SCRM.link(imData, {dbValues: data});
+                    SCRM._run('/chunk/squadlist', {
+                        idSquad0: '-- Группа --',
+                        callback: function(html){
+                            $('#sel_idSquad').html(html);
+                        }
+                    });
+                });
+            });
+        },
+        goImport: function(){
+            var ifields = { };
+            $.each(imData.cols, function(i, v){
+                if (v.value) key2obj(ifields, v.value).push(i);
+            });
+            if ($.isEmptyObject(ifields)) {
+                SCRM.alert('Не выбраны поля для импорта');
+                return false;
+            }
+
+            var addData = {
+                oper: 'add'
+            };
+            $.each(imData.addF, function(k, v){
+                if (v.visible && v.value) addData[ v.field ] = v.value;
+            });
+            function doImport() {
+                if (imData.rows.length == 0) return false;
+    
+                var row = imData.rows[0];
+                var iData = {};
+                $.each(ifields, function(k, v){
+                    iData[k] = $.map(v, function(idx, n) {
+                        return $.trim(row[idx]);
+                    }).join(' ');
+                    if (k=='birth' && iData[k].length <= 4 ) iData[k] += '-01-01';
+                });
+                //console.log($.extend(iData, addData))
+                pEDIT(imData.imTable, $.extend(iData, addData), function(d){
+                    $.observable(imData.rows).remove(0);
+                    doImport();
+                });
+            }
+            doImport();
+        }
+    });
+});
+</script>

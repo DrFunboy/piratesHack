@@ -1,0 +1,112 @@
+<!-- [[-Profile? &prefix=`usr.`]] -->
+<script>
+SCRM._service[ '[[+rq]]' ] = function(data) {
+    key2obj(SCRM.app, 'user', {});
+    var usr = {
+        name: SCRM.app.user.fullname, // '[[-+usr.fullname]]',
+        email: SCRM.app.user.email, //'[[-+usr.email]]',
+        tel: SCRM.app.user.mobilephone// '[[-+usr.mobilephone]]'
+    };
+    var mdl = {
+        title: 'Написать в Администрацию',
+        body: '#hlp_adm',
+        cm_size: 'lg',
+        post: usr,
+        new_msg: function(e) {
+            e.preventDefault();
+            
+            SCRM.link(mdl, {loading: true});
+            var formData = new FormData(e.target);
+            $.each(mdl.post, function(key, value){
+                formData.append(key, value);
+            });
+
+            $.ajax({
+                url: '/hook/msg.adm',
+                type: 'POST',
+                //dataType: 'json',
+                data: formData,
+                cache: false,
+                processData: false,
+                contentType: false // Set to false as jQuery will tell the server its a query string request
+            })
+            .done(function(data){
+                SCRM.link(mdl, {
+                    ok: true
+                });
+            })
+            .always(function(data){
+                SCRM.link(mdl, {loading: false});
+            })
+            .fail(failXHR);
+        }
+    };
+    
+    club_Drawer(mdl);
+    $('.custom-file > .custom-file-label', mdl.mdl).each(function () {
+        $(this).data('label', $(this).text())
+    });
+};
+
+// update label text with current input value
+$(document).on('change', '.custom-file > .custom-file-input', function () {
+    const files = this.files
+    const $fileLabel = $(this).next('.custom-file-label')
+    // use when no file chosen
+    const $originLabel = $fileLabel.data('label')
+    
+    // truncate text when user chose more than 2 files
+    $fileLabel.text(files.length + ' files selected')
+    
+    if (files.length <= 2) {
+        let fileNames = []
+        for (let i = 0; i < files.length; i++) {
+            fileNames.push(files[i].name);
+        }
+        $fileLabel.text(fileNames.join(', '));
+    }
+    
+    // reset label text if no file chosen
+    if (!files.length) {
+        $fileLabel.text($originLabel);
+    }
+});
+
+</script>
+
+<script id="hlp_adm" type="text/x-jsrender">
+<form action="" method="post" role="form" enctype="multipart/form-data"
+    data-link="{on 'submit' new_msg} visible{:!ok}">
+<fieldset>
+    [[-<input type="hidden" name="name" value="[[+usr.fullname]] | [[+usr.mobilephone]]" />
+    <input type="hidden" name="email" value="[[+usr.email]]" />]]
+    <div class="form-group">
+        <label>От кого</label>
+        <a href="/login/profile.html" target="_blank" class="d-block">
+            {{:post.name}} | {{:post.email}} | {{:post.tel}}
+        </a>
+    </div>
+    
+    <div class="form-group">
+        <label for="sd_info" class="control-label">Текст сообщения <abbr>*</abbr></label>
+        <textarea class="form-control" rows="4" id="sd_info" name="info"
+            data-link="info"></textarea>
+    </div>
+
+    <div class="form-group">
+        <div class="custom-file">
+            <input type="file" class="custom-file-input" id="sd_file" name="file[]" multiple="multiple">
+            <label class="custom-file-label" for="sd_file">Приложить файлы</label>
+        </div>
+    </div>
+    <button type="submit" value="" class="btn btn-sm btn-primary"
+        data-link="disabled{:!info||loading}">
+        Отправить заявку
+        <span class="spinner-border spinner-border-sm" role="status" data-link="visible{:loading}"></span>
+    </button>
+</fieldset>
+</form>
+<div class="alert alert-success mt-2 mb-0" role="alert"
+    data-link="visible{:ok}">Ваше сообщение отправлено. Специалист ответит в ближайшее время.<br>Копия сообщения отправлена на ваш e-mail.</div>
+</script>
+

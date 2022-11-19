@@ -1,0 +1,523 @@
+[[-<link rel="stylesheet" type="text/css" href="/assets/table/table.css">]]
+
+<script>
+$.fn.clubSchedule = function (start_params) {
+  var clubSchedule = this;
+
+  var schData = $.extend({
+    params: {
+        url: '/hook/schedule.data/',
+        f: {}
+    },
+    postData: {
+        mode: clubSchedule.data('mode'),
+        key: function() {
+            return schData.key || clubSchedule.data('key');
+        },
+        cnt_squad: clubSchedule.data('cnt_squad')
+    },
+    fltr_names: {
+      idStype: {
+        name: 'Тип',
+        fields: {
+            stype:'stype_name'
+        }
+      },
+      idSport: {
+        name: 'Дисциплина',
+        fields: {
+            sport:'sportname'
+        }
+      },
+      idClub:{
+        name: 'Зал',
+        fields: {
+            club:'clubname'
+        }
+      } ,
+      idTrainer: {
+        name: 'Тренер',
+        fields: {
+            trainer:'trainername',
+            trainer2:'trainername2'
+        }
+      },
+      idSquad: {
+        name: 'Группа',
+        fields: {
+            squad: 'squadname',
+        },
+        tpl: '#tpl_ScheduleFltrSquad',
+        buildFunc: function(schl, nd) {
+            if (schl.squadclubname) {
+                // Для фильтров - если больше одной группы
+                var fltrsSquad = key2obj(nd, 'fltr_names.idSquad.rows', { })[schl.squad] = schl.squad;
+                
+                var fltrsSquadClub = key2obj(nd, 'fltr_names.idSquad.squadClub', { });
+                var idSquadClub = key2obj(fltrsSquadClub, schl.squadclub, {
+                    name: schl.squadclubname,
+                    idSquad: { }
+                });
+                key2obj(idSquadClub.idSquad, schl.squad, schl);
+            }
+        }
+      }
+    },
+    buildSchData: function(rows, nd) {
+        nd = $.extend({times: {}, dates: {}, cnt: 0}, nd);
+        //console.log('nd', nd)
+        $.each(rows, function(i, schl) {
+            for (var fltr in schData.fltr_names) {
+                var frow = schData.fltr_names[fltr];
+                if (frow.value) {
+                    var in_filter = false;
+                    if (frow.fltrFunc) {
+                        in_filter = frow.fltrFunc(frow, schl);
+                    } else for (var fld_name in frow.fields) {
+                        if (frow.value === schl[fld_name]) in_filter = true; //goto each
+                    }
+                    if (!in_filter) return true;
+                }
+            }
+            var ts = schl.d_s.split(':')[0];
+            var time = key2obj(nd.times, ts, {});
+            key2obj(time, schl.d_w).push(schl);
+            key2obj(nd.dates, schl.d_w, {});
+            nd.cnt++;
+        });
+        $.each((nd.serverData || schData.serverData).dates, function(i, d) {
+            // Имена дней
+            if (d.day in nd.dates) nd.dates[d.day] = d;
+        });
+        console.log('nd', nd);
+        SCRM.link(schData, nd);
+        
+        clubSchedule.trigger('clubSchedule.onbuild', schData);
+    }
+  }, start_params);
+
+  clubSchedule
+  .addClass('club-schedule')
+  .on('click', '.btn-custom-arrow', function(e){
+      schData.postData.weekstart = schData.serverData[ $(this).data('nav') ]
+      clubSchedule.trigger('clubSchedule.reload');
+  })
+  .data('schData', schData)
+  .on('clubSchedule.reload', function(event, reload_params) {
+    $.extend(true, schData, reload_params);
+    $.observable(schData).setProperty('loading', true);
+
+    pJSON(schData.params.url, schData.postData, function(data){
+      var nd = {
+        loading: false,
+        weekname: data.weekname, //getWeekName(data),
+        serverData: data,
+        updated: new Date()
+      };
+      $.each(data.idSchedule, function(i, schl){
+        $.each(schData.fltr_names, function(k, frow) {
+            if (frow.buildFunc) {
+                frow.buildFunc(schl, nd);
+            } else $.each(frow.fields || {}, function(f_key, fname) {
+                // если обозначены поля, то будут обновлены справочники
+                var name = schl[fname];
+                if (name) {
+                    var fltr = key2obj(nd, 'fltr_names.'+k+'.rows', {});
+                    key2obj(fltr, schl[f_key], {
+                        name: name
+                    });
+                }
+            });
+        });
+      });
+      // TODO: Проверить текущие фильтры и если их нет в новых данных - сбросить в пустую строку
+      schData.buildSchData(data.idSchedule, nd);
+      clubSchedule.trigger('clubSchedule.onload', schData);
+    });
+  });
+
+    $.observe(schData.fltr_names, '**', function(e, data){
+        if (data.path=='value') {
+          schData.buildSchData(schData.serverData.idSchedule);
+        }
+    });
+
+    $.templates('#tpl_ScheduleWrapper')
+    .link(clubSchedule, schData, {
+        showFilter: function(fltr) {
+            var fltr_names = {};
+            if (fltr) $.each(schData.fltr_names, function(i, v){
+                if (SCRM.countProps(v.rows||{}) > 1) fltr_names[i] = v;
+            });
+            return fltr_names;
+        }
+    });
+
+    $.views.converters({
+      [[-daynameslice: function(date) {
+        date = date.replace( /[ауеоя]/ig, '' );
+        return date.slice(0, 2);
+      },
+      dateslice: function(date) {
+        var a = date.split("-");
+        if( a.length < 2) return date[0];
+        return [ a[2], a[1] ].join(".");
+      },]]
+      fioslice: function(fio) {
+        var a = fio.split(' ');
+        a[1] = (a[1])? a[1].slice(0,1)+'.':'';
+        a[2] = (a[2])? a[2].slice(0,1)+'.':'';
+        return [ a[0], a[1]+a[2] ].join(' ');
+      },
+      fioslicerev: function(fio) {
+        var a = fio.split(' ');
+        return [ a[1]||'', a[2]||'', a[0] ].join(' ');
+      }
+    });
+
+    return clubSchedule.trigger('clubSchedule.reload');
+};
+</script>
+
+<script id="tpl_ScheduleWrapper" type="text/x-jsrender">
+<div class="top-block-schedule">
+    <div data-link="{include tmpl='#tpl_ScheduleDates'}" class="dates-schedule mb-2"></div>
+    <div data-link="{include tmpl='#tpl_ScheduleFltrs'}" class="row fltr-schedule hidden-print"></div>
+</div>
+<div class="alert alert-warning" data-link="visible{:cnt==0}">Нет данных</div>
+<div class="table-responsive" data-link="visible{:cnt>0}">
+<table class="tbl-schedule table table-condensed table-hover m-0 w-auto">
+    <thead>
+    <tr>
+    <td></td>
+    {^{props dates sort="prop.date"}}
+        <td>
+        <div class="day-head">{{:prop.datefmt}}
+            [[-<b>{{daynameslice:prop.dayname}}</b>,
+            {{dateslice:prop.date}}]]
+        </div>
+        </td>
+    {{/props}}
+    </tr>
+    </thead>
+    <tbody data-link="{props times sort='key' ~dates=dates ~srvData=serverData tmpl='#tpl_ScheduleRow'}"></tbody>
+</table>
+</div>
+</script>
+
+<script id="tpl_ScheduleRow" type="text/x-jsrender">
+<tr>
+    <td>{{>key}}:00</td>
+    {{props ~dates sort="prop.date" ~data_time=prop}}
+    <td class="days-td"
+        data-link="{for ~data_time[prop.day] tmpl='#tpl_ScheduleItem'}"></td>
+    {{/props}}
+</tr>
+</script>
+
+<script id="tpl_ScheduleDates" type="text/x-jsrender">
+<button class="btn btn-outline-primary btn-sm btn-custom-arrow" data-nav="weekthis"
+    data-link="disabled{:loading} {on ~navClick}">
+    <i class="fa fa-step-forward"></i>
+</button>
+<button class="btn btn-outline-primary btn-sm btn-custom-arrow" data-nav="weekprev"
+    data-link="disabled{:loading} {on ~navClick}">
+    <i class="fa fa-chevron-left"></i>
+</button>
+<button class="btn btn-outline-primary btn-sm btn-custom-arrow" data-nav="weeknext"
+    data-link="disabled{:loading} {on ~navClick}">
+    <i class="fa fa-chevron-right"></i>
+</button>
+<b class="weekname">{^{:(loading)? 'Loading...':weekname}}</b>
+</script>
+
+<script id="tpl_ScheduleFltrs" type="text/x-jsrender">
+{^{props ~showFilter(updated) }} [[-fltrs,weekname)]]
+    <div class="col-6 col-lg-auto">
+    <select data-link="prop.value" class="custom-select">
+        <option value="">-- {{:prop.name}} --</option>
+        {{if prop.tpl tmpl=prop.tpl }}
+        {{else}}
+            {^{props prop.rows sort="prop.name"}}
+            <option value="{{:key}}">{{:prop.name}}</option>
+            {{/props}}
+        {{/if}}
+    </select>
+    </div>
+{{/props}}
+</script>
+
+<script id="tpl_ScheduleFltrSquad" type="text/x-jsrender">
+{^{props prop.squadClub sort="prop.name"}}
+    <optgroup label="{{:prop.name}}">
+        {{props prop.idSquad sort="prop.squadname"}}
+        <option value="{{:key}}">{{:prop.squadname}} ({{:prop.ssportname}})</option>
+        {{/props}}
+    </optgroup>
+{{/props}}
+</script>
+
+<script id="tpl_ScheduleItem" type="text/x-jsrender">
+<div class="sch-item" data-id="{{:id}}" data-parent="{{:parent}}" data-planfact="{{:planfact}}">
+    <div class="sch-header">
+        <span class="sch-time">
+            {{:d_s}} - {{:d_e}}
+            <i class="fa fa-check-circle-o text-muted" data-link="visible{:planfact==1} title{formatDateTime:datestart}" data-toggle="tooltip"></i>
+        </span>
+        <span class="badge badge-subtle badge-primary" data-toggle="tooltip"
+            data-link="title{:sportname} css-background-color{:sportcolor}">{{:ssportname}}</span>
+    </div>
+    <div class="sch-body">
+      [[-<div class="sch-sportname">{{:sportname}}</div>]]
+      <div class="sch-trainer">{{fioslice:trainername}}</div>
+      <div class="sch-trainer" data-link="visible{:trainername2}">{{fioslice:trainername2}}</div>
+      <div class="sch-squadname">{{:squadname}}
+        {{if squad!='0' && ~srvData.cnt_squad && !~srvData.cnt_squad[squad]}}
+        <i class="fa fa-exclamation-triangle" data-toggle="tooltip" title="Пустая группа"></i>
+        {{/if}}
+      </div>
+      <div class="sch-clubname">{{:clubname}}{{if location}}, {{:location}}{{/if}}</div>
+    </div>
+</div>
+</script>
+
+<style>
+
+.club-schedule .sch-item {
+    display: block;
+    background-color: white;
+    border-radius: 3px;
+    min-width: 160px;
+    margin-bottom: 0.25rem;
+    padding: 0.8rem;
+    /*min-height: 160px;*/
+    position: relative;
+}
+
+.club-schedule .sch-item:last-child {
+  margin-bottom: 0;
+}
+
+.club-schedule  .print-schedule img {
+  width: 23px;
+  height: 32px;
+}
+
+.col-lg-auto {
+  width: 14.1%;
+}
+
+@media (min-width: 767.98px) {
+  .club-schedule .top-block-schedule {
+    padding-left: 4rem;
+  }
+}
+
+.club-schedule .btn-custom-arrow {
+  width: 32px;
+  height: 32px;
+  background: #F4F5F7;
+  border-radius: 8px;
+  border: none;
+  padding: 0 !important;
+  color: #515C74;
+}
+
+.club-schedule .btn-custom-arrow img,
+.club-schedule .btn-custom-arrow i {
+  margin-top: -2px;
+}
+
+.club-schedule .btn-custom-arrow:hover {
+  background: #EFF2F6;
+}
+
+.club-schedule .btn-custom-arrow:active {
+  background: #ECF0F5 !important;
+  color: #fff !important;
+  background-color: #ECF0F5 !important;
+  border-color: #ffffff !important;
+}
+
+.club-schedule  .btn-outline-primary:hover {
+  background-color: #EBEEF2 !important;
+  border-color: #EBEEF2 !important;
+  color: #515C74 !important;
+  font-weight: 500;
+}
+
+.club-schedule .btn-outline-primary.focus,
+.club-schedule .btn-outline-primary:focus {
+  box-shadow: none !important;
+}
+
+.club-schedule .dates-schedule {
+    margin-left: -3px;
+}
+
+@media (max-width: 767.98px) {
+  .fltr-schedule, .fltr-schedule .form-control,
+  .club-schedule .tbl-schedule,
+  .club-schedule .dates-schedule {
+    font-size: .9em;
+  }
+
+  .club-schedule .top-block-schedule {
+    padding-left: 1rem;
+  }
+
+  .club-schedule .btn-custom-arrow {
+    width: 42px;
+    height: 42px;
+  }
+
+  .club-schedule .weekname {
+    padding-top: 0;
+    font-size: 1.2rem;
+  }
+
+  .tbl-schedule .sch-trainer {
+    font-size: 0.875rem !important;
+  }
+
+  .club-schedule .days-td {
+    min-width: 15rem;
+  }
+}
+
+.tbl-schedule tr > td:first-child {
+  border: none;
+  padding-top: 1.65rem;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 0.75rem;
+  line-height: 14px;
+  color: #515C74;
+  width: 3.5rem;
+  text-align: center;
+}
+
+.tbl-schedule tbody tr:hover,
+.tbl-schedule tbody tr:hover {
+  background-color: transparent;
+}
+
+.tbl-schedule tr:last-child > td:first-child {
+  border: none;
+}
+
+.row.fltr-schedule {
+  margin-right: 0px;
+}
+
+.tbl-schedule .day-head {
+    padding-left: 1.2rem;
+    color: #14142B;
+    min-width: 10rem;
+}
+
+.tbl-schedule .day-head small {
+    color: #515C74;
+}
+
+.tbl-schedule .sch-time,
+.tbl-schedule .sch-type {
+    font-weight: 500;
+    font-size: 0.75rem;
+    line-height: 14px;
+    color: #515C74;
+}
+
+.tbl-schedule .sch-body {
+    color: #14142B;
+}
+
+.tbl-schedule .sch-clubname {
+  line-height: 13px;
+  /*display: flex;
+  align-items: center;*/
+}
+
+.tbl-schedule .sch-trainer {
+  font-weight: bold;
+  line-height: 15px;
+}
+
+.tbl-schedule .sch-squadname {
+  line-height: 14px;
+}
+
+.tbl-schedule .sch-time,
+.tbl-schedule .sch-clubname {
+  color: #515C74;
+}
+
+/*.table-responsive {
+  height: calc(100vh - 96px);
+  overflow-y: scroll;
+}*/
+
+.club-schedule .sch-item > div,
+.club-schedule .sch-body > div{
+  padding-bottom: 8px;
+}
+
+.club-schedule .fltr-schedule {
+  padding-right: .5rem;
+}
+
+.club-schedule .fltr-schedule > div {
+  margin-bottom: .5rem;
+  padding: 0 0 0 .5rem;
+}
+
+.tbl-schedule {
+    /*overflow: hidden;*/
+}
+
+.tbl-schedule th, .tbl-schedule td {
+    padding: 8px;
+    vertical-align: top;
+}
+
+.tbl-schedule tbody td {
+    border-left: 1px solid #F4F5F7;
+    border-top: 1px solid #F4F5F7;
+}
+.tbl-schedule tr th:first-child,
+.tbl-schedule tr td:first-child {
+    border-left: 0 none;
+}
+.tbl-schedule tbody tr td:last-child {
+    border-right: 1px solid #F4F5F7;
+}
+.tbl-schedule tbody tr:last-child td {
+    border-bottom: 1px solid #F4F5F7;
+}
+
+.tbl-schedule thead th {
+    border: 0;
+}
+
+.club-schedule .weekname {
+    margin: 0 0.5rem;
+    display: inline-block;
+    color: #515C74;
+    vertical-align: middle;
+}
+
+.club-schedule .sch-item .fa-exclamation-triangle {
+  color: red;
+}
+
+/*.club-schedule option {
+    background-color: #F4F5F7;
+}*/
+
+.sch-item .badge-primary {
+    float: right;
+    text-transform: lowercase;
+    background-color: gainsboro;
+    font-weight: 500;
+}
+</style>

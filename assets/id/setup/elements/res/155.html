@@ -1,0 +1,60 @@
+<!-- clubReport -->
+<script id="report_rows" type="text/x-jsrender">
+<div id="report_add" class="m-t-sm">
+<table class="table table-hover">
+    <thead>
+    <tr>
+    <th>Статус</th>
+    <th class="text-right">Количество</th>
+    <th class="text-right">Сумма</th>
+    </tr>
+    </thead>
+    <tbody>
+{{for rows}}
+    <tr>
+        <td>
+            {{:label}}
+        </td>
+        <td class="text-right">
+            {{:data}}
+        </td>
+        <td class="text-right">
+            {{:total}}
+        </td>
+    </tr>
+{{/for}}
+    </tbody>
+</table>
+</div>
+</script>
+
+<script>
+var shopStatuses = [[!clubStatus?tbl=`idOrderItems` &fields=`alias`]];
+var shopStatus = { };
+$.each(shopStatuses, function(k, v){
+    shopStatus[v.alias] = v;
+});
+
+$.observable(clubReport).setProperty({
+    opts: {
+        postData : {
+            table: 'idOrderItems',
+            _report: 'idOrderItems_status'
+        },
+        callback: function(data){
+            var allcount = 0, total = 0;
+            var dataChart = [ ];
+            $.each(data.rows, function(k, v){
+                v.label = shopStatus[v.label].name;
+                dataChart.push([v.label+' ('+ v.data +')',  v.data])
+                allcount += 1*v.data;
+                total += 1*v.total;
+            });
+            allcount = allcount+ ' на сумму '+ total;
+            clubCountsChart(dataChart, allcount);
+            
+            clubReport.opts.result.append( $.templates('#report_rows').render(data) );
+        }
+    }
+});
+</script>

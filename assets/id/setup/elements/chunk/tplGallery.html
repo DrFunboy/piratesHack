@@ -1,0 +1,35 @@
+<script id="tpl_gallery_edit" type="text/x-jsrender">
+<div class="mb-2" data-link="visible{:!hide_upload}">
+    <button class="btn btn-outline-primary rounded-pill uploadClubFile" type="button"
+        data-link="{on ~S.uploadFile}" accept="image/*" multiple="multiple">
+        <span class="spinner-border spinner-border-sm" role="status" data-link="visible{:loading}"></span>
+        <span data-link="visible{:!loading}"><i class="fa fa-camera" data-link="visible{:!loading}"></i> Загрузить</span>
+    </button>
+</div>
+<div class="row">
+    {^{for rows ~pd=#data}}
+    <div data-link="class{:~item_cls||'col-xl-2 col-lg-3 col-md-4 col-6'}" data-imgkey="{{:key}}">
+        <div class="card card-figure">
+            <figure class="figure">
+                <div class="figure-img text-center">
+                    <img class="img-fluid" src="" alt="{{:name}}" data-link="src{:sm||~S.emptyImg()}">
+                    <div class="figure-description">
+                        <p class="text-muted mb-0">
+                            <small>{{:name}}.{{:fileext}}</small>
+                        </p>
+                    </div>
+                    <div class="figure-tools">
+                        <a href="#" class="tile tile-circle mr-auto" data-link="{on ~delFile}">
+                            <i class="fa fa-trash"></i>
+                        </a>
+                    </div>
+                    <div class="figure-action">
+                        <a href="{{:md||'#'}}" class="btn btn-block btn-sm btn-primary club-img"><i class="fa fa-eye"></i></a>
+                    </div>
+                </div>
+            </figure>
+        </div>
+    </div>
+    {{/for}}
+</div>
+</script>

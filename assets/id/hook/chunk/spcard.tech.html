@@ -1,0 +1,74 @@
+<script id="tpl_spTech" type="text/x-jsrender">
+    <ul class="nav nav-pills mb-2">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#t_spTech_qr"><i class="fa fa-qrcode"></i></a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#t_spTech_extid"><i class="fa fa-link"></i></a>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div id="t_spTech_qr" class="tab-pane active">
+            <p><img data-link="src{:'[[++crm_url]]qrcode.php?text=[[++site_url]]qr?key='+ sp^key}"></p>
+            <p>
+                <div class="small">key: <b data-link="sp^id"></b></div>
+                <a href="#" data-name="key" data-roinplace="spFieldEdit" data-link="{formatEmpty:sp^key}"></a>
+            </p>
+            <p>
+                <div class="small">code1s</div>
+                <a href="#" data-name="code1c" data-roinplace="spFieldEdit" data-link="{formatEmpty:sp^code1c}"></a>
+            </p>
+        </div>
+        <div id="t_spTech_extid" class="tab-pane">
+            <table id="grExtid" data-entity="idExtid" class="calculateReload"></table>
+        </div>
+    </div>
+</script>
+
+<script>
+SCRM._service['/chunk/spcard.tech'] = function(e, param) {
+    var spCardData = $.view(e.elm).data;
+    var tabLink = $('a[href="#t_spTech"]', spCardData.pnlSp)
+    
+    if (!spCardData.tpl_spTech) {
+        SCRM.link(spCardData, {tpl_spTech: '#tpl_spTech'});
+        tabLink.on('calculate', function(e, data){
+            console.log('tpl_spTech_calc', e, data)
+        });
+        
+        $('#grExtid', spCardData.pnlSp)
+        .on('jqGridSerializeGridData', function(e, postData) {
+            postData._where = {
+                parent: spCardData.sp.id,
+                'wExtype.cls': 'idSportsmen'
+            };
+        })
+        .jqGridInit({
+            sortname: 'created', sortorder: 'desc',
+            colModel:[
+                {name:'id', hidden: true, template: idFieldTemplate},
+                {name:'name', index: 'wExtype.name',
+                    template: editRowLinkTemplate
+                },
+                {name:'parent', width:100, hidden:true},
+                {name:'extid', editable: true},
+                {name:'extoken', editable: true},
+                {name:'duedate', editable: true, template: dateTimeTemplate},
+                {name:'extended', label: 'extended', editable: true, template: infoTemplate},
+                {name:'created', hidden: false, label:'Создано', template: createdTemplate}
+            ],
+            navOpts: {add:false, edit:true, search:false}
+        })
+        .jqGrid('filterToolbar')
+        .jqGridColumns();
+    }
+    tabLink.tab('show');
+    console.log('spcard.tech', spCardData, e)
+    
+    /*SCRM.link(schData, {
+        lsn_mode: '#tpl_RateEvent'
+    });
+    checkLinkedEvent();*/
+}
+
+</script>

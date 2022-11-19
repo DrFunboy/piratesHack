@@ -1,0 +1,114 @@
+<script id="tpl_ReportChanges" type="text/x-jsrender">
+<div class="reportDates mb-3"></div>
+
+<div class="row">
+    <div class="col-md-5">
+        <table class="table table-bordered m-0">
+            <thead>
+                <tr>
+                    <th>Наименование</th>
+                    <th>Количество</th>
+                </tr>
+            </thead>
+            <tbody>
+            {^{for rows}}
+              <tr>
+                <td>
+                <a href="#" class="prevent-default" data-chfield="{{:chfield}}" data-link="{on ~showField} text{:~spFieldName(chfield)}"></a>
+                </td>
+                <td class="text-right">
+                    <a href="#" class="show-sportsmen-pnl badge badge-primary prevent-default" data-w="idChanges.chfield={{:chfield}}"
+                        data-link="{on ~showSpGrid}">
+                    <span data-toggle="tooltip" title="Количество записей">{{:cnt}}</span> / <span data-toggle="tooltip" title="Количество спортсменов">{{:cntsportsmen}}</span>
+                    </a>
+                </td>
+              </tr>
+            {{/for}}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-7">
+        <table class="table table-bordered m-0" data-link="visible{:chvalues}">
+            <thead>
+                <tr>
+                    <th>Наименование</th>
+                    <th>Количество</th>
+                </tr>
+            </thead>
+            <tbody>
+            {^{for chvalues}}
+              <tr>
+                <td>
+                {{:newvalue}}
+                </td>
+                <td class="text-right">
+                    <a href="#" data-w="idChanges.chfield={{:~root.chfield}};idChanges.newvalue={{:newvalue}}"
+                        class="badge badge-primary show-sportsmen-pnl prevent-default"
+                        data-link="{on ~showSpGrid}">{{:cnt}} / {{:cntsportsmen}}</a>
+                </td>
+              </tr>
+            {{/for}}
+            </tbody>
+        </table>
+    </div>
+</div>
+</script>
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    var postData = {
+        _report: 'idSportsmen_changes'
+    };
+
+    function makeReport(pd) {
+        pd = $.extend({rows: 1001}, postData, pd);
+        pDATA('idChanges', pd, function(data) {
+            var nd = pd._where? {
+                chvalues: data.rows
+            } : {
+                rows: data.rows,
+                chvalues: null
+            }
+            SCRM.link(param, nd);
+        });
+    }
+
+    // Это для имен полей
+    SCRM._runLoader('spCard')(null, function(){
+        $.templates('#tpl_ReportChanges')
+        .link(param.container, param, {
+            spFieldName: SCRM._fieldName,
+            showField: function(e, data) {
+                var d = data.linkCtx.data;
+                //console.log(d);
+                makeReport({
+                    _where: {chfield: d.chfield}
+                });
+            },
+            showSpGrid: function(e, data) {
+                //console.log(e, data);
+                var d = data.linkCtx.data;
+                var w = {
+                    'idChanges.chfield': d.chfield
+                };
+                if (d.newvalue) w['idChanges.newvalue'] = d.newvalue;
+                SCRM._run('/chunk/report.spgrid/', {
+                    container: param.container,
+                    callback: function(gr) {
+                        gr.data('start_status', '*')
+                    },
+                    postData: $.extend({
+                        _where: w
+                    }, postData)
+                });
+            }
+        })
+        .find('.reportDates')
+        .on('periodChange', function(e, dates) {
+            $.extend(postData, dates);
+            makeReport();
+        })
+        .panelPeriod('reportDates');
+    });
+};
+</script>

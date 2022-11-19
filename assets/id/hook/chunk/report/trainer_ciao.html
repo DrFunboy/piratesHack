@@ -1,0 +1,87 @@
+<script id="tpl_ReportTrainerCiao" type="text/x-jsrender">
+<div class="reportDates mb-3"></div>
+
+<table class="table table-hover m-0">
+    <thead>
+        <tr>
+            <th>Тренер</th>
+            <th>Перевод</th>
+            <th>Архив</th>
+        </tr>
+    </thead>
+    <tbody>
+    {^{for rows}}
+      <tr>
+        <th>{{:name}}</th>
+        <td>
+            {{if cnt_trainer > 0}}
+            [[-<a href="#" class="show-sportsmen-pnl badge" title="{{:sportsmen_new}}"
+                data-w="idChanges.newvalue=Новый;idSportsmen.city={{:id}}">]]
+            <a href="#" class="show-sportsmen-pnl badge badge-primary prevent-default" data-w="cnt_trainer={{:id}}"
+                    data-link="{on ~showSpGrid}">{{:cnt_trainer}}</a>
+            {{/if}}
+        </td>
+        <td>
+            {{if cnt_arc > 0}}
+            <a href="#" class="show-sportsmen-pnl badge badge-primary prevent-default" data-w="idTrainer.id={{:id}}"
+                    data-link="{on ~showSpGrid}">{{:cnt_arc}}</a>
+            {{/if}}
+        </td>
+      </tr>
+    {{/for}}
+    </tbody>
+</table>
+</script>
+
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    var postData = {
+        _report: 'idTrainer_archive'
+    };
+
+    function makeReport(pd) {
+        pd = $.extend({rows: 1001}, postData, pd);
+        pDATA('idTrainer', pd, function(data) {
+            SCRM.link(param, {
+                rows: data.rows
+            });
+        });
+    }
+
+    $.templates('#tpl_ReportTrainerCiao')
+    .link(param.container, param, {
+        /*spFieldName: SCRM._fieldName,
+        showField: function(e, data) {
+            var d = data.linkCtx.data;
+            //console.log(d);
+            makeReport({
+                _where: {chfield: d.chfield}
+            });
+        },*/
+        showSpGrid: function(e, data) {
+            var d = data.linkCtx.data;
+            console.log(e, data);
+            var w = {
+                'idTrainer.id': d.id
+            };
+            //if (d.newvalue) w['idChanges.newvalue'] = d.newvalue;
+            SCRM._run('/chunk/report.spgrid/', {
+                container: param.container,
+                callback: function(gr) {
+                    gr.data('start_status', '*')
+                },
+                postData: $.extend({
+                    _where: w
+                }, postData)
+            });
+        }
+    })
+    .find('.reportDates')
+    .on('periodChange', function(e, dates) {
+        $.extend(postData, dates);
+        makeReport();
+    })
+    .panelPeriod('reportDates');
+};
+</script>

@@ -1,0 +1,275 @@
+<div class="tab-content card card-body">
+    <div id="an_now" class="tab-pane active">
+        <div class="nav nav-pills mb-2" role="tablist">
+            <a class="nav-item nav-link active" data-toggle="tab" href="#now_tbl">Сегодня</a>
+            <a class="nav-item nav-link" data-toggle="tab" href="#now_cube">С группировками</a>
+        </div>
+        <div class="tab-content m-t-sm">
+            <div id="now_tbl" class="tab-pane active">
+                <h3 class="section-title">Действующие спортсмены <span class="badge badge-lg badge-danger" id="allcount">...</span></h3>
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="stat1">
+                                <thead>
+                                <tr>
+                                    <th>Подразделение</th>
+                                    <th>К-во<br>спортсменов</th>
+                                    <th>Больничный</th>
+                                    <th>Обещанный платеж</th>
+                                    <th>Отпуск</th>
+                                    <th>Нет<br>страховки</th>
+                                    <th>Нет<br>мед.справки</th>
+                                </tr>
+                                </thead>
+                                <tbody class="dash_links"></tbody>
+                            </table>
+                        </div>
+                        <div><a href="#" id="backbtn" class="btn btn-outline-primary btn-xs">&laquo; Назад</a></div>
+                    </div>
+                
+                    <div class="col-lg-4">
+                        <div id="chartCounts"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="now_cube" class="tab-pane">
+                <div data-toggle="buttons" class="btn-group btn-group-toggle mb-2">
+                    <label class="btn btn-sm btn-secondary active">
+                        <input type="radio" name="options" checked="checked" data-rows="Зал,Группа">Группы</label>
+                    <label class="btn btn-sm btn-secondary">
+                        <input type="radio" name="options" data-rows="Зал,Тренер">Тренеры</label>
+                    <label class="btn btn-sm btn-secondary">
+                        <input type="radio" name="options" data-rows="Зал,Дисциплина">Дисциплины</label>
+                    <label class="btn btn-sm btn-secondary">
+                        <input type="radio" name="options" data-rows="Разряд,Тренер"> Разряды </label>
+                </div>
+                <div id="pivot"></div>
+            </div>
+        </div>
+    </div>
+    <div id="report2" class="tab-pane tab-content">
+        <div class="list-group list-group-bordered" data-link="{for reportList tmpl='#tpl_rptListItem'}"></div>
+        [[-<div class="report-list list-group list-group-bordered" data-link="visible{:!reportName}">
+            [[-!pdoResources?
+                &parents=`[[*id]]`
+                &scheme=`abs`
+                &sortby=`pagetitle` &sortdir=`ASC`
+                &useWeblinkUrl=`1`
+                &limit=`0`
+                &checkPermissions=`list`
+                &tpl=`@INLINE <a href="[[+link]]" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                    data-report="[[+id]]" [[+link_attributes]]>[[+pagetitle]]</a>`
+                &showLog=`0`
+            ]]
+        </div>
+        <div data-link="visible{:reportName}">
+            [[-$jsReport]]
+            <div id="panelSportsmens" class="mt-2" style="display:none">
+                [[-$dbInner]]
+            </div>
+        </div>]]
+    </div>
+    <div class="tab-pane" id="report2tab">
+        <div class="card card-body" id="report2body" data-spgrid="#reportSpGrid"></div>
+        <table id="reportSpGrid"></table>
+    </div>
+</div>
+
+<script id="tpl_rptListItem" type="text/x-jsrender">
+    <a href="#{{:alias}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center prevent-default"
+        data-link="text{:name} {on ~chReport}"></a>
+</script>
+
+<script id="tpl_stat1" type="text/x-jsrender">
+{{for rows}}
+    <tr class="city{{:city}}" style="display:none">
+    <td>{{:clubname}}</td>
+    <td>{{:cnt_all}}</td>
+    <td>{{:cnt_boln}}</td>
+    <td>{{:cnt_waitpay}}</td>
+    <td>{{:cnt_otp}}</td>
+    <td>{{:cnt_ins}}</td>
+    <td>{{:cnt_med}}</td>
+    </tr>
+{{/for}}
+{{for cityData}}
+    <tr class="city0">
+    <td><a href="#" data-city="{{:id}}">{{:name}}</a></td>
+    <td>{{:cnt_all}}</td>
+    <td>{{:cnt_boln}}</td>
+    <td>{{:cnt_waitpay}}</td>
+    <td>{{:cnt_otp}}</td>
+    <td>{{:cnt_ins}}</td>
+    <td>{{:cnt_med}}</td>
+    </tr>
+{{/for}}
+</script>
+
+[[$panelPeriod]]
+
+<script>
+SCRM.link(SCRM.app.topNavTabs).insert([
+    {href: '#an_now', html: 'Статистика', active: true},
+    {href: '#report2', html: 'Отчеты'}
+]);
+
+SCRM.loadWSS('c3', function() {
+    var rptData = {
+        reportList: [[!clubStatus?tbl=`idReport` &cls=`stat`]]
+    };
+    
+    rptTab =  {href: '#report2tab', html: '<i class="fa fa-file-text-o"></i>', hidden: true};
+    SCRM.link(SCRM.app.topNavTabs).insert(rptTab);
+    
+    $.link(true, '#report2', rptData, {
+        chReport: function(e, data) {
+            var d = data.linkCtx.data;
+            $('#reportSpGrid').trigger('hide');
+            SCRM._run('/'+d.alias, {
+                container: '#report2body'
+            });
+            $('[href="#report2tab"]').tab('show');
+        }
+    });
+    
+
+    var postData = {
+        rows: 1001,
+        _report: 'idCity_counts'
+    };
+    
+    function clubCountsChart(data, allcount){
+        var chart = c3.generate({
+            bindto: '#chartCounts',
+            [[-legend: {
+                //position: 'right',
+                hide: true
+            },
+            size: {
+                height: 330
+            }]]
+            data: {
+                columns: data,
+                type : 'pie'
+            }
+        });
+        //chart.legend.show();
+        $('#allcount').text(allcount);
+    }
+    
+    pDATA('idSportsmen', postData, function(data){
+        var cityData = { };
+        var chartData = [ ];
+        var allcount = 0;
+        $.each(data.rows, function(k, v){
+            if (!cityData[v.city]) cityData[v.city] = {
+                name: v.cityname,
+                id: v.city
+            };
+            $.each(v, function(k1, v1){
+                var a_fld = k1.split('_');
+                if (a_fld[0]=='cnt'||a_fld[0]=='sum') {
+                    if (!cityData[v.city][k1]) cityData[v.city][k1] = 0;
+                    cityData[v.city][k1] += 1*v1;
+                }
+            });
+            allcount += 1 * v.cnt_all;
+        });
+        data.cityData = $.map(cityData, function(v, i){
+            chartData.push([v.name+' ('+ v.cnt_all +')', v.cnt_all]);
+            return v;
+        });
+        var tbody = $('#stat1 tbody').html( $.templates("#tpl_stat1").render(data) );
+        $('a[data-city]', tbody).click(function(e){
+            e.preventDefault();
+            var city = $(this).data('city');
+            $('tr', tbody).hide().filter('.city'+city).show();
+            var chartData = [ ];
+            var allcount = 0;
+            $.each(data.rows, function(k, v){
+                if (v.city == city) {
+                    if (!v.clubname) v.clubname = '---';
+                    chartData.push([v.clubname+' ('+ v.cnt_all +')', v.cnt_all]);
+                    allcount += 1*v.cnt_all;
+                }
+            });
+            clubCountsChart(chartData, $(this).text()+': '+allcount);
+            $('#backbtn').show()
+        });
+        $('#backbtn').on('click', function(e){
+            e.preventDefault();
+            $(this).hide();
+            $('tr', tbody).hide().filter('.city0').show();
+            clubCountsChart(chartData, allcount);
+        }).click();
+    });
+
+    /* ================= Pivot =================== */
+    $('a[href="#now_cube"]').on('shown.bs.tab.club',function(){
+        $(this).off('shown.bs.tab.club');
+        SCRM.loadWSS('pivottable', function(){
+            var utils = $.pivotUtilities;
+            var tpl = utils.aggregatorTemplates;
+            var numberFormat = utils.numberFormat;
+            var Format0 = numberFormat({digitsAfterDecimal: 0});
+            var pivotData = null;
+            
+            pDATA('idSportsmen', $.extend({
+                _mode: 'analytics'
+            }, postData), function(data) {
+                pivotData = data;
+                showPivot();
+            });
+            
+            var statCubeBtns = $('#now_cube input[name=options]').change(showPivot);
+            
+            function showPivot() {
+                var rows = (statCubeBtns.filter(':checked').data('rows')).split(',');
+        
+                var cfg = {
+                    //aggregators: $.pivotUtilities.aggregators,
+                    aggregators: {
+                        //"Сумма долга": function() { return tpl.count()() },
+                        //"Сумма долга": function() { return tpl.sum()(["cnt"]) },
+                        "Спортсмены": function() { return tpl.sum(Format0)(["cnt"])}
+                    },
+                    //renderers:   $.pivotUtilities.renderers,
+                    sorters: {
+                        [[-Province: $.pivotUtilities.sortAs(
+                                ["British Columbia", "Alberta",
+                                "Saskatchewan", "Manitoba",
+                                "Territories", "Ontario", "Quebec",
+                                "New Brunswick", "Prince Edward Island",
+                                "Nova Scotia", "Newfoundland and Labrador"]),
+                        Age: function(a,b){ return b-a; }]]
+                    },
+                    rows: rows,
+                    //cols:['status'],
+                    //vals:["sumremain"],
+                    //aggregatorName:"Integer Sum"
+                    //rendererName: "Heatmap"
+                    //renderer: utils.renderers["Heatmap"],
+                    hiddenAttributes: ["cnt"]
+                };
+        
+                var transformCols = function(injectRecord){
+                    pivotData.rows.map(function(mp) {
+                        injectRecord({
+                            cnt: mp.cnt,
+                            'Зал': mp.club_name,
+                            'Тренер': mp.trainer_name,
+                            'Дисциплина': mp.sport_name,
+                            'Группа': mp.squad_name,
+                            'Разряд': mp.razr
+                        });
+                    });
+                };
+
+                $("#pivot").pivotUI(transformCols, cfg, true, "ru");
+            }
+        });
+    });
+});
+</script>

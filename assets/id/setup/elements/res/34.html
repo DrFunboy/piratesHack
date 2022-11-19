@@ -1,0 +1,85 @@
+<div class="row">
+    <div class="col-lg-5 col-md-8">
+        <div class="card" id="autoinvoice">
+        <div class="card-body spinner-parent">
+            <p>Функция начисления выполняется 1 раз в месяц.<br>
+            Программа берет данные из столбца "Стоимость" в реестре спортсменов и формирует задолженность для записей со статусом "Действует" и "Обещанный платеж".</p>
+
+            <div class="form-group" data-link="{include tmpl='#autoInvoiceType'}"></div>
+            <div class="form-group">
+                <div class="input-group">
+                    <label class="input-group-prepend" for="AIcalendar">
+                        <span class="badge"><i class="fa fa-calendar"></i></span>
+                    </label>
+                    <input type="text" class="form-control" id="AIcalendar">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="add0" data-link="post^add0">
+                    <label class="custom-control-label" for="add0">Начислять при нулевой стоимости</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="allcity" data-link="post^allcity">
+                    <label class="custom-control-label" for="allcity">Все филиалы</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <textarea type="text" class="form-control" data-link="post^info" placeholder="Комментарий"></textarea>
+            </div>
+            <button class="btn btn-primary" data-link="{on ~start}">Запуск автоначисления</button>
+        </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/x-jsrender" id="autoInvoiceType">
+    <label class="col-form-label col-form-label-sm" for="invoicetype">Тип</label>
+    <select class="custom-select custom-select-sm" id="invoicetype" data-link="post^invoicetype">
+        {{for dbvalues.idInvoiceType tmpl='#tpl_selectOption' /}}
+    </select>
+</script>
+
+<script>
+SCRM.loadWSS('ready', function(){
+    var autoinvoice = {
+        dbvalues: [[!dbvalues?mode=`idInvoiceType`]],
+        post: {
+            add0: true,
+            allcity: false
+        }
+    };
+    autoinvoice.post.invoicetype = ( autoinvoice.dbvalues.idInvoiceType || [{id:0, name:''}] )[0].id;
+
+    var now = new Date();
+    $('#AIcalendar')
+    .on('onChangeDateEdit', function(e, data) {
+        autoinvoice.post.date = data.sqlDates[0];
+    })
+    .initDateEdit({
+        defaultDate: new Date(now.getFullYear(), now.getMonth(), 1)
+    });
+
+    $.link(true, '#autoinvoice', autoinvoice, {
+        start: function(e, data) {
+            var btn = $(e.target)//.hide();
+            spinnr(true, btn);
+            
+            pJSON('/hook/autoinvoice', autoinvoice.post, function(data){
+                if (data.result == "ERROR") {
+                    SCRM.alert('Ошибка: ' + data.comment);
+                } else {
+                    SCRM.success('Произведен расчет, добавлено записей: ' + data.total);
+                }
+            })
+            .always(function() {
+                spinnr(false, btn);
+            });
+        }
+    });
+});
+</script>

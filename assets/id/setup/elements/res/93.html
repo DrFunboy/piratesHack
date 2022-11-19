@@ -1,0 +1,62 @@
+<div class="tab-content section-block my-0">
+    <div class="card tab-pane" id="clubReportWrap">
+        <div class="list-group list-group-bordered" data-link="visible{:!reportName}">
+        [[-!pdoResources?
+            &parents=`0`
+            &scheme=`abs`
+            &sortby=`pagetitle` &sortdir=`ASC`
+            &useWeblinkUrl=`1`
+            &checkPermissions=`list`
+            &limit=`0`
+            &tpl=`@INLINE <a href="[[+link]]" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-report="[[+id]]" [[+link_attributes]]>[[+pagetitle]]</a>`
+            &showLog=`0`
+            &where=`{"context_key":"[[*context_key]]","content:LIKE":"%!-- clubReport%"}`
+        ]]
+        </div>
+        <div class="card-body" data-link="visible{:reportName}">
+            [[-$jsReport]]
+            <div id="panelSportsmens" class="mt-2" style="display:none">
+                [[-$dbInner]]
+            </div>
+        </div>
+    </div>
+    <div id="report2" class="tab-pane card active">
+        <div class="list-group list-group-bordered" data-link="{for reportList tmpl='#tpl_rptListItem'}"></div>
+    </div>
+    <div class="tab-pane" id="report2tab">
+        <div class="card card-body" id="report2body" data-spgrid="#reportSpGrid"></div>
+        <table id="reportSpGrid"></table>
+    </div>
+</div>
+
+[[$panelPeriod]]
+
+<script id="tpl_rptListItem" type="text/x-jsrender">
+    <a href="#{{:alias}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center prevent-default"
+        data-link="text{:name} {on ~chReport}"></a>
+</script>
+
+<script>
+SCRM.link(SCRM.app.topNavTabs).insert([
+    {href: '#report2', html: 'Отчеты 2.0', active: true},
+    {href: '#clubReportWrap', html: 'Отчеты', hidden: true}
+]);
+SCRM.loadWSS('ready', function() {
+    var rptData = {
+        reportList: [[!clubStatus?tbl=`idReport`]]
+    },
+    rptTab =  {href: '#report2tab', html: '<i class="fa fa-file-text-o"></i>', hidden: true};
+    SCRM.link(SCRM.app.topNavTabs).insert(rptTab);
+
+    $.link(true, '#report2', rptData, {
+        chReport: function(e, data) {
+            var d = data.linkCtx.data;
+            $('#reportSpGrid').trigger('hide');
+            SCRM._run('/'+d.alias, {
+                container: '#report2body'
+            });
+            $('[href="#report2tab"]').tab('show');
+        }
+    });
+});
+</script>

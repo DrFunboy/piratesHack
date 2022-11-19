@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0" />
+    [[-shrink-to-fit=no, viewport-fit=cover]]
+    <title>[[*pagetitle]] | [[!++site_name]]</title>
+
+<link rel="stylesheet" href="[[++crm_url]]wss/theme.min.css?v=[[++vers]]" />
+
+<script src="[[++crm_url]]wss/jquery.min.js?ver=3.3.1"></script>
+<script src="/js/[[!++scrm_prugv]]/start.js?v=t7" id="start_js"></script>
+
+[[!+StartupHTMLBlock]]
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous" />
+</head>
+<body id="body[[*id]]" class="spinner-parent" data-user="[[!+modx.user.id]]" data-clubid="[[*club_id]]" data-mxq="[^q^]">
+<div class="app">
+    <nav class="app-header app-header-dark d-print-none start-data-link">
+        <div class="top-bar">
+            [[-<a href="index.html" class="navbar-brand bg-danger">
+                [[-<img src="assets/images/brand-inverse.png" alt="" style="height: 32px;width: auto;">]]
+            </a>]]
+            <a class="top-bar-brand" href="/">
+                [[!++site_name]]
+            </a>
+          <div class="top-bar-list">
+            <div class="top-bar-item px-2 d-lg-none">
+                <button class="hamburger hamburger-squeeze" type="button" data-toggle="modal" data-target="#mmenuModal">
+                    <span class="hamburger-inner"></span>
+                </button>
+            </div>
+            <!-- .top-bar-item -->
+            <div class="top-bar-item top-bar-item-right px-0">
+              <ul class="header-nav nav">
+                <li class="nav-item dropdown header-nav-dropdown1" id="scrmHelpMenu">
+                    <a class="nav-link" href="#" data-toggle="dropdown"><span class="fa fa-question-circle"></span></a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-arrow"></div>
+                        <a class="dropdown-item prevent-default" href="#" data-run="/chunk/help.kb">База знаний</a>
+                        <a class="dropdown-item" href="/help/integration.html"
+                                data-link="visible{:ugroups.indexOf('idAdmin')>=0}">Интеграции</a>
+                        <a class="dropdown-item prevent-default" href="#"
+                            data-link="visible{:ugroups.indexOf('idSportsmen')>=0}" data-run="/chunk/help.adm">Написать в администрацию</a>
+                        <div data-link="visible{:is_crew}">
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-header"><small>Служба заботы</small></div>
+                            <a class="dropdown-item prevent-default" href="#" data-run="Techat">Онлайн-чат</a>
+                            <a class="dropdown-item prevent-default" href="#" data-run="/chunk/help.tech">Техническая поддержка</a>
+                            
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item prevent-default" href="https://sportcrm.club?utm_source=about-link" target="_blank" data-run="/chunk/about">О системе</a>
+                        [[-<a class="dropdown-item prevent-default" href="#" data-run="/chunk/html/License">Лицензия</a>]]
+                    </div>
+                </li>
+              </ul>
+              <!-- .btn-account -->
+              <div class="dropdown d-flex d-sm-flex1">
+    [[!Login?
+        &loginTpl=`idLoginMenu4`
+        &logoutTpl=`idLogoutMenu4`
+        &loginViaEmail=`1`
+        &logoutResourceId=`1`
+        &errTpl=`idLoginErrTpl`
+    ]]
+              </div><!-- /.btn-account -->
+            </div><!-- /.top-bar-item -->
+          </div><!-- /.top-bar-list -->
+        </div><!-- /.top-bar -->
+    </nav>
+
+    <div id="page" class="d-flex min-vh-100">
+        <aside class="border-right d-print-none d-none d-lg-block">
+            <div class="color-line"></div>
+            <nav id="main-menu" class="mb-5">
+            [[!clubMenu]]
+            </nav>
+        </aside>
+        
+        <main class="app-main1 flex-grow-1 d-flex flex-column">
+            <div class="wrapper1 flex-grow-1">
+              <div class="page1">
+                <header class="page-navs shadow-sm pr-3 d-print-none start-data-link">
+                    <div class="account-summary" data-link="visible{:!topNavTabs^length}">
+                        <h2 class="card-title" data-link="html{:title}">[[*pagetitle]]</h2>
+                        <h6 class="card-subtitle text-muted" data-link="html^{:subtitle}"></h6>
+                    </div>
+                    <div class="nav-scroller" id="topNavTabs" data-link="visible{:topNavTabs^length}">
+                        <div class="nav nav-tabs" data-link="{for topNavTabs tmpl='navTab'}"></div>
+                    </div>
+                  [[-<!-- right actions -->
+                  <div class="ml-auto">
+                    <!-- invite members -->
+                    <div class="dropdown d-inline-block">
+                      <button type="button" class="btn btn-light btn-icon" title="Invite members" data-toggle="dropdown" data-display="static" aria-haspopup="true" aria-expanded="false"><i class="fas fa-user-plus"></i></button>
+                      <div class="dropdown-arrow"></div><!-- .dropdown-menu -->
+                      <div class="dropdown-menu dropdown-menu-right dropdown-menu-rich stop-propagation">
+                        <div class="dropdown-header"> Add members </div>
+                        <div class="form-group px-3 py-2 m-0">
+                          <input type="text" class="form-control" placeholder="e.g. @bent10" data-toggle="tribute" data-remote="assets/data/tribute.json" data-menu-container="#people-list" data-item-template="true" data-autofocus="true" data-tribute="true"> <small class="form-text text-muted">Search people by username or email address to invite them.</small>
+                        </div>
+                        <div id="people-list" class="tribute-inline stop-propagation"></div><a href="#" class="dropdown-footer">Invite member by link <i class="far fa-clone"></i></a>
+                      </div><!-- /.dropdown-menu -->
+                    </div><!-- /invite members -->
+                    <button type="button" class="btn btn-light btn-icon" data-toggle="sidebar"><i class="fa fa-angle-double-left"></i></button>
+                  </div><!-- /right actions -->]]
+                </header>
+                <div class="page-inner">
+                  
+                  [[-<header class="page-title-bar">
+                    <h1 class="page-title"> Page title </h1>
+                  </header>]]
+                    <div class="page-section" id="pageSection1">
+[[*content]]
+                    </div>
+                  
+                  [[-<div class="section-block">
+                      <p>Hello world!</p>
+                    </div>]]
+                </div><!-- /.page-inner -->
+              </div><!-- /.page -->
+            </div><!-- /.wrapper -->
+            
+            <footer class="d-print-none bg^light border^top app-footer start-data-link">
+                <ul class="list-inline" data-link="visible{:bottomNavLinks^length} {for bottomNavLinks ~itemCls='text-muted' tmpl='#tplListInlineItem'}"></ul>
+                <div class="copyright">
+                    <img src="[[++crm_url]]images/favicon-32x32.png?v=21" style="width:16px;height:16px" alt="SCRM" class="mr-1" data-run="/chunk/about">
+                    [[!++site_fullname]]
+                </div>
+            </footer>
+        </main>
+    </div>
+</div>
+
+[[-$tplModal]]
+
+<div class="modal modal-drawer fade" id="mmenuModal" tabindex="-1" role="dialog" aria-labelledby="mmenuLabel">
+    <div class="modal-dialog modal-drawer-left" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <b id="mmenuLabel" class="modal-title">[[!++site_name]]</b>
+                <button class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+            </div>
+            <div class="modal-body p-0"></div>
+        </div>
+    </div>
+</div>
+
+<script id="tplListInlineItem" type="text/x-jsrender">
+    <li class="list-inline-item" data-link="{include tmpl='#tplMenuItem'}"></li>
+</script>
+<script id="tplMenuItem" type="text/x-jsrender">
+{{if !href tmpl=#data}}
+{{else href=='-'}}
+    <div class="dropdown-divider"></div>
+{{else}}
+    <a data-link="html{:html} href{:href} class{:~itemCls||'dropdown-item'}"></a>
+{{/if}}
+</script>
+<script id="tpl_topNavTab" type="text/x-jsrender">
+    <a class="nav-link" data-toggle="tab"
+        data-link="html{:html} href{:href} class{merge:active toggle='active'} visible{:!hidden}"></a>
+</script>
+
+<script>
+    SCRM.app.title = '[[*longtitle:default=`[[*pagetitle]]`]]';
+    $('.start-data-link').link(true, SCRM.app);
+</script>
+
+[[-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.15.0/umd/popper.min.js" integrity="sha256-fTuUgtT7O2rqoImwjrhDgbXTKUwyxxujIMRIK7TbuNU=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha256-CjSoeELFOcH0/uxWu6mC/Vlrc1AARqbm/jiiImDGV3s=" crossorigin="anonymous"></script>]]
+
+<script src="[[++crm_url]]wss/bootstrap.js?ver=4.6.0"></script>
+[[!+BottomHTMLBlock]]
+</body>
+</html>

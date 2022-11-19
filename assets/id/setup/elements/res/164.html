@@ -1,0 +1,187 @@
+<script>
+if (SCRM.app.club_id==6) {
+    getDataRows('idChanges', {
+        _where: {'chfield': 'badge'},
+        rows: 1001,
+        sidx: 'idChanges.created DESC'
+    }, function(badge){
+        var spBadges = {
+            rows: badge.rows,
+            imgs: {}
+        };
+
+        if (spBadges.rows.length > 0) pJSON('/hook/files', {
+            uid: 'clubBadges'
+        }, function(data){
+            SCRM.link(sp_data.addMenu).insert({
+                id: 'tab_Badges',
+                name: 'Значки'
+            });
+            $.each(data.rows, function(i, v){
+                spBadges.imgs[v.key] = v;
+            });
+            
+            var tpl = '#tplBadgesItems';
+            $.templates(tpl).link('#tab_Badges', spBadges);
+            console.log(spBadges);
+            
+            var last = $.map(badge.rows, function(row, i){
+                if (i<2) return row;
+            });
+            
+            club_Modal({
+                rows: last,
+                imgs: spBadges.imgs,
+                modal: true,
+                body: tpl,
+                title: 'Новые значки',
+                ok: 'Посмотреть все',
+                onOK: function(e, mdl) {
+                    $('a[href="#tab_Badges"]').click();
+                    mdl.mdl_hide();
+                }
+            });
+        });
+    });
+}
+</script>
+
+<script id="tplBadgesItems" type="text/x-jsrender">
+<div class="row">
+    {^{for rows ~imgs=imgs}}
+    <div class="{{if !~root.modal}} col-xl-3 col-lg-4 {{/if}} col-sm-6">
+        <div class="card card-figure is-hoverable animated rollIn">
+            <img class="mx-auto d-block w-100"
+                data-link="src{:~imgs[newvalue]^filepath} alt{:~imgs[newvalue]^name}">
+            <h6 class="figure-title text-muted">{{formatDate:created}}</h6>
+        </div>
+    </div>
+    {{/for}}
+</div>
+</script>
+
+[[!+modx.user.id:memberof=`idManager,idTrainer,idClubAdmin`:then=`
+<script>
+    SCRM.loadWSS('files', function(){
+        if (SCRM.app.club_id==80) {
+            $('<button class="btn btn btn-outline-success btn-sm float-right"><i class="fa fa-star"></i> Выдать значок</button>')
+            .appendTo('#QSportsmen .card-header')
+            .on('click', function(){
+                var badgeData = {
+                    body: '#tplAddBadges'
+                };
+                club_Modal(badgeData, {
+                    giveBadge: function(e, d){
+                        e.preventDefault();
+                        pEDIT('idChanges', {
+                            oper: 'add',
+                            sportsmen: qrSportsmen.id,
+                            chfield: 'badge',
+                            newvalue: d.linkCtx.data.key
+                        }, function(data){
+                            badgeData.mdl_hide();
+                            SCRM.success('Выдал');
+                        });
+                    }
+                });
+                pJSON(SCRM.files_url, {
+                    //thumb: 'badge:md',
+                    uid: 'clubBadges'
+                }, function(data){
+                    SCRM.link(badgeData, {
+                        rows: data.rows
+                    });
+                });
+            });
+        }
+    
+        if (window.optsData) {
+            SCRM._service.optsBadges = function(runOpts) {
+                SCRM.link(optsData, {
+                    optsTmpl: '#tpl_optsBadges'
+                });
+                var imgs = $('#badgEdit');
+                spinnr(true, imgs);
+                
+                pJSON('/hook/files', {
+                   uid: 'clubBadges'
+                }, function(fdata){
+                    console.log(fdata, runOpts);
+                    imgs.trigger(fdata.postData.uid, $.extend({
+                        post: {filetype: 'badge'}
+                    }, fdata));
+                    spinnr(false, imgs);
+                });
+                /*pJSON(SCRM.files_url, {
+                    //thumb: 'badge:md,thumb',
+                    uid: 'clubBadges'
+                }, function(fdata){
+                    $(document).trigger('clubFiles', fdata);
+                    spinnr(false, imgs);
+                });*/
+            };
+            $.observable(optsData.idConfig).insert({
+                name:'Значки',
+                alias:'optsBadges',
+                menuindex: 180,
+                extended: {run:'optsBadges'}
+            });
+        }
+    });
+</script>
+`]]
+
+<script id="tplAddBadges" type="text/x-jsrender">
+    <span class="spinner-border spinner-border-sm text-primary" role="status" data-link="visible{:!rows}"></span>
+    <div class="row">
+        {^{for rows sort="name"}}
+        <div class="col-lg-4 col-6">
+            <div class="card card-figure">
+                <figure class="figure">
+                    <div class="figure-img">
+                    <img class="img-fluid" src="{{:filepath}}" alt="{{:basename}}">
+                    <a href="#" class="img-link" data-link="{on ~giveBadge}">
+                        <span class="tile tile-circle bg-danger"><span class="fa fa-star"></span></span>
+                        <span class="img-caption d-none">{{:basename}}</span>
+                    </a>
+                    </div><!-- /.figure-img -->
+                    <b class="text-muted">{{:name}}</b>
+                </figure><!-- /.card-figure -->
+            </div><!-- /.card -->
+        </div>
+        {{/for}}
+    </div>
+</script>
+
+<script id="tpl_optsBadgesEdit" type="text/x-jsrender">
+    <button class="btn btn-outline-primary rounded-pill" type="button"
+        data-link="{on ~S.uploadFile}" accept="image/*" multiple="multiple">
+        <span class="spinner-border spinner-border-sm" role="status" data-link="visible{:loading}"></span>
+        <span data-link="visible{:!loading}"><i class="fa fa-camera" data-link="visible{:!loading}"></i> Загрузить</span>
+    </button>
+    
+    <div class="row mt-2">
+    {^{for rows sort="name" ~pd=#data}}
+        <div class="col-lg-3 col-md-4 col-6">
+            <div class="card card-figure">
+              <figure class="figure" data-file="{{:name}}.{{:fileext}}">
+                <div class="figure-img text-center">
+                  <img class="img-fluid" src="{{:filepath}}" alt="{{:name}}">
+                  <div class="figure-tools">
+                    <a href="#" class="tile tile-circle mr-auto" data-link="{on ~delFile}">
+                        <i class="fa fa-trash"></i>
+                    </a>
+                  </div>
+                </div>
+              </figure>
+              <b class="text-muted">{{:name}}</b>
+            </div>
+        </div>
+    {{/for}}
+    </div>
+</script>
+
+<script id="tpl_optsBadges" type="text/x-jsrender">
+<div id="badgEdit" class="spinner-parent" data-linkfile=""
+    data-link="{on 'clubBadges' ~S.linkFile '#tpl_optsBadgesEdit'}"></div>
+</script>

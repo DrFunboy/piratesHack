@@ -1,0 +1,50 @@
+<script id="tpl_ReportSpDouble" type="text/x-jsrender">
+    <table class="table table-bordered table-sm m-0">
+        <thead>
+            <tr>
+                <th>Ф.И.О.</th>
+                <th>Дата рождения</th>
+                <th>К-во</th>
+            </tr>
+        </thead>
+        <tbody>
+        {^{for rows}}
+          <tr>
+            <th>{{:name}}</th>
+            <th>{{:birth}}</th>
+            <td class="text-right">
+                <a href="#" class="show-sportsmen-pnl badge badge-primary" data-w="name={{:name}}" data-link="{on ~showSpGrid}">{{:cnt}}</a>
+            </td>
+          </tr>
+        {{/for}}
+        </tbody>
+    </table>
+</script>
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    var postData = {
+        _report: 'idSportsmen_double'
+    };
+    
+    $.templates('#tpl_ReportSpDouble')
+    .link(param.container, param, {
+        showSpGrid: function(e, data) {
+            var d = data.linkCtx.data;
+            SCRM._run('/chunk/report.spgrid/', {
+                container: param.container,
+                callback: function(gr) {
+                    gr.data('start_status', '*')
+                },
+                postData: {
+                    _where: {name: d.name}
+                }
+            });
+        }
+    });
+
+    pDATA('idSportsmen', $.extend({rows: 1001}, postData), function(data) {
+        SCRM.link(param, {rows: data.rows});
+    });
+};
+</script>

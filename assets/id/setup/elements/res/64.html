@@ -1,0 +1,13 @@
+[[$tplClubFrameTop?bs=`1` &fa=`1`]]
+
+<div id="schedIframe" data-mode="[[!#REQUEST.mode:default=`city`]]" data-key="[[!#REQUEST.key:default=`1`]]"></div>
+[[$schedInner]]
+
+<script>
+$(function() {
+    $('#schedIframe').clubSchedule();
+});
+</script>
+
+</body>
+</html>

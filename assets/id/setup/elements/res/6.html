@@ -1,0 +1,741 @@
+<style>
+    #schBox .fltr-schedule {
+        display:none;
+    }
+    .h-card__tariff {
+        position: relative;
+        z-index:1000;
+        background: -webkit-gradient(linear, left top, right top, color-stop(-18.09%, #31cb8a), to(#3194cb));
+        background: -webkit-linear-gradient(left, #31cb8a -18.09%, #3194cb 100%);
+        background: -o-linear-gradient(left, #31cb8a -18.09%, #3194cb 100%);
+        background: linear-gradient(90deg, #31cb8a -18.09%, #3194cb 100%);
+        color: white;
+    }
+    .h-card__tariff a {
+        color: white;
+    }
+    
+.user-photo {
+  position: relative;
+  /*margin: 0 17px 0 0;*/
+  width: 166px;
+  height: 166px;
+}
+.user-photo__input {
+  display: none;
+}
+.user-photo__box {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: -ms-inline-flexbox;
+  display:         inline-flex;
+  
+  -webkit-border-radius: 50%;
+          border-radius: 50%;
+  border: 8px solid #f5f6f8;
+  overflow: hidden;
+}
+.user-photo__img {
+  -o-object-fit: cover;
+     object-fit: cover;
+  -o-object-position: center;
+     object-position: center;
+  font-family: 'object-fit: cover; object-position: center';
+  width: 100%;
+  height: 100%;
+}
+.user-photo__camera-box {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: -ms-inline-flexbox;
+  display:         inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  -ms-flex-pack: center;
+          justify-content: center;
+  width: 43px;
+  height: 43px;
+  background: #cdd6df;
+  -webkit-border-radius: 50%;
+          border-radius: 50%;
+    color: #fff;
+}
+.user-photo__upload {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+}
+.user-photo__camera {
+  width: 23px;
+  height: 23px;
+  fill: #fff;
+}
+.sportsmen-name {
+    font-size: 22px;
+    line-height: 30px;
+    color: #2f4050;
+}
+</style>
+
+<div id="sp_data">
+    <div class="ml-auto" id="headerBtn">
+        <button class="btn btn-light btn-icon" data-link="{on ~showQRimg}"><i class="fa fa-qrcode"></i></button>
+    </div>
+    <div id="headerInfo" data-link="{include tmpl='#tpl_spheader'}"></div>
+    <div class="section-block tab-content my-0" data-link="{include tmpl='#tpl_spdata'}"></div>
+</div>
+
+<script id="tpl_spPhoto" type="text/x-jsrender">
+    <a class="user-photo__box h-100 w-100" href="#"
+        data-link="href{:file1^md||'#'} {on ~clickPhoto1}" accept="image/*">
+        <img class="user-photo__img" src="" alt=""
+            data-link="src{:file1^sm||~S.emptyImg(gender)}">
+    </a>
+    <a href="#" class="user-photo__upload prevent-default" data-link="{on ~S.uploadFile} visible{:file1^modify}" accept="image/*">
+        <div class="user-photo__camera-box">
+            <i class="fa fa-camera"></i>
+        </div>
+    </a>
+</script>
+
+<script id="tpl_spheader" type="text/x-jsrender">
+<header class="page-cover p-3">
+<div class="row">
+    <div class="col-12 col-md-6 mb-3 mb-md-0">
+    <div class="h-card__user rounded-lg shadow bg-white p-4 d-md-flex h-100 align-items-center">
+      <div class="spinner-parent">
+        <div class="user-photo mx-auto" data-linkfile="" data-file1type="photo"
+            data-link="{on key ~S.linkFile '#tpl_spPhoto'}">
+        </div>
+      </div>
+      <div class="mt-2 mt-md-0 pl-md-3 text-center text-md-left">
+          <h3 class="sportsmen-name">{{:name}}</h3>
+          <div class="text-muted">{{formatDate:birth}}</div>
+      </div>
+    </div>
+    </div>
+    <div class="col-12 col-md-6">
+    <div class="h-card__tariff rounded-lg shadow p-3 animated swing h-100">[[- {{if !~ls0(saldo) }} bg-info {{else}} bg-warning {{/if}}]]
+        <div class="d-flex mb-3">
+            <div class="mr-auto pr-2">
+                <span>{^{if saldo < 0}}Задолженность{{else}}Баланс{{/if}}</span>
+                <h2 class="font-bold">{{:saldo}}</h2>
+                {^{include tmpl='#tpl_InvoiceLesson' /}}
+            </div>
+            <div>
+                <div class="pb-2">Договор <b>{{:contract}}</b> от {{formatDate:contractdate}}</div>
+                <div>Тариф {{:price}}{^{if discount!=''}} (Льгота {{:discount}}){{/if}}</div>
+            </div>
+        </div>
+        {{if idPayMethod}}
+        <form action="/pay/{{:key}}/" method="post" id="pay_form" data-link="visible{:~showPaym(saldo)} action{:'/pay/'+key+'/'+selPayMethod}">
+            <div class="form-group" data-link="{radiogroup selPayMethod} visible{:idPayMethod.length > 1}">
+                {^{for idPayMethod}}
+                <div class="custom-control custom-control-inline custom-radio">
+                    <input type="radio" class="custom-control-input" name="idPayMethod" value="{{:id}}" id="idPayMethod_{{:id}}">
+                    <label class="custom-control-label" for="idPayMethod_{{:id}}">{{:name}}</label>
+                </div>
+                {{/for}}
+            </div>
+            <div class="form-row">
+                <div class="col-md-7">
+                    [[-<input name="total" value="{^{if saldo < 0}}{{: 0 - saldo }}{{else}}{{:price}}{{/if}}" type="text" class="form-control">]]
+                    <input name="total" data-link="{:saldo < 0 ? 0 - saldo : price}" type="text" class="form-control mb-2 mb-md-0">
+                </div>
+                <div class="col-md-5">
+                    <button type="submit" class="btn btn-warning btn-block">Оплатить</button>
+                </div>
+            </div>
+        </form>
+        {{else}}
+        <form action="/qpay?key={{:key}}" method="post" target="_blank" id="pay_form" data-link="visible{:(paym && paym.length)}">
+            <div class="form-group" data-link="visible{:paym.length > 1}">
+                {^{for paym}}
+                <div class="custom-control custom-control-inline custom-radio">
+                    <input type="radio" class="custom-control-input" name="paym" value="{{:name}}" id="paym_{{:name}}"
+                        data-link="checked{:#index==0}">
+                    <label class="custom-control-label" for="paym_{{:name}}">{{:label}}</label>
+                </div>
+                {{/for}}
+            </div>
+            <div class="form-row">
+                <div class="col-md-7">
+                    [[-<input name="total" value="{^{if saldo < 0}}{{: 0 - saldo }}{{else}}{{:price}}{{/if}}" type="text" class="form-control">]]
+                    <input name="total" data-link="{:saldo < 0 ? 0 - saldo : price}" type="text" class="form-control mb-2 mb-md-0">
+                </div>
+                <div class="col-md-5">
+                    <button type="submit" class="btn btn-warning btn-block">Оплатить</button>
+                </div>
+            </div>
+        </form>
+        {{/if}}
+        <a href="#" class="mt-2 d-block" data-link="{on 'click' ~showMoney '#tab_idPay'}"><i class="fa fa-history"></i> История платежей</a>
+    </div>
+    </div>
+</div>
+</header>
+[[-<div class="text-center">
+    <div id="sportsmenPhoto"></div>
+        <a href="user-profile.html" class="user-avatar user-avatar-xl"><img src="assets/images/avatars/profile.jpg" alt=""></a>
+        <h2 class="h4 mt-2 mb-1">{{:name}}</h2>
+        <div class="my-1">
+            <i class="fa fa-star text-yellow"></i>
+            <i class="fa fa-star text-yellow"></i>
+            <i class="fa fa-star text-yellow"></i>
+            <i class="fa fa-star text-yellow"></i>
+            <i class="far fa-star text-yellow"></i>
+        </div>
+    <div class="text-muted">{{formatDate:birth}}</div>
+</div>]]
+<nav class="page-navs">
+    <div class="nav-scroller">
+        <div class="nav nav-center nav-tabs" id="cabinetTabs">
+            <a class="nav-link active" href="#scheduleTab" data-toggle="tab">Занятия</a>
+            <a class="nav-link" href="#info" data-toggle="tab">Информация[[- <span class="badge">16</span>]]</a>
+            <a class="nav-link" href="#money" data-toggle="tab">Платежи</a>
+            {^{for addMenu}}
+                <a class="nav-link" href="#{{:id}}" data-toggle="tab">{{:name}}</a>
+            {{/for}}
+        </div>
+    </div>
+</nav>
+</script>
+
+<script id="tpl_spdata" type="text/x-jsrender">
+<div class="tab-pane active animated fadeInLeft" id="scheduleTab">
+    <div class="nav nav-pills mb-2" role="tablist">
+        <a class="nav-item nav-link active" data-toggle="tab" href="#schedule">Расписание</a>
+        <a class="nav-item nav-link" data-toggle="tab" href="#reservation"
+            data-link="visible{:(spLesson && spLesson^length) || (orderTrainers && orderTrainers^length)}">Запись
+            <span class="badge badge-warning ml-1" data-link="visible{:spLesson && spLesson^length > 0} {:spLesson^length}">3</span></a>
+        <a class="nav-item nav-link" data-toggle="tab" href="#lessons" data-link="{on ~showLessons}">Журнал</a>
+    </div>
+
+    <div class="tab-content">
+        <div class="tab-pane active spinner-parent" id="schedule">
+            <div id="schBox" data-mode="sportsmen"></div>
+        </div>
+        <div class="tab-pane" id="reservation">
+            {{include tmpl="#tpl_Reservation" /}}
+        </div>
+        <div class="tab-pane table-responsive-md" id="lessons">
+            <table class="table table-striped table-bordered1 bg-white">
+                <tbody>
+                {^{for idLesson}}
+                <tr data-link="class{:~rowLessonInvoice()? 'table-warning':''}">
+                    <td>
+                        <div class="row">
+                            <div class="col-sm-6 mb-2 mb-sm-0 small text-muted" title="Created: {{:created}}">
+                                {{formatDateTime:datestart}}
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="row">
+                                    <div class="col text-center">{{fmtStatus:status tbl='idLesson'}}</div>
+                                    <div class="col">{{:mark}}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="row">
+                            <div class="col-md-6 mb-2 mb-sm-0 ">
+                                {{:trainer_name}}
+                                <div class="text-muted small mt-1">
+                                <i data-link="class{:'mr-1 fa '+stype_ico} title{:stype_name}"></i>
+                                {{:(squad!=0)? ~joinStr(levelname,squadname):''}}</div>
+                            </div>
+                            <div class="col-md-6" data-link="visible{:info}">
+                                <i class="fa fa-comment-o mr-1"></i>
+                                {{:info}}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {{/for}}
+                </tbody>
+                <tfoot>
+                <tr><td colspan="2">
+                <button class="btn btn-outline-primary btn-xs mr-2"
+                    data-link="{on ~btnNav idLesson_page*1-1 'idLesson' } disabled{:idLesson_page*1==1}">«</button>
+                {^{:idLesson_page}} - {^{:idLesson_total}}
+                <button class="btn btn-outline-primary btn-xs ml-2"
+                    data-link="{on ~btnNav idLesson_page*1+1 'idLesson' } disabled{:idLesson_page*1==idLesson_total*1}">»</button>
+                </td></tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="tab-pane" id="info">
+    <div class="row">
+    <div class="col-lg-6 animated fadeInLeft">
+        <div class="card card-body" data-link="{include tmpl='#tpl_sportsmenInfoEdit'}">
+        </div>
+        
+        <div class="card card-body">
+            {^{sprow ~title="Тренер"}}
+                {{:trainername}}
+            {{/sprow}}
+            
+            {^{sprow ~title="Разряд"}}
+                {{:razr}}
+            {{/sprow}}
+        </div>
+    </div>
+    <div class="col-lg-6 animated fadeInRight">
+        <div id="sportsmenMedical" class="card">
+            <div class="card-body d-flex">
+            <div class="text-muted h1 d-none d-sm-block mr-3 ">
+                <i class="fa fa-user-md"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="row">
+                <div class="col">
+                    <label class="text-muted small mb-1">
+                    Срок медсправки
+                    </label>
+                    <p data-link="class{:~S.dateDiffClass(meddate)}">{{formatDate:meddate showempty=true}}</p>
+                </div>
+                <div class="col">
+                    <label class="text-muted small mb-1">
+                    Срок страховки
+                    </label>
+                    <p data-link="class{:~S.dateDiffClass(insdate)}">{{formatDate:insdate showempty=true}}</p>
+                </div>
+                </div>
+                <form action="/sportsmens/insure.html" method="post">
+                    <input type="hidden" name="key" value="{{:key}}">
+                    <button type="submit" class="btn btn-outline-primary btn-block"
+                        id="btnInsure">Застраховать</button>
+                </form>
+            </div>
+            </div>
+        </div>
+        <div id="sportsmenFiles" data-link="{on key ~S.linkFile '#tpl_files'}" data-linkfile=""></div>
+        <div class="card">
+            <div class="card-header card-title">
+                Группы
+            </div>
+            <div class="list-group list-group-reflow list-group-bordered">
+            {^{for idSportsmenSquad}}
+            <div class="list-group-item">
+                <div class="list-group-item-body">
+                    <h4 class="list-group-item-title">
+                        {{if is_main}}<i class="fa fa-check-circle mr-1"></i>{{/if}}
+                        {{:level_name}} | {{:squad_name}}
+                    </h4>
+                    <p class="list-group-item-text text-truncate text-muted">
+                    {{:club_name}}, {{:sport_name}}
+                    </p>
+                </div>
+            </div>
+            {{/for}}
+            {^{if arcSportsmenSquad^length}}
+                <div id="headArcSquad" class="list-group-item text-muted">
+                    <button class="btn btn-reset" data-toggle="collapse" data-target="#arcSportsmenSquad" aria-expanded="false" aria-controls="arcSportsmenSquad">
+                        <span class="collapse-indicator mr-2"><i class="fa fa-fw fa-caret-right"></i></span>
+                        Архив (<span data-link="arcSportsmenSquad^length"></span>)
+                    </button>
+                </div>
+                <div id="arcSportsmenSquad" class="collapse text-muted" aria-labelledby="headArcSquad">
+                    {^{for arcSportsmenSquad}}
+                        <div class="list-group-item">
+                            <div>
+                                <b>{{:level_name}} | {{:squad_name}}</b><br>
+                                {{:club_name}}, {{:sport_name}}<br>
+                                <small>{{formatDate:created}} - {{formatDate:dateend}}</small>
+                            </div>
+                        </div>
+                    {{/for}}
+                </div>
+            {{/if}}
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+
+<div class="tab-pane" id="money">
+    <div class="nav nav-pills mb-2" role="tablist">
+        <a class="nav-item nav-link active" data-toggle="tab" href="#tab_idInvoice">Начисления</a>
+        <a class="nav-item nav-link" data-toggle="tab" href="#tab_idPay">Оплаты</a>
+    </div>
+    
+    <div class="tab-content card1 card-body1">
+        <div id="tab_idInvoice" class="tab-pane table-responsive-md active">
+            <table class="table table-striped table-bordered bg-white">
+                <tbody>
+                {^{for idInvoice}}
+                <tr {{if sumpay==sum}} class="table-success"{{else sum==0}} class="rowArc"{{/if}} >
+                    <td><b>{{:name_typeinvoice}}</b></td>
+                    <td title="Created: {{:created}}">
+                        {{formatDate:dateinvoice}}
+                        {{if duedate}}~ {{formatDate:duedate}}{{/if}}
+                    </td>
+                    <td>{{:sum}}</td>
+                    <td>{{:info}}</td>
+                    </tr>
+                {{/for}}
+                </tbody>
+                <tfoot>
+                <tr><td colspan="4">
+                <button class="btn btn-outline-primary btn-xs mr-2"
+                    data-link="{on ~btnNav idInvoice_page*1-1 'idInvoice' } disabled{:idInvoice_page*1==1}">«</button>
+                {^{:idInvoice_page}} - {^{:idInvoice_total}}
+                <button class="btn btn-outline-primary btn-xs ml-2"
+                    data-link="{on ~btnNav idInvoice_page*1+1 'idInvoice' } disabled{:idInvoice_page*1==idInvoice_total*1}">»</button>
+                </td></tr>
+                </tfoot>
+            </table>
+        </div>
+        <div id="tab_idPay" class="tab-pane table-responsive-md">
+            <table class="table table-striped table-bordered bg-white">
+                <tbody>
+                {^{for idPay}}
+                    <tr>
+                    <td title="Created: {{:created}}">{{formatDate:datepay}}</td>
+                    <td>{{:sum}}</td>
+                    <td>{{:info}}</td>
+                    </tr>
+                {{/for}}
+                </tbody>
+                <tfoot>
+                <tr><td colspan="3">
+                <button class="btn btn-outline-primary btn-xs mr-2"
+                    data-link="{on ~btnNav idPay_page*1-1 'idPay' } disabled{:idPay_page*1==1}">«</button>
+                {^{:idPay_page}} - {^{:idPay_total}}
+                <button class="btn btn-outline-primary btn-xs ml-2"
+                    data-link="{on ~btnNav idPay_page*1+1 'idPay' } disabled{:idPay_page*1==idPay_total*1}">»</button>
+                </td></tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{^{for addMenu}}
+    <div class="tab-pane" id="{{:id}}" data-link="{if tpl tmpl=tpl}"></div>
+{{/for}}
+</script>
+
+<script id="tpl_sportsmenInfoEdit" type="text/x-jsrender">
+{{sprow ~title="Дата рождения"}}
+    <a href="#" data-name="birth" class="dashed" data-roinplace="parentEdit" data-editor="dateedit">{{formatDate:birth}}</a>
+{{/sprow}}
+{{sprow ~title="Серия и Номер свидетельства"}}
+    <a href="#" data-name="doc" class="dashed" data-roinplace="parentEdit">{{:doc}}</a>
+{{/sprow}}
+
+<hr class="mb-2">
+{{sprow ~title="ФИО родителя или законного представителя"}}
+    <a href="#" data-name="contact" class="dashed" data-roinplace="parentEdit">{{:contact}}</a>
+{{/sprow}}
+{{sprow ~title="Телефон"}}
+    <a href="#" data-name="tel" class="dashed" data-roinplace="parentEdit">{{:tel}}</a>
+{{/sprow}}
+
+<hr class="mb-2">
+{{sprow ~title="Рост спортсмена (см)"}}
+    <a href="#" data-name="height" class="dashed" data-roinplace="parentEdit">{{:height}}</a>
+{{/sprow}}
+{{sprow ~title="Вес (кг)"}}
+    <a href="#" data-name="weight" class="dashed" data-roinplace="parentEdit">{{:weight}}</a>
+{{/sprow}}
+</script>
+
+[[$schedInner]]
+
+<script id="tpl_clubDocs" type="text/x-jsrender">
+    <div class="row"><div class="col-lg-6">
+        <div class="list-group list-group-bordered">
+        {{for ~root.clubDocs.rows}}
+            <a href="{{:filepath}}" target="_blank" download="{{:name}}.{{:fileext}}" class="list-group-item list-group-item-action">
+                <div class="list-group-item-figure"><i class="fa fa-lg fa-briefcase"></i></div>
+                <div class="list-group-item-body">
+                    <span class="list-group-item-text">{{:name}}.{{:fileext}}</span>
+                </div>
+            </a>
+        {{/for}}
+        </div><!-- /.list-group -->
+    </div></div>
+</script>
+
+<script id="tpl_sprow" type="text/x-jsrender">
+<div class="form-row">
+    <label class="col-md-4 text-muted">{{:~title}}</label>
+    <div class="col-md-8 mb-3" data-link="{include tmpl=#content}"></div>
+</div>
+</script>
+
+<script id="tpl_Reservation" type="text/x-jsrender">
+<div class="row">
+    <div class="col-lg-6 animated fadeInLeft">
+        <div class="card card-body">
+            <button class="btn btn-success btn-block" data-link="{on ~newReservation}"><i class="fa fa-user-plus"></i> Записаться</button>
+            <table class="table table-striped m-0 mt-2">
+                <tbody>
+                {^{for spLesson}}
+                <tr>
+                    <td title="Created: {{:created}}">{{formatDateTime:datestart}}</td>
+                    <td>{{:trainer_name}}</td>
+                </tr>
+                {{/for}}
+                </tbody>
+            </table>
+            
+        </div>
+    </div>
+</div>
+{^{if modalReservation tmpl='#tpl_modalReservation' /}}
+</script>
+
+<script id="tpl_modalReservation" type="text/x-jsrender">
+
+<div class="modal modal-drawer fade" id="modalReservation" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-drawer-right" role="document" style="min-width:50%">
+        <div class="modal-content">
+        
+<div class="modal-header d-flex">
+    <div class="flex-grow-1">
+        <h6 class="m-0">Запись на занятие</h6>
+    </div>
+    <button type="button" class="close" data-dismiss="modal">&times;</button>
+</div>
+<div class="modal-body pt-2">
+    {^{if !chTrainer}}
+    <div class="list-group list-group-flush list-group-bordered">
+        <div class="list-group-header">Выбрать тренера</div>
+        {^{for orderTrainers}}
+            <a href="#" class="list-group-item list-group-item-action prevent-default"[[- d-flex justify-content-between align-items-center]]
+                data-link="{on ~chTrainer #data}">
+                {{:name}}
+            </a>
+        {{/for}}
+    </div>
+    {{else}}
+    <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-light btn-icon mr-2" data-link="{on ~chTrainer 0}">
+            <i class="fa fa-chevron-left"></i>
+        </button>
+        <div class="flex-grow-1">
+            <h4 class="card-title mt-2">{^{:chTrainer.name}}</h4>
+        </div>
+    </div>
+    <hr>
+    {^{props chTrainer^drows sort='key'}}
+        <div class="mb-3">
+        <h6 class="card-title text-muted">{{formatDate:key}}, {{:~root.chTrainer.dates[prop[0]^dn].dayname}}</h6>
+            {{for prop sort='d_s'}}
+                {{if cnt_lesson>0}}
+                <button disabled="disabled"
+                    data-link="class{:'mr-2 mb-2 btn ' + ((cnt_sportsmen>0)? 'btn-primary':'btn-secondary')}">
+                    {{:d_s}}
+                </button>
+                {{else}}
+                <button class="btn btn-secondary mr-2 mb-2"
+                    data-link="{on ~sportsmenReservation}">
+                    {{:d_s}}
+                </button>
+                {{/if}}
+            {{/for}}
+        </div>
+    {{/props}}
+    <button class="btn btn-subtle-primary btn btn-block" data-link="{on ~moreTrainerDates}">
+        {^{formatDate:chTrainer^d2}}
+        <i class="fa fa-chevron-down"></i>
+    </button>
+    {{/if}}
+</div>
+
+        </div>
+    </div>
+</div>
+</script>
+
+[[$tplInvoiceLesson]]
+[[$tplFiles]]
+
+<script>
+var sp_data = [[!idGetSportsmen?mode=`cabinet` &redirect=`1`]];
+SCRM.idSportsmen = sp_data;
+SCRM.setClubStatus(SCRM.idSportsmen.clubStatus);
+
+$.extend(sp_data, {
+    addMenu: [],
+    arcSportsmenSquad: []
+});
+
+sp_data.idSportsmenSquad = $.map(sp_data.idSportsmenSquad, function(v, i) {
+    if (!v.dateend) return v;
+    sp_data.arcSportsmenSquad.push(v);
+});
+
+if (sp_data.clubDocs && sp_data.clubDocs.rows.length>0) {
+    sp_data.addMenu.push({id:'clubDocs', name:'Документы', tpl: '#tpl_clubDocs'});
+}
+
+var tbl_opts = {
+    idInvoice: { sidx: 'dateinvoice' },
+    idPay: { sidx: 'datepay' },
+};
+
+function getDataRows(table, opts, callback) {
+    opts = $.extend({
+        rows: 12,
+        sord: 'desc',
+        page:1
+    }, opts);
+    pJSON('/data/cabinet', $.extend({
+        table: table,
+        key: sp_data.key
+    }, opts, tbl_opts[table]), function(data){
+        if (callback) {
+            callback(data);
+        } else {
+            odata = { };
+            odata[table] = data.rows;
+            odata[table+'_page'] = data.page;
+            odata[table+'_total'] = data.total;
+            SCRM.link(sp_data, odata);
+        }
+    });
+}
+
+SCRM.loadWSS(['ready','files'], function() {
+    $.views.tags('sprow', {
+        contentCtx: true,
+        template: '#tpl_sprow'
+    });
+
+    $.link(true, '#sp_data', sp_data, {
+        showPaym: function(saldo) {
+            if (sp_data.opts.hide0paym && sp_data.saldo >= 0) return false;
+            return sp_data.idPayMethod && sp_data.idPayMethod.length;
+        },
+        btnNav: function(page, table, e, d){
+            getDataRows(table, {page:page});
+        },
+        showMoney: function(tab, e, d){
+            e.preventDefault();
+            $('[href="#money"]').show().click();
+            if (tab) {
+                $('[href="'+tab+'"]').click();
+            }
+        },
+        rowLessonInvoice: function(data, cls, d) {
+            var row = this.data;
+            return ((row.cfg_value||'').indexOf(row.status) > -1) && !row.dateinvoice;
+        },
+        showLessons: function(e, d){
+            e.preventDefault();
+            if (!sp_data.idLesson) getDataRows('idLesson');
+        },
+        newReservation: function(e, d){
+            SCRM.link(sp_data, {modalReservation: true});
+            $('#modalReservation').appendTo('body').modal('show');
+            getReservation();
+        },
+        chTrainer: function(tr, e, d){
+            if (tr!=0) {
+                getReservation({trainer: tr.id, d1: 'today'});
+                tr.drows = {};
+            }
+            SCRM.link(sp_data, {chTrainer: tr});
+        },
+        moreTrainerDates: function(e, d) {
+            getReservation({trainer: sp_data.chTrainer.id, d1: sp_data.chTrainer.d2});
+        },
+        sportsmenReservation: function(e, data) {
+            var d = data.linkCtx.data;
+            pJSON(resevationURL, {
+                start_id: d.id,
+                datestart: d.datestart,
+                sportsmen: sp_data.key
+            }, function(data) {
+                SCRM.success('Зарезервировал');
+                getReservation({trainer: sp_data.chTrainer.id, d1: d.datestart, days: 1});
+            });
+            
+            var ds = 'drows.'+d.datestart.split(' ')[0];
+            $.observable(sp_data.chTrainer).removeProperty(ds);
+
+            //console.log('sportsmenReservation', e, d, sp_data.chTrainer, ds);
+        },
+        showQRimg: function(e){
+            var url = '[[!++site_url]]qr?key='+ sp_data.key;
+            club_Modal({
+                body: '<img src="[[++crm_url]]qrcode.php?text='+ url +'" class="mx-auto d-block">',
+                cm_size: 'sm'
+            });
+        }
+    });
+    
+    $(document)
+    .on('parentEdit', function(e, txt) {
+        pJSON('/hook/changeparentdata', {
+            name: $(e.target).data('name'),
+            value: txt,
+            key: sp_data.key
+        }, function(result){
+            if (result && !result.error) {
+                SCRM.success('Saved');
+            }
+        });
+        
+    });
+
+    $('[data-linkfile]').trigger(sp_data.key, $.extend(sp_data.files, {
+        gender: sp_data.gender
+    }));
+    
+    var pageHeader = $('header.page-navs');
+    $('#headerInfo').insertAfter(pageHeader);
+    $('#headerBtn').appendTo(pageHeader)
+
+    //var clubSchedule = $('#schBox').data('key', sp_data.sp_squad.join(',')).appendTo('#schedule').show();
+    var clubSchedule = $('#schBox').data('key', sp_data.key)
+    .on('clubSchedule.reload', function(e) {
+        spinnr(true, $(this));
+    })
+    .on('clubSchedule.onload', function(e, d) {
+        spinnr(false, $(this));
+    })
+    .clubSchedule();
+
+    $('a[href="#money"]').on('shown.bs.tab', function (e) {
+        getDataRows('idInvoice');
+        getDataRows('idPay');
+    });
+    
+    var resevationURL = '/hook/schedule.reservation';
+    function getReservation(opts) {
+        opts = $.extend({
+            sportsmen: sp_data.key
+        }, opts);
+        pJSON(resevationURL, opts, function(data){
+            var nd = {
+                spLesson: data.spLesson,
+            };
+            if (opts.days && opts.days==1) delete data.d2;
+            if (!opts.trainer) {
+                nd.orderTrainers = data.rows;
+            } else {
+                var dates = {};
+                $.each(data.rows, function(i, v) {
+                    var ds = 'drows.'+v.datestart.split(' ')[0];
+                    if (!(ds in dates)) dates[ds] = [];
+                    dates[ds].push(v);
+                });
+                $.extend(data, dates);
+                SCRM.link(sp_data.chTrainer, data);
+                //console.log('trainer', sp_data, data);
+            }
+            SCRM.link(sp_data, nd);
+        });
+    }
+    getReservation();
+});
+</script>

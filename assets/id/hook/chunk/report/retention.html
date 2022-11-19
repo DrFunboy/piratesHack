@@ -1,0 +1,126 @@
+<script id="tpl_ReportRetention" type="text/x-jsrender">
+<div class="reportDates mb-3"></div>
+    
+    <div data-link="visible{:total_cnt>0}">
+    Новые ({^{:period_name}}): <b class="text-success">+{^{:total_cnt}}</b>
+    <table class="table table-bordered my-3">
+        <thead>
+            <tr>
+                <th>Период</th>
+                <th>Начислено</th>
+                <th>Оплачено</th>
+            </tr>
+        </thead>
+        <tbody>
+        {^{for period}}
+          <tr>
+            <td>{{:name}}</td>
+            <td class="text-right">
+                {{if spcnt}}<span class="badge badge-primary">{{:spcnt}}</span>{{/if}}
+                {{formatMoney:invsum||0}}
+            </td>
+            <td class="text-right">{{formatMoney:ipsum||0}}</td>
+          </tr>
+        {{/for}}
+        </tbody>
+    </table>
+    </div>
+    
+    {^{if !showMore}}
+    <a href="#" data-link="{on ~showMore}" class="prevent-default">Подробнее</a>
+    {{else}}
+
+    <h3 class="section-title">По спортсменам</h3>
+    <div class="table-responsive">
+    <table class="table table-bordered table-sm m-0">
+        <thead>
+            <tr>
+                <th>N</th>
+                <th>Ф.И.О.</th>
+                {^{for period}}
+                <th>{{:name}}</th>
+                {{/for}}
+            </tr>
+        </thead>
+        <tbody>
+        {^{for rows itemVar="~sp" ~p=period}}
+          <tr>
+            <td>{{:#index+1}}</td>
+            <td>
+                <a href="#" data-sportsmen="{{:key}}">{{:name}}</a>
+                <span class="text-muted d-block">{{:status}}</span>
+            </td>
+            {{for ~p}}
+            <td class="text-right">
+                {{if ~sp['invcnt_'+#index] ~idx=#index}}
+                    <div class="text-nowrap">
+                    <span class="badge badge-primary">{{:~sp['invcnt_' + ~idx]}}</span>
+                    {{:~sp['invsum_' + ~idx]}}
+                    </div>
+                {{/if}}
+                {{if ~sp['ipsum_'+#index] ~idx=#index}}
+                    <div class="text-success">{{:~sp['ipsum_'+~idx]}}</div>
+                {{/if}}
+            </td>
+            {{/for}}
+          </tr>
+        {{/for}}
+        </tbody>
+    </table>
+    </div>
+
+    {{/if}}
+</script>
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    var reportBlock = $.templates('#tpl_ReportRetention')
+    .link(param.container, param, {
+        showMore: function(e) {
+            SCRM.link(param, {showMore: true});
+        }
+    });
+    
+    var reportDates = reportBlock.find('.reportDates')
+    .on('periodInit', function(e, ppdata) {
+        $.each(ppdata.period, function(i, v) {
+            if (i > 0) {
+                v.d1d2[1] = ppdata.period[0].d1d2[1]
+            }
+        });
+    })
+    .on('periodChange', function(e, dates) {
+        pJSON('/report/retention', dates, function(data) {
+            console.log(data);
+            var nd = {
+                total_cnt: 0,
+                period_name: data.period[0].name,
+                period: data.period
+            };
+            nd.rows = $.map(data.rows, function(v, i) {
+                nd.total_cnt++;
+                function v_1(key){
+                    v[key] = (v[key]||0)*1;
+                    return v[key];
+                }
+                $.each(nd.period, function(n, p){
+                    p.spcnt = (p.spcnt||0) + (v_1('invcnt_'+n)? 1 : 0); // количество в человеках
+                    p.invsum = (p.invsum||0) + v_1('invsum_'+n);
+                    p.ipsum = (p.ipsum||0) + v_1('ipsum_'+n);
+                    //p['ipsum'] = (v['ipsum_'+n]||0)*1;
+                    //key2obj(data, 'spcnt_'+n, {v: 0}).v += (v['invcnt_'+n]||0)*1? 1 : 0;
+                    //key2obj(data, 'invsum_'+n, {v: 0}).v += (v['invsum_'+n]||0)*1;
+                    //key2obj(data, 'ipsum_'+n, {v: 0}).v += (v['ipsum_'+n]||0)*1;
+                });
+                return v;
+            });
+            SCRM.link(param, nd);
+            console.log(param);
+        });
+    })
+    .panelPeriod({
+        key: 'reportDates3',
+        selPeriod: '3'
+    });
+};
+</script>

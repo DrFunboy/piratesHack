@@ -1,0 +1,338 @@
+<table id="grid_idEvent" data-entity="idEvent"></table>
+
+<div id="tr_addinfo" style="display:none" data-link="visible{:id}">
+    <h3 class="section-block section-title p-0 mb-0" data-link="row^name"></h3>
+    <nav class="nav-scroller border-bottom1">
+        <div class="nav nav-tabs" role="tablist" id="eventTabs" data-link="{for eventTabs tmpl='navTab'}">
+        </div>
+    </nav>
+    <div class="tab-content card card-body">
+        <div id="tab_EventCategory" class="tab-pane active">
+            <div class="row">
+                <div class="col-md-5 mb-2">
+                    <div class="mb-2 d-flex">
+                        <div class="dropdown">
+                            <button data-toggle="dropdown" class="btn btn-primary btn-sm dropdown-toggle">Действия</button>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-arrow"></div>
+                                <a href="#" class="dropdown-item" data-link="{on ~copyCategory}">
+                                    <i class="fa fa-copy" aria-hidden="true"></i> Копировать категории</a>
+                                <a href="#" class="dropdown-item" data-link="{on ~pasteCategory} visible{:copyCategory}">
+                                    <i class="fa fa-paste" aria-hidden="true"></i> Вставить категории</a>
+
+                                <div class="dropdown-divider"></div>
+                                <button class="dropdown-item" data-link="{on ~exportEList} disabled{:!category}">
+                                    <i class="fa fa-file-word-o" aria-hidden="true"></i> Выгрузить заявку</button>
+                                [[-<a href="#" class="nyet dropdown-item">Экспортировать</a>]]
+                            </div>
+                        </div>
+                    </div>
+                    <table id="tableEventCategory" data-entity="idEventCategory"></table>
+                </div>
+                <div class="col-md-7" style="display:none" data-link="visible{:category}">
+                    <div class="mb-2 d-flex">
+                        <button class="btn btn-success btn-sm mr-1" data-link="{on ~addSportsmen}"><i class="fa fa-user-plus"></i></button>
+                        <div class="dropdown">
+                            <button data-toggle="dropdown" class="btn btn-secondary btn-sm">
+                                <i class="fa fa-clipboard"></i></button>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-arrow"></div>
+                                <a href="#" class="dropdown-item" id="eventMemberAdd"><i class="dropdown-icon fa fa-user-plus"></i> Добавить из буфера</a></li>
+                            </div>
+                        </div>
+                    </div>
+                    <table id="spEventMember" data-entity="idEventMember"></table>
+                </div>
+            </div>
+        </div>
+        <div id="tab_EventMember" class="tab-pane">
+            [[$dbInner]]
+        </div>
+        
+    </div>
+</div>
+
+<script id="tpl_evAddSportsmen" type="text/x-jsrender">
+{{include ~placeholder="ФИО" tmpl="#tpl_searchinput" /}}
+
+<div class="list-group list-group-flush list-group-bordered mt-2" data-link="visible{:idSportsmens} {for idSportsmens tmpl='#tpl_rowSportsmen'}">
+</div>
+</script>
+
+<script>
+SCRM.eventData = {
+    eventTabs: [
+        {href: '#tab_EventCategory', html: 'Категории', active: true, tpl: '-'},
+        {href: '#tab_EventMember', html: 'Спортсмены', tpl: '-'}
+    ]
+};
+
+SCRM.loadWSS(['ready','grid'], function () {
+    var eventData = $.extend(SCRM.eventData, {
+        row: {}
+    });
+
+    eventData.grid = $("#grid_idEvent")
+    .jqGridInit({
+        sortname: 'datestart', sortorder: 'desc',
+        search: true,
+        autowidth: true,
+        colModel:[
+            {template: idFieldTemplate},
+            {name:'status', label: 'Тип', editable: true, template: selTemplate,
+                clubStatus: 'idEvent', lookupKey: 'name'
+            },
+            {name:'name', label:'Наименование', width:250,
+                editable: true, editrules: {required: true},
+                cellattr: function (rowId, tv, rawObject, cm, rdata) { 
+                    return 'style="white-space: normal;"';
+                },
+                template: editRowLinkTemplate
+            },
+            {name:'place', label:'Место проведения', width:200,
+                editable: true,
+                cellattr: function (rowId, tv, rawObject, cm, rdata) { 
+                    return 'style="white-space: normal;"';
+                }
+            },
+            {name:'datestart', label:'Начало', editable: true, template:dateTemplate },
+            {name:'dateend', label:'Окончание', editable: true, template:dateTemplate }
+        ],
+        onSelectRow: function(rid,rr,ee){
+            var eventRow = $(this).jqGrid('getRowData', rid);
+            if (eventData.id != rid) $('#eventTabs > [data-toggle="tab"]').addClass('calculate');
+            SCRM.link(eventData, {
+                id: rid,
+                category: null,
+                row: eventRow
+            });
+            
+            $("#tableEventCategory").trigger('reloadGrid');
+            $('#eventTabs > [data-toggle="tab"].active').trigger('calculate');
+        },
+        navOpts: {add: true, edit: true, del: true},
+        fltrToolbar: true
+    })
+    .jqGridColumns()
+    .jqGridExport();
+    
+    $('#eventMemberAdd').click(function(e){
+        e.preventDefault();
+        var insArray = get_clipSportsmen(),
+            emaCount = 0;
+        if (insArray && insArray.length > 0) {
+            SCRM.msg('Добавлено <b id="emaCount">0</b> - '+insArray.length, 'Добавляю записи', {
+                closeButton: true,
+                timeOut: 0, extendedTimeOut: 0
+            });
+            $.each(insArray, function(i, v){
+                pEDIT('idEventMember', {
+                    oper:'add',
+                    idevent: eventData.id,
+                    sportsmen: v
+                }, function(data){
+                    emaCount++;
+                    $('#emaCount').text(emaCount);
+                    if (emaCount == insArray.length) eventData.grSportsmen.trigger('reloadGrid');
+                });
+            });
+        } else {
+            SCRM.alert('Empty');
+        }
+    });
+    
+    
+    $("#tableEventCategory")
+    .one('reloadGrid', function(e, data) {
+        $(this)
+        .on('jqGridSerializeGridData', function(e, postData) {
+            postData._where = {idevent: eventData.id};
+        })
+        .jqGridInit({
+            sortname: 'name', sortorder: 'asc',
+            rowNum: 50,
+            multiselect: true,
+            //rowList: false,
+            pginput: false,
+            colModel:[
+                {name: 'id', hidden: true, template: idFieldTemplate},
+                {name: 'name', label: 'Наименование', width: 250,
+                    editable: true, editrules: {required: true},
+                    cellattr: function (rowId, tv, rawObject, cm, rdata) { 
+                        return 'style="white-space: normal;"';
+                    },
+                    template: editRowLinkTemplate
+                },
+                {name: 'alias', width: 100, editable: true, hidden: true},
+                {name: 'menuindex', template: menuindexTemplate, hidden: true},
+                {name: 'extended', 
+                    hidden: true, //hidedlg: true,
+                    editable: true, edittype: 'textarea',
+                    editoptions: {rows: '3', cols: '40'}
+                }
+            ],
+            navOpts: {add: true, edit: true, del: true}
+        })
+        .jqGridColumns()
+    })
+    .on('jqGridAddEditSerializeEditData', function(e, pd){
+        if (pd.oper=='add') pd.idevent = eventData.id;
+    })
+    .on('jqGridSelectRow', function(e, rid, sel) {
+        SCRM.link(eventData, {category: rid});
+        $("#spEventMember").trigger('reloadGrid');
+    });
+
+    $("#spEventMember")
+    .one('reloadGrid', function(e) {
+        $(this).jqGridInit({
+            postData: {
+                _where: function() {
+                    return 'ideventcategory=' + eventData.category
+                }
+            },
+            rowNum: 25,
+            //rowList: false,
+            pginput: false,
+            multiSort: true,
+            //sortname: 'team asc,sportsmen_name asc', //sortorder: 'asc',
+            colModel:[
+                {name:'id', hidden: true, template: idFieldTemplate},
+                {name:'team', label:'Команда', width:70, editable: true},
+                {name:'sportsmen_name', label:'ФИО', width:200,
+                    index: 'idSportsmen.name',
+                    formatter: function(cellvalue, i, row){
+                        return (cellvalue)?
+                        '<a href="#" data-sportsmen="'+row.key+'"><i class="fa fa-id-card-o"></i> '+ cellvalue+'</a>'
+                        : '';
+                    }
+                },
+                {name:'place', label:'Место', width:70, editable: true},
+                {name:'result', label:'Результат', width:70, editable: true},
+                {name: 'act', template: 'actions', width: 60}
+            ],
+            actionsNavOptions: {
+                delbutton: false
+            },
+            navOpts: {add: false, edit: false, del: true}
+        })
+        .jqGridColumns();
+    });
+    
+    $.link(true, "#tr_addinfo", eventData, {
+        addSportsmen: function(e, data) {
+            var srchData = { 
+                body: '#tpl_evAddSportsmen'
+            };
+            club_Modal(srchData, {
+                srchSubmit: function(e, data) {
+                    e.preventDefault();
+                    pDATA('idSportsmen', {
+                        sidx: 'idSportsmen.name', sord: 'asc',
+                        rows: 100,
+                        filters: SCRM.obj2Filter({
+                            name: {op: 'bw', data: srchData.srchTxt},
+                            status: 'narc'
+                        })
+                    }, function(data) {
+                        SCRM.link(srchData, {idSportsmens: data.rows});
+                    });
+                },
+                chSportsmen: function(e, data) {
+                    e.preventDefault();
+                    var d = data.linkCtx.data;
+                    //console.log(d);
+                    pEDIT('idEventMember', {
+                        oper: 'add',
+                        idevent: eventData.id,
+                        ideventcategory: eventData.category,
+                        sportsmen: d.id
+                    }, function(data) {
+                        SCRM.success('Добавил');
+                        srchData.mdl_hide();
+                        $("#spEventMember").trigger('reloadGrid');
+                    });
+                }
+            });
+        },
+        exportEList: function(e, data) {
+            //e.preventDefault();
+            var data = {
+                table: 'idSportsmen',
+                _where: 'evc.id=' + eventData.category,
+                _export: 'spEventMember',
+                tmpl: 'eventmembers.docx',
+                rows: 1001 // Безлимитно
+            };
+            clubPostForm( $('#spEventMember').jqGrid('getGridParam', 'url'), data);
+        },
+        copyCategory: function(e, data) {
+            e.preventDefault();
+            var grid = $('#tableEventCategory');
+            var pd = $.extend({ }, grid.jqGrid('getGridParam', 'postData'), {rows: 1001});
+            var sel_rows = getGridSelRows(grid);
+            if (sel_rows.length>0) pd._where = {id: sel_rows};
+            if (pd._where && typeof pd._where === 'object' ) pd._where = JSON.stringify(pd._where);
+            
+            pJSON(grid.jqGrid('getGridParam', 'url'), pd, function(data){
+                SCRM.link(eventData, {copyCategory: data.rows});
+            });
+        },
+        pasteCategory: function(e, data) {
+            e.preventDefault();
+            var hooks = $.map(eventData.copyCategory, function(v, i){
+                return function() {
+                    return pEDIT('idEventCategory', $.extend(v, {
+                        oper: 'add',
+                        idevent: eventData.id
+                    }), function(){
+                        if (i==eventData.copyCategory.length-1) $("#tableEventCategory").trigger('reloadGrid');
+                    });
+                };
+            });
+            SCRM.jqXHRarray(hooks);
+        }
+    });
+    
+    eventData.grSportsmen = $('#grmain')
+    .on('jqGridSerializeGridData', function(e, postData) {
+        key2obj(postData, '_where', {})['evc.idevent'] = eventData.id;
+    })
+    .one('jqGridBeforeInit', function(e, grOpts) {
+        /*$.extend(grOpts, {
+            //editurl: editUrl + '?table=idEventMember',
+            multiselect: true, multiboxonly: true, multiPageSelection: true
+        });*/
+        /*grOpts.postData._where = function() {
+            return 'evc.idevent='+eventData.id;
+        };*/
+        grOpts.colModel.splice(2, 0, {
+            label: 'Категория', name: 'eventcategory_name', width:150,
+            index: 'evc.name'
+        });
+        $.extend(grOpts.navOpts, {edit: false, del: false});
+        
+        $.each(grOpts.colModel, function(i, v){
+            if (v.name=='status') {
+                v.searchoptions = $.extend(true, {}, v.searchoptions, {defaultValue: ''});
+            }
+        });
+    })
+    .one('jqGridAfterInit', function(e){
+        $(this).jqGridExport();
+    });
+
+    $('#eventTabs')
+    .on('shown.bs.tab calculate', function(e, idevent){
+        var href = $(e.target).attr('href');
+        if ( !eventData[href] || eventData[href] != eventData.id ) {
+            eventData[href] = eventData.id;
+            if (href == '#tab_EventMember') {
+                //console.log(e, eventData[href]);
+                eventData.grSportsmen.trigger('sportsmenGrid');
+            }
+        }
+    });
+});
+</script>
+

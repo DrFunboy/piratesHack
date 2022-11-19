@@ -1,0 +1,511 @@
+<div class="card" id="tabs">
+    <nav class="nav-scroller card-header">
+        <div class="nav nav-tabs card-header-tabs" role="tablist">
+            <a class="nav-item nav-link active" data-toggle="tab" href="#an_now" aria-selected="true">Сегодня</a>
+            <a class="nav-item nav-link" data-toggle="tab" href="#an_period" aria-selected="false">За период</a>
+        </div>
+    </nav>
+
+    <div class="tab-content card-body">
+        <div id="an_now" class="tab-pane active">
+            <div class="nav nav-pills mb-2" role="tablist">
+                <a class="nav-item nav-link active" data-toggle="tab" href="#now_tbl" aria-selected="true">Свод</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#now_cube" aria-selected="false">С группировками</a>
+            </div>
+            <div class="tab-content">
+                <div id="now_tbl" class="tab-pane active">
+                    <h3 class="section-title">Действующие спортсмены <span class="badge badge-lg badge-danger" id="allcount">...</span></h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="stat1">
+                            <thead>
+                            <tr>
+                                <th>Подразделение</th>
+                                <th>К-во<br>спортсменов</th>
+                                <th>К-во<br>должников</th>
+                                <th>Сумма<br>долга</th>
+                                <th>К-во<br>переплат</th>
+                                <th>Сумма<br>переплат</th>
+                            </tr>
+                            </thead>
+                            <tbody class="dash_links"></tbody>
+                        </table>
+                    </div>
+                    <div><a href="#" id="backbtn" class="btn btn-outline-primary btn-xs">&laquo; Назад</a></div>
+                </div>
+    
+                <div role="tabpanel" class="tab-pane" id="now_cube">
+                    <div data-toggle="buttons" class="btn-group btn-group-toggle mb-2">
+                        <label class="btn btn-sm btn-secondary active">
+                            <input type="radio" name="options" checked="checked" data-rows="Зал,Группа"> Группы </label>
+                        <label class="btn btn-sm btn-secondary">
+                            <input type="radio" name="options" data-rows="Зал,Тренер"> Тренеры </label>
+                        <label class="btn btn-sm btn-secondary">
+                            <input type="radio" name="options" data-rows="Дисциплина,Зал"> Дисциплины </label>
+                    </div>
+                    <div id="pivot"></div>
+                </div>
+            </div>
+        </div>
+        <div id="an_period" class="tab-pane panel-body">
+            [[$panelPeriod]]
+            <div id="panelPeriod"></div>
+            <div class="nav-scroller">
+                <div class="nav nav-pills my-2" role="tablist" id="anPeriodTabs">
+                    <a class="nav-item nav-link active" data-toggle="tab" href="#an_invoice">Начисления</a>
+                    <a class="nav-item nav-link" data-toggle="tab" href="#an_invpays">Оплаты</a>
+                    <a class="nav-item nav-link" data-toggle="tab" href="#an_pays">Реестр оплат</a>
+                    <a class="nav-item nav-link" data-toggle="tab" href="#an_money">По спортсменам</a>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="an_invoice" data-report="idSportsmen_invoice">
+                    <div data-link="{if !invoice tmpl='Loading'}{else tmpl='#an_tinvoice_tpl'}"></div>
+                    <div class="pt-3">
+                        <table data-entity="idSportsmen"></table>
+                    </div>
+                </div>
+                <div class="tab-pane" id="an_invpays" data-report="idSportsmen_invpays">
+                    <div data-link="{if !invpays tmpl='Loading'}{else tmpl='#an_tinvpays_tpl'}"></div>
+                    <div class="pt-3">
+                        <table data-entity="idSportsmen"></table>
+                    </div>
+                </div>
+                <div class="tab-pane" id="an_pays">
+                    <table id="grid_anPay" data-entity="idPay" class="calculateGrid"></table>
+                </div>
+                <div class="tab-pane" id="an_money">
+                    <table id="gridSpInvPays" data-entity="idSportsmen"></table>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script id="an_tinvoice_tpl" type="text/x-jsrender">
+<div class="table-responsive"><table class="table table-bordered m-0">
+<thead>
+    <tr>
+        <th>Наименование</th>
+        <th>Начислено</th>
+        <th>Оплачено</th>
+        <th>Задолженность</th>
+    </tr>
+</thead>
+<tbody>
+{{* window.inv_totals = {t1:0, t2:0, t3:0}; }}
+{{for invoice.rows sort="typeinvoice_name"}}
+{{* inv_totals.t1 += data.total*1;
+    inv_totals.t2 += data.totalpay*1;
+    inv_totals.t3 += data.total - data.totalpay;
+}}
+    <tr data-rowid="{{:typeinvoice}}">
+    <th>
+    <a href="#" class="inv_sportsmen" data-mode="leftJoin">
+        {{:typeinvoice_name}}
+    </a>
+    </th>
+    <td class="text-right">
+        <a href="#" class="inv_sportsmen">
+            <span class="badge badge-primary">
+                <span data-toggle="tooltip" title="Количество записей">{{:cnt}}</span>
+                {{if cnt != cnt_sportsmen}}
+                / <span data-toggle="tooltip" title="Количество спортсменов">{{:cnt_sportsmen}}</span>
+                {{/if}}
+            </span><br>
+            {{formatMoney:total}}
+            {{if cnt_0!='0'}}<br><small class="text-muted"><span class="badge badge-secondary">{{:cnt_0}}</span> = 0</small>{{/if}}
+        </a>
+    </td>
+    <td class="text-right">
+        <a href="#" class="inv_sportsmen" data-having="pays" title="Показать оплативших">
+            <span class="badge badge-success">{{:cntpay}}</span><br>
+            {{formatMoney:totalpay}}
+        </a>
+    </td>
+    <td class="text-right">
+        <a href="#" class="inv_sportsmen" data-mode="leftJoin" data-having="debts" title="Показать должников">
+            <span class="badge badge-warning">{{:cntnpay}}</span><br>
+            {{formatMoney:(total - totalpay)}}
+        </a>
+    </td>
+    </tr>
+{{/for}}
+</tbody>
+<tfoot>
+    <tr>
+        <th>
+        Итого
+        </th>
+        <td class="text-right">
+            {{*: formatMoney(inv_totals.t1)}}
+        </td>
+        <td class="text-right">
+            {{*: formatMoney(inv_totals.t2)}}
+        </td>
+        <td class="text-right">
+            {{*: formatMoney(inv_totals.t3)}}
+        </td>
+    </tr>
+</tfoot>
+
+</table></div>
+</script>
+
+
+<script id="an_tinvpays_tpl" type="text/x-jsrender">
+<div class="table-responsive"><table class="table table-bordered m-0">
+<thead>
+    <tr>
+        <th>Наименование</th>
+        <th>Оплачено</th>
+        <th><i class="fa fa-money"></i></th>
+        <th><i class="fa fa-bank"></i></th>
+    </tr>
+</thead>
+<tbody>
+{{* window.inv_totals = {t1:0, t2:0, t3:0}; }}
+{{for invpays.rows}}
+{{* window.inv_totals.t1 += data.total*1;
+    window.inv_totals.t2 += data.cache_total*1;
+    window.inv_totals.t3 += data.ncache_total*1;
+}}
+    <tr data-rowid="{{:typeinvoice}}#{{:invoice_period}}">
+    <td>
+        <b>{{:typeinvoice_name}}</b><br>{{formatPeriod:invoice_period}}
+    </td>
+    <td class="text-right">
+        <a href="#" class="inv_sportsmen" data-id="{{:typeinvoice}}">
+            <span class="badge badge-primary">
+                <span data-toggle="tooltip" title="Количество записей">{{:cnt}}</span>
+                {{if cnt != cnt_sportsmen}}
+                / <span data-toggle="tooltip" title="Количество спортсменов">{{:cnt_sportsmen}}</span>
+                {{/if}}
+            </span><br>
+            {{formatMoney:total}}
+        </a>
+    </td>
+    <td class="text-right">
+        {{formatMoney:cache_total}}
+    </td>
+    <td class="text-right">
+        {{formatMoney:ncache_total}}
+    </td>
+    </tr>
+{{/for}}
+</tbody>
+<tfoot>
+    <tr>
+        <th>
+        Итого
+        </th>
+        <td class="text-right">
+            {{*: formatMoney(inv_totals.t1)}}
+        </td>
+        <td class="text-right">
+            {{*: formatMoney(inv_totals.t2)}}
+        </td>
+        <td class="text-right">
+            {{*: formatMoney(inv_totals.t3)}}
+        </td>
+    </tr>
+</tfoot>
+
+</table></div>
+</script>
+
+<script id="tpl_stat1" type="text/x-jsrender">
+{{for rows}}
+    <tr class="city{{:city}}" style="display:none">
+    <td>{{:clubname}}</td>
+    <td>{{:cnt_all}}</td>
+    
+    <td>{{:cnt_minus}}</td>
+    <td>{{formatMoney:sum_minus}}</td>
+    <td>{{:cnt_plus}}</td>
+    <td>{{formatMoney:sum_plus}}</td>
+    </tr>
+{{/for}}
+{{for cityData}}
+    <tr class="city0">
+    <td><a href="#" data-city="{{:id}}">{{:name}}</a></td>
+    <td>{{:cnt_all}}</td>
+    
+    <td>{{:cnt_minus}}</td>
+    <td>{{formatMoney:sum_minus}}</td>
+    <td>{{:cnt_plus}}</td>
+    <td>{{formatMoney:sum_plus}}</td>
+    </tr>
+{{/for}}
+</script>
+
+<script>
+var moneyReport = {
+    
+};
+
+SCRM.loadWSS('grid', function(){
+    $.views.converters({
+        formatPeriod: function(str) {
+            return $.jgrid.parseDate("ISO8601Long", str+'-01', "M Y");
+        }
+    });
+    var postData = {
+        rows: 1001,
+        _report: 'idCity_counts'
+    };
+    
+    pDATA('idSportsmen', postData, function(data){
+        var cityData = { };
+        var allcount = 0;
+        $.each(data.rows, function(k, v){
+            if (!cityData[v.city]) cityData[v.city] = {
+                name: v.cityname,
+                id: v.city
+            };
+            $.each(v, function(k1, v1){
+                var a_fld = k1.split('_');
+                if (a_fld[0]=='cnt'||a_fld[0]=='sum') {
+                    if (!cityData[v.city][k1]) cityData[v.city][k1] = 0;
+                    cityData[v.city][k1] += 1*v1;
+                }
+            });
+            allcount += 1 * v.cnt_all;
+        });
+        $('#allcount').text(allcount);
+        data.cityData = $.map(cityData, function(v, i){
+            return v;
+        });
+        var tbody = $('#stat1 tbody').html( $.templates("#tpl_stat1").render(data) );
+        $('a[data-city]', tbody).click(function(e){
+            e.preventDefault();
+            var city = $(this).data('city');
+            $('tr', tbody).hide().filter('.city'+city).show();
+            $('#backbtn').show()
+        });
+        $('#backbtn').on('click', function(e){
+            e.preventDefault();
+            $(this).hide();
+            $('tr', tbody).hide().filter('.city0').show();
+        }).click();
+    });
+
+    /* ================= Pivot =================== */
+    $('#now_cube')
+    .one('calculate', function(){
+        SCRM.loadWSS('pivottable', function() {
+            var utils = $.pivotUtilities;
+            var tpl = utils.aggregatorTemplates;
+            var numberFormat = utils.numberFormat;
+            var Format0 = numberFormat({digitsAfterDecimal: 0, thousandsSep: ' '});
+            var pivotData = null;
+            
+            pDATA('idSportsmen', $.extend({
+                _mode: 'analytics'
+            }, postData), function(data) {
+                pivotData = data;
+                showPivot();
+            });
+            
+            var statCubeBtns = $('#now_cube input[name=options]').change(showPivot);
+            
+            function showPivot() {
+                var rows = statCubeBtns.filter(':checked').data('rows').split(',');
+        
+                //var successRate = function() { return sumOverSum(frFormat)(["successes", "trials"]); }
+                var cfg = {
+                    aggregators: $.pivotUtilities.aggregators,
+                    aggregators: {
+                        "Сумма долга": function() { return tpl.sum(Format0)(["Долг"])},
+                        "Сумма переплат": function() { return tpl.sum(Format0)(["Переплата"])}
+                    },
+                    rows: rows,
+                    rendererName: "Тепловая карта",
+                    hiddenAttributes: ['Долг','Переплата']
+                };
+        
+                var transformCols = function(injectRecord){
+                    pivotData.rows.map(function(mp) {
+                        injectRecord({
+                            'Долг': Math.abs(mp.sum_minus),
+                            'Переплата': mp.sum_plus,
+                            'Зал': mp.club_name,
+                            'Тренер': mp.trainer_name,
+                            'Дисциплина': mp.sport_name,
+                            'Группа': mp.squad_name
+                        });
+                    });
+                };
+
+                $("#pivot").pivotUI(transformCols, cfg, true, "ru");
+            }
+        });
+    });
+    
+    $("#grid_anPay")
+    .one('reloadGrid', function(e, data){
+        $(e.target)
+        .on('jqGridSerializeGridData', function(e, pd) {
+            $.extend(pd, moneyReport.dates);
+        })
+        .jqGridInit({
+            sortname: 'datepay', sortorder: 'desc',
+            search: true,
+            colModel:[
+                {template: idFieldTemplate},
+                {template: createdTemplate},
+                {name:'datepay', label:'Дата', editable: true,
+                    template: dateTemplate
+                },
+                {name:'name', index:'idSportsmen.name', label:'Ф.И.О.', width:150,
+                    formatter: function(cellvalue, options, row) {
+                        return (cellvalue)?
+                            '<a href="#" data-sportsmen="'+row.sportsmen_key+'"><i class="fa fa-id-card-o"></i> '+ cellvalue+'</a>'
+                            : '';
+                    }
+                },
+                {name:'numpay', label:'Номер', width:90, editable:true},
+            
+                {name:'sum', label:'Сумма', width:90, editable: true,
+                    template: numberTemplate
+                },
+                {name:'type_pay', label:'Тип', index:'idPay.code1c', width:50, align:'center',
+                    //search:true,
+                    formatter: typePay,
+                    stype: 'select',
+                    searchoptions:{
+                        value: lookAll+';bank:Банк;cache:Нал.'
+                    }
+                },
+                {name:'spent', label:'Зачтено', width:90,
+                    template: numberTemplate
+                },
+                {name:'rest', label:'Остаток', width:90,
+                    template: numberTemplate
+                },
+                {name:'trainer_name', index:'idTrainer.name', label:'Тренер', width:150, hidden: true},
+                {name:'payd', hidden:true},
+                {name:'code1c', hidden:true},
+                {name:'info', label:'Комментарий', width:270,
+                    template: infoTemplate,
+                    editable:true
+                }
+            ],
+            rowattr: function(data) {
+                if (data.payd == 0) return {'class': 'rowArc'};
+                if (data.code1c) return {'class': 'rowWarn'};
+            },
+            footerrow: true, userDataOnFooter: true,
+            navOpts: {add: false, edit: true},
+            fltrToolbar: true
+        })
+        .jqGridColumns()
+        .jqGridExport();
+    });
+
+    function initEFields(e, grOpts) {
+        var grid = $(e.target);
+        
+        function cellSaldoColor3(rowId, cellValue, rawObject, cm, rdata) {
+            var invoiced = (rawObject.invoiced) ? rawObject.invoiced*1 : 0;
+            var payed = (rawObject.payed) ? rawObject.payed*1 : 0;
+            rdata.i_g_p = invoiced - payed;
+            if (rdata.i_g_p == 0) return '';
+            return arr2clstring([(rdata.i_g_p > 0)? 'rowYes' : 'rowNo']);
+        }
+        function cellSaldoColor4(rowId, cellValue, rawObject, cm, rdata){
+            if (rdata.i_g_p == 0) return '';
+            return arr2clstring([(rdata.i_g_p < 0)? 'rowYes' : 'rowNo']);
+        }
+        $.each(grOpts.colModel, function(i, v) {
+            if (v.name=='invoiced') v.cellattr = cellSaldoColor3;
+            if (v.name=='payed') v.cellattr = cellSaldoColor4;
+            if (v.name=='status') {
+                key2obj(v, 'searchoptions', {}).defaultValue = '';
+                //v.searchoptions = $.extend(true, {}, v.searchoptions, {defaultValue: ''});
+            }
+        });
+        grid.on('jqGridSerializeGridData', function postDates(e, pd) {
+            delete pd._stype;
+            console.log(e, pd)
+            $.extend(pd, moneyReport.dates);
+        });
+        /*.one('jqGridAfterInit', function(e) {
+            $(this).data('spData').wrapper.addClass('pt-3');
+        });*/
+    }
+    
+    //var gridSpMoneyReport = $('#gridSpMoneyReport')
+    //.one('jqGridBeforeInit', initEFields)
+    
+    $('#an_period [data-entity="idSportsmen"]')
+    .on('jqGridBeforeInit', initEFields);
+
+    $('#an_invoice,#an_invpays')
+    .on('click', '.inv_sportsmen', function(e){
+        e.preventDefault();
+        var link = $(this),
+            tab = link.closest('.tab-pane'),
+            report = tab.data('report'),
+            grid = $('[data-entity="idSportsmen"]', tab).attr('id', report);
+
+        SCRM._run('/chunk/report.spgrid', {
+            grid: grid.data('start_status', '*'),
+            initOpts: {
+                ipcFields: 'invoiced,add_cnt,payed,add_info',
+                postData: {
+                    //filters: '',
+                    _report: report,
+                    mode: link.data('mode') || 'innerJoin',
+                    rowid: link.closest('[data-rowid]').data('rowid'),
+                    having: link.data('having') || ''
+                }
+            }
+        });
+    })
+    .link(true, moneyReport);
+
+    /*var gridSpInvPays = $('#gridSpInvPays')
+    .one('jqGridBeforeInit', initEFields);*/
+
+    $(document)
+    .on('calculate', '[href="#an_money"]', function(e) {
+        SCRM._run('/chunk/report.spgrid', {
+            grid: gridSpInvPays,
+            initOpts: {
+                ipcFields: 'invoiced,add_cnt,payed',
+                postData: {
+                    _report: 'idSportsmen_inv_and_pays'
+                }
+            }
+        });
+    })
+    .on('calculate', '[href="#an_invoice"],[href="#an_invpays"]', function(e) {
+        var link = $(this).attr('href'),
+            tab = $(link),
+            dname = link.substring(4);
+        $('[data-entity="idSportsmen"]', tab).trigger('hide');
+
+        SCRM.link(moneyReport, dname, null);
+        pDATA('idSportsmen', $.extend({
+                lessdata: 1,
+                _report: tab.data('report') //'idSportsmen_invoice'
+            }, moneyReport.dates),
+        function(data){
+            SCRM.link(moneyReport, dname, data);
+        });
+    });
+    
+    $('#panelPeriod')
+    .on('periodChange', function(e, dates) {
+        SCRM.link(moneyReport, {dates: dates});
+        $('#anPeriodTabs [data-toggle="tab"]').reCalculate();
+    })
+    .panelPeriod();
+
+    function typePay(cellValue, options, rowObject) {
+        return (rowObject.code1c)? '<i class="fa fa-university fa-lg"></i>' : '';
+    }
+});
+</script>

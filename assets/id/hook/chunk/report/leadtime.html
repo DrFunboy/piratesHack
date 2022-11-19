@@ -1,0 +1,39 @@
+<script id="tpl_ReportLeadTime" type="text/x-jsrender">
+    <div class="reportDates mb-3"></div>
+    <table class="table table-bordered no-margins">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Количество</th>
+            </tr>
+        </thead>
+        <tbody>
+        {^{for rows}}
+        <tr data-link="class{:data>50? 'table-danger':''}">
+            <td>{{formatDateTime:label}}</td>
+            <td class="text-right">{{:data}}</td>
+        </tr>
+        {{/for}}
+        </tbody>
+    </table>
+</script>
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    $.templates('#tpl_ReportLeadTime')
+    .link(param.container, param)
+    .find('.reportDates')
+    .on('periodChange', function(e, dates) {
+        var postData = $.extend({
+            rows: 1001,
+            _report: 'idLead_group',
+            _label: 'idLead.datestart'
+        }, dates);
+        pDATA('idLead', postData, function(data) {
+            SCRM.link(param, {rows: data.rows});
+        });
+    })
+    .panelPeriod('reportDates');
+};
+</script>
+

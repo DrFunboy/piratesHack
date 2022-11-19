@@ -1,0 +1,60 @@
+<script id="mdl_grid_col" type="text/x-jsrender">
+	<ul class="sortable-lists list-group list-group-bordered"
+        data-toggle="sortable" id="ulGrid">
+        {{for colModel}}
+            <li class="list-group-item align-items-center drag-handle"
+                data-name="{{:name}}" data-link="visible{:!hidedlg}">
+                <span class="drag-indicator"></span>
+                <div class="d-flex">
+                	<span class="custom-control custom-control-inline custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" data-link="{:visible:}" id="ckb{{:#index}}">
+                        <label class="custom-control-label" for="ckb{{:#index}}"></label>
+                    </span>
+                    <span>{{:label || name}}</span>
+                </div>
+            </li>
+        {{/for}}
+	</ul>
+</script>
+
+<script>
+SCRM._service[ '[[+rq]]' ] = function() {
+    var grid = $(this);
+    var colModel = $.map(grid.jqGrid('getGridParam', 'colModel'), function(v){
+        v.visible = !v.hidden;
+        if (in_array(v.name, ['rn','cb'])) v.hidedlg = true;
+        return v;
+    });
+    var pageID = (SCRM.app || {}).club_id || 0,
+        StorageId = 'colModel_'+ pageID + grid.attr('id');
+    var modalVar = {
+		body: '#mdl_grid_col',
+		colModel: colModel,
+		mdl_footer: `<button type="button" class="btn btn-secondary" data-link="{on 'click' clearLS}"><i class="fa fa-undo"></i></button>`,
+		clearLS: function(e,d){
+		    //Очищение localStorage при нажатии на кнопку в модалке
+		    removeObjectFromLocalStorage(StorageId);
+		    window.location = window.location;
+		},
+		onOK: function(e, md){
+		    grid.jqGridRemapColumns(colModel, modalVar.colNames);
+		    saveObjectInLocalStorage(StorageId, grid.jqGrid('getGridParam', 'colModel'));
+		    modalVar.mdl_hide();
+		}
+	};
+    club_Modal(modalVar);
+    SCRM.loadWSS('Sortable', function() {
+        $('[data-toggle="sortable"]', modalVar.mdl).each(function(i, selector) {
+            var options = $(selector).data();
+            options.onEnd = function (evt) {
+                modalVar.colNames = $.map(evt.from.children, function(value, key){
+                    return value.dataset.name;
+            	});
+            };
+            options.animation = options.animation || 150;
+            options.filter = options.filter || '.ignore-sort';
+            Sortable.create(selector, options);
+        });
+    });
+}
+</script>

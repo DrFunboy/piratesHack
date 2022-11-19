@@ -1,0 +1,29 @@
+[[$tplClubFrameTop]]
+<script>
+var spData = [[!idGetSportsmen?mode=`pay`]];
+$(function() {
+    if (spData.paydata){
+        if (spData.paydata.html) {
+            $('#payform').html(spData.paydata.html);
+        } else {
+            var pf = $('#payform form').hide();
+            $.each(spData.paydata, function(i, v){
+                //pf.append('<label>'+i+'</label>');
+                pf.append('<input type="text" name="'+i+'" value="'+v+'">');
+            });
+            pf.attr('action', spData.paydata.payUrl);
+            if (spData.paydata.debug) console.log(spData); else pf.submit();
+        }
+    }
+});
+</script>
+
+<div id="payform">
+    <form action="" method="post">
+        <input type="submit" value="OK">
+    </form>
+    <p>Loading pay data...</p>
+</div>
+
+</body>
+</html>

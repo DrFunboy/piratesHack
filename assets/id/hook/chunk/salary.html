@@ -1,0 +1,218 @@
+<!--
+salary_cfg {
+    "trainer":["70","500"],
+    "trainer2":["50","300"]
+} 
+
+Модули - clubSalary	clubSalary	 	clubSalary	{"load":"/chunk/salary","club_id":"39"}
+
+Конфигурация - Зарплата	clubSalary	 	clubSalary	{"fields":"salary_cfg","run":"/chunk/salary"}
+-->
+
+<script>
+if ( SCRM.app.club_id == 39 ) { //Если это страница "Посещаемость, аттестация"
+    $(function(){
+        var salary_cfg = {},
+        stypeKey = {};
+        $.each([[!clubConfig?name=`salary_cfg`]], function(k,v){
+            v[0] = v[0]*1;
+            v[1] = v[1]*1;
+            salary_cfg[k] = v;
+        });
+        $.each([[!clubStatus?tbl=`idSchedule`]], function(k,v){
+            stypeKey[v.alias] = v.name;
+        })
+        
+        var reportTSalary = {
+            trows: {},
+            salary_cfg: salary_cfg,
+            stypeKey: stypeKey,
+        };
+        
+        var trainers = {};
+        $.each([[!dbvalues?mode=`idTrainer`]].idTrainer, function(i, v){
+            trainers[v.id] = v.name;
+        });
+    
+        SCRM.link(SCRM.app.topNavTabs).insert({
+            href: '#tbl_Salary', html: 'Зарплата', hook: 'dates'
+        });
+    
+        var tw = $('<div id="tbl_Salary" class="tab-pane"></div>').insertAfter('#tbl_byday');
+        
+        $.templates('#tpl_Salary').link(tw, reportTSalary);
+        
+        $('a[href="#tbl_Salary"]')
+        .addClass('calculate')
+        .on('calculate', function(e) {
+            spinnr(tw);
+            pDATA('idSchedule', $.extend({
+                rows: 1001,
+                _report: 'idSchedule_table'
+            }, SCRM.tableData.dates), function(data){
+                var trows = { }, total = 0;
+                $.each(data.rows, function(i, v){
+                    v.stypename = reportTSalary.stypeKey[v.stype];
+                    var tr = key2obj(trows, v.trainer, {
+                        name: v.trainer_name,
+                        salary: 0,
+                        les: []
+                    });
+                    price1 = reportTSalary.salary_cfg[v.stype+"_trainer"] ||  reportTSalary.salary_cfg.trainer;
+                    price2 = reportTSalary.salary_cfg[v.stype+"_trainer2"] ||  reportTSalary.salary_cfg.trainer2;
+    
+                    var salary1 = v.cnt_y * price1[0];
+                    if (salary1 < price1[1]) salary1 = price1[1];
+                    tr.salary += salary1;
+                    total += salary1;
+                    v['salary'+v.trainer] = salary1;
+                    tr.les.push(v);
+                    
+                    if (v.trainer2 != '0') {
+                        var tr2 = key2obj(trows, v.trainer2, {
+                            name: trainers[v.trainer2] || '',
+                            salary: 0,
+                            les: []
+                        });
+    
+                        var salary2 = v.cnt_y * price2[0];
+                        if (salary2 < price2[1]) salary2 = price2[1];
+                        tr2.salary += salary2;
+                        total += salary2;
+                        v['salary'+v.trainer2] = salary2;
+                        tr2.les.push(v);
+                    }
+                });
+    
+                SCRM.link(reportTSalary, {
+                    trows: trows,
+                    total: total
+                });
+                spinnr(false, tw);
+            });
+        });
+    });
+} else if (SCRM.app.club_id == 38) {//Если это страница настроек
+    SCRM._service[ '[[+rq]]' ] = function() {
+        var cfg = optsData.salary? optsData.salary.cfg: [[!clubConfig?name=`salary_cfg`]],
+        schedule = [[!clubStatus?tbl=`idSchedule`]],
+        beautyCfg = {
+            default: {
+                name: "По умолчанию",
+                trainer: cfg.trainer || ["", ""],
+                trainer2: cfg.trainer2 || ["", ""]
+            }
+        };
+        
+        $.each(schedule, function(k,v){
+            beautyCfg[v.alias] = {
+                name: v.name,
+                trainer: cfg[v.alias+"_trainer"] || ["", ""],
+                trainer2: cfg[v.alias+"_trainer2"] || ["", ""]
+            };
+        });
+        
+        SCRM.link(optsData, {
+            salary: {
+                beautyCfg: beautyCfg,
+                cfg: cfg
+            },
+            optsTmpl: '#tmpl_salary_cfg'
+        });
+    }
+    $(document)
+    .on('changeSalary', function(e, txt) { //Сохранение конфига и обновление его локально
+        txt = txt*1;
+        if (isNaN(txt)) txt = 0;
+        var dataset = $(e.target).data(),
+        key = "trainer";
+        if (dataset.trainer) key+=dataset.trainer;
+        if (dataset.alias != "default") key = dataset.alias+"_"+key;
+        if (!optsData.salary.cfg[key]) optsData.salary.cfg[key] = [0,0];
+        optsData.salary.cfg[key][dataset.index] = txt;
+        setConfigValue("salary_cfg", optsData.salary.cfg);
+    });
+}
+</script>
+
+<script id="tpl_Salary" type="text/x-jsrender">
+<div class="card-body 1pt-0">
+    <div class="table-responsive mb-3">
+    <table class="table table-bordered table-sm table-hover m-0" style="width:auto">
+        <thead class="text-center">
+            <tr>
+                <th rowspan="2">N</th>
+                <th rowspan="2">Ф.И.О.</th>
+                <th>Сумма</th>
+                <th>Занятия</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+            {^{props trows sort='name'}} 
+            <tr data-id="{{>key}}">
+                <td class="text-right">{{:#index+1}}</td>
+                <td>
+                    {{>prop.name}}
+                </td>
+                <td class="text-right">{{>prop.salary}}</td>
+                <td>
+                    <button class="btn btn-reset" data-toggle="collapse"
+                        data-target="#les{{>key}}" aria-expanded="false" aria-controls="les{{>key}}">
+                        <span class="collapse-indicator mr-2"><i class="fa fa-fw fa-caret-right"></i></span>
+                    </button>
+                    <div id="les{{>key}}" class="collapse">
+                        {{for prop.les sort="datestart" ~k=key}}
+                            <p>
+                            <div class="small text-muted">{{formatDateTime:datestart}}</div>
+                            {{:stypename}}
+                            :: {{:cnt_y}}/{{:cnt_lesson}}
+                            :: <b>{{:#data['salary' + ~k]}}</b>
+                            </p>
+                        {{/for}}
+                    </div>
+                </td>
+            </tr>
+            {{/props}}
+        </tbody>
+    </table>
+    </div>
+    <p>Итого: <b data-link="total"></b></p>
+</div>
+</script>
+
+<script id="tmpl_salary_cfg" type="text/x-jsrender">
+{^{include salary}}
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th class="col-6"></th>
+                <th class="col-3">За 1 чел.</th>
+                <th class="col-3">Минимум</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{props beautyCfg}}
+                <tr>
+                    <th>{{:prop.name}}</th>
+                    {{for prop.trainer ~alias=key}}
+                        <td>
+                            <a href="#" data-alias="{{:~alias}}" data-index="{{:#index}}" data-roinplace="changeSalary" data-editor="number">{{formatEmpty:#data}}</a>
+                        </td>
+                    {{/for}}
+                </tr>
+                <tr>
+                    <td class="border-top-0">Второй тренер</td>
+                    {{for prop.trainer2 ~alias=key}}
+                        <td>
+                            <a href="#" data-alias="{{:~alias}}" data-trainer="2" data-index="{{:#index}}" data-roinplace="changeSalary" data-editor="number">{{formatEmpty:#data}}</a>
+                        </td>
+                    {{/for}}
+                </tr>
+            {{/props}}
+        </tbody>
+    </table>
+</div>
+{{/include}}
+</script>

@@ -1,0 +1,32 @@
+<script>
+SCRM._service['[[+rq]]'] = function(mdl) {
+    var title = (mdl.elm)? mdl.elm.text() : '';
+    mdl = $.extend({
+        title: '#HTMLBlock_title[[+uqid]]',
+        body: '#HTMLBlock_body[[+uqid]]',
+        cm_size: 'lg',
+        printHelpTopic: function(e) {
+            SCRM.loadWSS('printThis', function(){
+                $('.modal-body', mdl.mdl)
+                .printThis({
+                    pageTitle: 'SportCRM - '+title,
+                    printContainer: true,
+                    printDelay: 500
+                });
+            });
+        }
+    }, mdl);
+
+    club_Drawer(mdl);
+};
+</script>
+
+<script id="HTMLBlock_title[[+uqid]]" type="text/x-jsrender">
+<button class="btn btn-subtle-primary rounded-pill btn-sm" data-link="{on printHelpTopic}">
+    <i class="fa fa-print"></i> Напечатать
+</button>
+</script>
+
+<script id="HTMLBlock_body[[+uqid]]" type="text/x-jsrender">
+    [[+HTMLBlock]]
+</script>

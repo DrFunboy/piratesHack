@@ -1,0 +1,124 @@
+<script>
+function clubOnlineUrl(link) {
+    if (!link) {
+        return null;
+    } else {
+        return ((link.indexOf('http') < 0)? '[[!clubConfig?name=`online_srv`]]' : '') + link;
+    }
+}
+
+$(function(){
+    var onlineButton = $('#clubOnlineButton').prependTo('.header-nav');
+    var clubOnline = {};
+
+    $.link(true, onlineButton, clubOnline, {
+        newOnline: function(e, data){
+            e.preventDefault();
+            var uids = $.map(schData.idTrainer, function(v, i){
+                return v.uid;
+            }).join('').split(/[- ,]/).join('');
+
+            var ev_data = {
+                mode: 'ext',
+                body: '#tpl_clubOnlineSelect',
+                ok: 'Запустить',
+                onOK: function(e, md) {
+                    var online_url = (md.mode != 'meet')? md.link : uids + clubOnline.lesson.squad;
+                    pEDIT('idSchedule', {
+                        id: clubOnline.lesson.id,
+                        link: online_url
+                    });
+                    $.observable(schData).setProperty('lesson.link', online_url);
+                    clubPostForm(clubOnline.online_url, null, {method:'GET'});
+                    return true;
+                }
+            };
+            club_Modal(ev_data);
+        },
+        delOnline: function(e, data){
+            pEDIT('idSchedule', {
+                id: clubOnline.lesson.id,
+                link: ''
+            });
+            $.observable(schData).setProperty('lesson.link', '');
+        }
+    });
+    if (window.schData) {
+        $.observe(schData, 'lesson^link', function(e, data) {
+            var link = (schData.lesson&&schData.lesson.link)? schData.lesson.link : '';
+            var nd = {
+                lesson: schData.lesson,
+                online_url: clubOnlineUrl(link)
+            };
+            $.observable(clubOnline).setProperty(nd);
+        });
+    }
+    if (window.sp_data) {
+        var today = sp_data.created.split(/[T ]/)[0];
+        function reloadClubOnline() {
+            getDataRows('idLesson', null, function(data){
+                var nd = {online_url:''};
+                $.each(data.rows, function(i, v) {
+                    var d = v.datestart.split(' ')[0];
+                    if ((v.schedule_link!='') && (d==today))  {
+                        nd = {
+                            online_url: clubOnlineUrl(v.schedule_link),
+                            sp_lesson: v
+                        };
+                        return false;
+                    }
+                });
+                if (nd.online_url != clubOnline.online_url) $.observable(clubOnline).setProperty(nd);
+                setTimeout(reloadClubOnline, 8000);
+            });
+        }
+        reloadClubOnline();
+    }
+});
+</script>
+
+<li class="nav-item dropdown header-nav-dropdown" id="clubOnlineButton"
+    data-link="visible{:online_url||(lesson&&lesson^id)} class{merge:online_url toggle='has-notified'} {include tmpl='#tpl_clubOnline'}"></li>
+
+
+<script id="tpl_clubOnline" type="text/x-jsrender">
+{^{if lesson}}
+    <a class="nav-link" href="#" data-toggle="dropdown">
+        <i class="fa fa-video-camera"></i>
+    </a>
+    <div class="dropdown-menu dropdown-menu-right">
+        <div class="dropdown-arrow"></div>
+        <a href="#" target="_blank" class="dropdown-item" data-link="{on ~newOnline} visible{:!lesson^link}"><i class="dropdown-icon fa fa-play"></i> Начать он-лайн</a>
+        <div data-link="visible{:lesson^link}">
+            <a href="#" target="_blank" class="dropdown-item" data-link="href{:online_url||'#'}">
+                <i class="dropdown-icon fa fa-play-circle"></i> Подключиться
+            </a>
+            <button class="dropdown-item" data-link="{on ~delOnline}"><i class="dropdown-icon fa fa-stop text-danger"></i> Завершить он-лайн</button>
+        </div>
+    </div>
+{{else}}
+    <a class="nav-link" href="#" target="_blank" data-link="href{:online_url||'#'}">
+        <i class="fa fa-video-camera"></i>
+    </a>
+{{/if}}
+</script>
+
+
+<script id="tpl_clubOnlineSelect" type="text/x-jsrender">
+<div class="form-group mt-1">
+    {^{radiogroup mode}}
+    <div class="custom-control custom-control-inline custom-radio">
+        <input type="radio" class="custom-control-input" id="sq_add" name="mode" value="ext">
+        <label class="custom-control-label" for="sq_add">Zoom, Skype, Teams</label>
+    </div>
+    <div class="custom-control custom-control-inline custom-radio">
+        <input type="radio" class="custom-control-input" id="sq_main" checked="checked" name="mode" value="meet">
+        <label class="custom-control-label" for="sq_main">Jitsi Meet</label>
+    </div>
+    {{/radiogroup}}
+</div>
+<div class="form-group mt-1" data-link="visible{:mode=='ext'}">
+    <textarea rows="2" class="form-control" placeholder="Ссылка"
+        data-link="link"></textarea>
+</div>
+</script>

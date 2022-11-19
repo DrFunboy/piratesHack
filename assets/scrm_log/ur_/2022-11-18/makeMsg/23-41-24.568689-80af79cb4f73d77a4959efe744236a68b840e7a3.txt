@@ -1,0 +1,1 @@
+{"email":"supersvinyak@gmail.com","password":"zryKbcQA","idCity":{"id":1,"name":"Краснодар","extended":null,"alias":"","fullname":null,"address":null,"chief":null,"inn":null,"ogrn":null,"kpp":null,"tel":null,"email":null,"bankname":null,"bankbik":null,"bankks":null,"bankrs":null,"menuindex":10,"published":1},"modUserGroupMember":true,"name":"Тестовый Водитель"}

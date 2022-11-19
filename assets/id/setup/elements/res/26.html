@@ -1,0 +1,54 @@
+<div class="section-block my-0" id="clReAc">
+    [[-!resetForgot]]
+    
+    <form action="" method="post" role="form" data-link="{on 'submit' ~resetPassword} visible{:!token}">
+        <p>Для восстановления пароля, нам нужен Ваш адрес электронной почты, указанный при регистрации.</p>
+        <input type="hidden" name="action" value="[[-+loginfp.request_uri]]" />
+        <input type="hidden" name="returnUrl" value="[[-+loginfp.request_uri]]" />
+        <input type="hidden" name="login_fp_service" value="forgotpassword" />
+        <div class="form-row">
+            <div class="col-12 col-sm-auto">
+                [[-<input type="email" name="email" value="[[+loginfp.post.email:default=`[[!#GET.email]]`]]" 
+                    placeholder="Ваш e-mail" class="form-control mb-2" />]]
+                <input type="email" name="email" placeholder="Ваш e-mail" class="form-control mb-2"
+                    data-link="sd^email" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" type="submit"
+                    data-link="disabled{:!sd^email||loading}">
+                    Сбросить пароль
+                    <span class="spinner-border spinner-border-sm" role="status" data-link="visible{:loading}"></span>
+                </button>
+            </div>
+        </div>
+        <div class="alert alert-success mt-2 mb-0" role="alert" style="display:none"
+            data-link="visible{:sd^ok&&!sd^email}">
+            Если пользователь с данным E-mail существует, вы получите на него ссылку для восстановления доступа.
+        </div>
+    </form>
+    <div class="alert alert-warning mt-2 mb-0" role="alert" style="display:none"
+        data-link="visible{:token}">Возможно, токен просрочен, попробуйте заполнить форму восстановления доступа заново.
+        <a href="[[~[[*id]]]]">Обновить страницу</a></div>
+</div>
+
+<script>
+$(function(){
+    var clReAc = [[!clubRecoverAccess]];
+    $.link(true, '#clReAc', clReAc, {
+        resetPassword: function(e, data) {
+            e.preventDefault();
+            var d = data.linkCtx.data;
+            d.sd.recoveraccess = true;
+
+            SCRM.link(d, {loading: true});
+            $.post(window.location, d.sd, function(data){
+                SCRM.link(d, {
+                    sd: {ok: data},
+                    loading: false
+                });
+            })
+            .fail(failXHR);
+        }
+    });
+});
+</script>

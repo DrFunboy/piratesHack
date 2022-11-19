@@ -1,0 +1,119 @@
+<table id="grid_ShopItems" data-entity="idShopItem"></table>
+<div id="addinfo" style="display:none" data-link="visible{:id}">
+    <h3 class="section-title mb-0 pb-0" data-link="rows[id].name"></h3>
+    <nav class="nav-scroller border-bottom">
+        <div class="nav nav-tabs" role="tablist">
+            <a class="nav-link active " data-toggle="tab" href="#photoShop">Картинки</a>
+            <a class="nav-link" data-toggle="tab" href="#infoShop">Описание</a>
+        </div>
+    </nav>
+    <div class="tab-content spinner-parent mt-2">
+        <div id="photoShop" class="tab-pane active" data-linkfile=""
+            data-link="{on 'shop'+id ~S.linkFile '#tpl_gallery_edit'}">
+        </div>
+        <div id="infoShop" class="tab-pane">
+            <p>
+            <button class="btn btn-primary btn-sm" data-link="text{:editMode?'Сохранить':'Редактировать'} {on ~infoEdit}"></button>
+            </p>
+            <div id="infoEdit"></div>
+        </div>
+    </div>
+</div>
+
+[[$tplGallery]]
+
+<script>
+SCRM.loadWSS(['grid'], function() {
+    var shopData = { };
+
+    $.link(true, "#addinfo", shopData, {
+        infoEdit: function() {
+            if (!shopData.editMode) {
+                SCRM.link(shopData, {editMode:true});
+                SCRM.loadWSS('summernoteBS4', function() {
+                    $('#infoEdit').summernote({
+                        focus: true,
+                        minHeight: 300
+                    });
+                });
+            } else {
+                var info = $('#infoEdit').summernote('code');
+                shopData.rows[shopData.id].info = info;
+                pEDIT('idShopItem', {
+                    id: shopData.id,
+                    info: info
+                }, function(){
+                    SCRM.success('Saved');
+                });
+            }
+        }
+    });
+
+    grids.idOrderItems = $("#grid_ShopItems")
+    .on('jqGridAfterLoadComplete', function(e, data) {
+        shopData.rows = {};
+        $.each(data.rows||[], function(i, v){
+            shopData.rows[v.id] = v;
+        });
+    })
+    .jqGridInit({
+        //gridEntity: 'idShopItem',
+        //url: dataUrl + '?table=idShopItem',
+        //editurl: editUrl + '?table=idShopItem',
+        postData: {
+            filters: SCRM.obj2Filter({published: '1'})
+        },
+        search: true,
+        multiSort: true,
+        sortname: 'menuindex asc,name asc',
+        colModel:[
+            {name:'id', hidden: true, template: idFieldTemplate},
+            {name:'name', label: 'Наименование', width:200,
+                editable:true, editrules: {edithidden:true}
+            },
+            {name:'price', label: 'Цена', template: numberTemplate,
+                editable:true, editrules: {edithidden:true}
+            },
+            {name:'info', label:'Описание', width: 45, align: 'center',
+                formatter: function(cv){
+                    return (!cv)? '' : '<i class="fa fa-sticky-note-o"></i>';
+                }
+            },
+            {name:'opts', label: 'Опции', template: infoTemplate,
+                editable: true, editrules: {edithidden:true}
+            },
+            {name:'status', label: 'Тип', width:55, template: selTemplate,
+                editable: true, editrules: {edithidden:true},
+                clubStatus: 'idShopItem', lookupKey: 'alias'
+            },
+            {name:'menuindex', label:'Сорт.', width:45, sorttype:'int', editable: true},
+            {template: publishedTemplate}
+        ],
+        onSelectRow: function(rid, rr, ee){
+            SCRM.link(shopData, {
+                id: rid
+            });
+            
+            var info = shopData.rows[rid].info;
+            if ($.summernote) $('#infoEdit').summernote('code', info);
+            else $('#infoEdit').html(info);
+
+            var imgs = $('#photoShop');
+            spinnr(true, imgs);
+            pJSON('/hook/files', {
+                uid: 'shop'+rid,
+                thumb: 1
+            }, function(fdata){
+                imgs.trigger(fdata.postData.uid, $.extend({
+                    post: {filetype: 'photo_shop'}
+                }, fdata));
+                spinnr(false, imgs);
+            });
+        },
+        navOpts: {add: true, edit: true, del: false},
+        fltrToolbar: true
+    })
+    .jqGridColumns()
+    .jqGridExport();
+});
+</script>

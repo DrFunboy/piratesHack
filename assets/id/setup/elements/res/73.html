@@ -1,0 +1,235 @@
+[[$tplClubFrameTop]]
+
+<div id="leadAdd"></div>
+
+<script id="tpl_leadAdd" type="text/x-jsrender">
+<div class="row mb-3">
+    <label for="lead_city" class="col-lg-3 text-lg-right">Город <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        <select id="lead_city" class="form-control" data-link="lead_city" required>
+            {^{for idCity}}
+                <option value="{{:id}}">{{:name}}</option>
+            {{/for}}
+        </select>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <label for="lead_name" class="col-lg-3 text-lg-right">ФИО ребенка <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        <input type="text" id="lead_name" class="form-control" autocomplete="off" data-link="lead_name" required>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <label class="col-lg-3 text-lg-right">Пол <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        {^{radiogroup lead_gender}}
+        <div class="custom-control custom-control-inline custom-radio">
+            <input type="radio" class="custom-control-input" value="0" id="gender0">
+            <label class="custom-control-label" for="gender0">Ж</label>
+        </div>
+        <div class="custom-control custom-control-inline custom-radio">
+            <input type="radio" class="custom-control-input" value="1" id="gender1">
+            <label class="custom-control-label" for="gender1">М</label>
+        </div>
+        {{/radiogroup}}
+    </div>
+</div>
+
+<div class="row mb-3">
+    <label for="lead_birth" class="col-lg-3 text-lg-right">Дата рождения <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        <input type="text" id="lead_birth" class="form-control" autocomplete="off" data-link="lead_birth" placeholder="дд.мм.гггг" required>
+    </div>
+</div>
+
+<div class="row mb-3 d-none">
+    <label for="lead_sport" class="col-lg-3 text-lg-right">Дисциплина <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        <select id="lead_sport" class="form-control" data-link="lead_sport1" required>
+            {^{for idSport}}
+                <option value="{{:id}}">{{:name}}</option>
+            {{/for}}
+        </select>
+    </div>
+</div>
+
+<div data-link="visible{:idClub && (idClub^length > 1 || leadSchedule^length > 0)}">
+<div class="row mb-3">
+    <label for="lead_club" class="col-lg-3 text-lg-right">Зал <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        <select id="lead_club" class="form-control" data-link="lead_club">
+            {^{for idClub}}
+                <option value="{{:id}}">{{:name}}</option>
+            {{/for}}
+        </select>
+    </div>
+</div>
+</div>
+
+<div data-link="visible{:leadSchedule && leadSchedule^length > 0}">
+<div class="row mb-3">
+    <label for="lead_datestart" class="col-lg-3 text-lg-right">Дата просмотра <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        <select id="lead_datestart" class="form-control" data-link="lead_datestart">
+            {^{for leadSchedule}}
+                <option value="{{:datestart}}">{{formatDateTime:datestart}}</option>
+            {{/for}}
+        </select>
+    </div>
+</div>
+</div>
+
+<div class="row mb-3">
+    <label for="lead_contact" class="col-lg-3 text-lg-right">ФИО контактного лица</label>
+    <div class="col-lg-8 col-xl-6">
+        <input type="text" id="lead_contact" class="form-control" autocomplete="off" data-link="lead_contact">
+    </div>
+</div>
+
+<div class="row mb-3">
+    <label for="lead_tel" class="col-lg-3 text-lg-right">Телефон  <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        <input type="text" id="lead_tel" class="form-control" data-link="lead_tel">
+    </div>
+</div>
+
+<div class="row mb-3">
+    <label for="lead_email" class="col-lg-3 text-lg-right">E-mail  <abbr>*</abbr></label>
+    <div class="col-lg-8 col-xl-6">
+        <input type="email" id="lead_email" class="form-control" data-link="lead_email">
+    </div>
+</div>
+
+<div class="row mb-3">
+    <label for="lead_source" class="col-lg-3 text-lg-right">Откуда узнали про нас</label>
+    <div class="col-lg-8 col-xl-6">
+        <select id="lead_source" class="form-control" data-link="lead_source">
+            {^{for idSource}}
+                <option value="{{:name}}">{{:name}}</option>
+            {{/for}}
+        </select>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <label for="lead_info" class="col-lg-3 text-lg-right">Коментарий</label>
+    <div class="col-lg-8 col-xl-6">
+        <input type="text" id="lead_info" class="form-control" data-link="lead_info" placeholder="Чем занимались ранее, пожелания, особенности">
+    </div>
+</div>
+
+<div class="row">
+    <div class="offset-lg-3 col-lg-8  col-xl-6">
+        <button class="btn btn-primary" type="button" data-link="{on ~leadAdd}">
+            <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" data-link="visible{:isLoading}"></span> Отправить
+        </button>
+        <span class="valid-feedback ml-3" data-link="visible{:isSuccess && !lead_name}">Успешно добавил {^{:isSuccess}}</span> 
+    </div>
+</div>
+
+</script>
+
+<script>
+var leadSchedule = [[!leadSchedule]];
+var dbValues = [[!dbvalues?mode=`idCity,idClub,idSport`]];
+
+$.each([[!clubStatus?tbl=`Gender,idSource`]], function(i, v){
+    key2obj(dbValues, v.tbl).push(v);
+});
+
+$.extend(dbValues,{
+    lead_gender: '[[!clubConfig?name=`Gender_main`]]',
+    lead_sport: dbValues.idSport[0].id,
+    lead_source: ''
+})
+
+var validEmail = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[ [0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+var fields = {
+    name: {req: true, def: ''},
+    birth: {req: true, def: ''},
+    club: {req: true},
+    tel: {req: true},
+    email: {
+        req: true,
+        valid: validEmail
+    },
+    //source : {req: true},
+    info: {def: ''}
+};
+
+$.templates("#tpl_leadAdd").link("#leadAdd", dbValues, {
+    leadAdd: function(e, data){
+        var postData = { };
+        
+        $.each(data.linkCtx.data, function(i, v){
+            var keyarr = i.split('_');
+            if (keyarr[0]=='lead') {
+                postData[ keyarr[1] ] = v;
+            }
+        });
+        $.each(fields, function(fld, v){
+            var elm = $('#lead_'+fld).removeClass('is-invalid');
+            if (v.valid && !v.valid.test(postData[fld])) postData[fld] = '';
+            if (v.req && !postData[fld]) {
+                elm.addClass('is-invalid');
+                postData.error = true;
+            }
+        });
+        if (!postData.error) {
+            $.observable(dbValues).setProperty({
+                isLoading: true,
+                isSuccess:false
+            });
+            pJSON('/handlers/membership-request.txt', postData, function(data){
+                var newValues = {
+                    isLoading: false,
+                    isSuccess: postData.name
+                };
+                if (data && data.id) $.each(fields, function(fld, v){
+                    if (v.def != undefined) newValues['lead_'+fld] = v.def;
+                });
+                $.observable(dbValues).setProperty(newValues);
+            });
+        }
+    }
+});
+
+function с_datestart( a, b ) {
+    if ( a.datestart < b.datestart ) return -1;
+    if ( a.datestart > b.datestart ) return 1;
+    return 0;
+}
+
+$.observe(dbValues, "lead_club", function(e, d) {
+    var ls = {
+        leadSchedule: $.map(leadSchedule.rows, function(v, i){
+            if (v.club == d.value) return v;
+        })
+    };
+    if (ls.leadSchedule.length > 0) {
+        ls.leadSchedule.sort(с_datestart);
+        ls.lead_datestart = ls.leadSchedule[0].datestart;
+    }
+    $.observable(dbValues).setProperty(ls);
+});
+
+$.observe(dbValues, "lead_city", function(e, eventArgs) {
+    var city = eventArgs.value;
+    $.each(dbValues.idCity, function(i, v){
+        if (v.id == city) {
+            $.observable(dbValues).setProperty({
+                lead_club: v.idClub[0].id,
+                idClub: v.idClub
+            });
+        }
+    });
+
+});
+if (dbValues.club_city) $.observable(dbValues).setProperty('lead_city', dbValues.club_city);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+[[!ChangePassword?
+   &validateOldPassword=`0`
+   &reloadOnSuccess=`1`
+   &postHooks=`changePWD`
+]]
+[[!#GET.logcp-success:eq=`1`:then=`<p class="alert alert-success">Пароль успешно изменен.
+<a href="/login/profile.html">Вернуться на страницу профиля.</a></p>`]]
+
+<form role="form" action="[[~[[*id]]]]" method="post" class="section-block my-0">
+    [[-<input name="test" value="rrr">]]
+    [[-<div class="form-group">
+        <label>Старый пароль <attr>*</attr>
+        <input type="password" class="form-control" name="password_old" value="[[+logcp.password_old]]">
+        </label>
+        [[!+logcp.error.password_old]]
+    </div>]]
+    <div class="form-group">
+        <label>Новый пароль <attr>*</attr>
+        <input type="password" class="form-control" name="password_new" value="[[+logcp.password_new]]">
+        </label>
+        [[!+logcp.error.password_new]]
+    </div>
+    <div class="form-group">
+        <label>Подтвердить пароль <attr>*</attr>
+        <input type="password" class="form-control" name="password_new_confirm" value="[[+logcp.password_new_confirm]]">
+        </label>
+        [[!+logcp.error.password_new_confirm]]
+    </div>
+    <div class="form-group">
+        <input type="submit" name="logcp-submit" value="Сменить пароль" class="btn btn-primary" />
+    </div>
+</form>

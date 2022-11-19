@@ -1,0 +1,32 @@
+<!-- clubReport -->
+
+<script id="report_tpl" type="text/x-jsrender">
+    <table class="table table-bordered no-margins">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Количество</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{for rows}}
+          <tr class="{{:data>50? 'table-danger':''}}">
+            <td>{{formatDateTime:label}}</td>
+            <td class="text-right">{{:data}}</td>
+            </td>
+          </tr>
+        {{/for}}
+        </tbody>
+    </table>
+</script>
+
+
+<script>
+$.observable(clubReport).setProperty('opts', {
+    postData : {
+        table: 'idLead',
+        _report: 'idLead_group',
+        _label: 'idLead.datestart'
+    }
+});
+</script>

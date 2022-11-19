@@ -1,0 +1,43 @@
+<script id="tpl_ReportInvoiceCheat" type="text/x-jsrender">
+    <div class="reportDates mb-3"></div>
+    <table class="table table-bordered no-margins">
+        <thead>
+            <tr>
+                <th>Создано</th>
+                <th>Дата начисления</th>
+                <th>Сумма</th>
+                <th>Спортсмены</th>
+            </tr>
+        </thead>
+        <tbody>
+        {^{for rows}}
+          <tr>
+            <td><a href="#" class="fmtCreated" data-id="{{:id}}" data-tbl="idInvoice">{{formatDateTime:created}}</a></td>
+            <td>{{formatDate:dateinvoice}}</td>
+            <td class="text-right">{{:sum}}</td>
+            <td><a href="#" data-sportsmen="{{:key}}">{{:sportsmen_name}}</a>
+            </td>
+          </tr>
+        {{/for}}
+        </tbody>
+    </table>
+</script>
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    $.templates('#tpl_ReportInvoiceCheat')
+    .link(param.container, param)
+    .find('.reportDates')
+    .on('periodChange', function(e, dates) {
+        var postData = $.extend({
+            rows: 1001,
+            _report: 'idInvoice_oldperiod',
+            tableadd: 'idSportsmen'
+        }, dates);
+        pDATA('idInvoice', postData, function(data) {
+            SCRM.link(param, {rows: data.rows});
+        });
+    })
+    .panelPeriod('reportDates');
+};
+</script>

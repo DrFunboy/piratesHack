@@ -1,0 +1,144 @@
+<script id="tpl_ReportShopChart" type="text/x-jsrender">
+<div class="reportDates mb-3"></div>
+<div class="reportChart"></div>
+<div id="report_add" class="mt-2">
+    <table class="table table-hover text-right">
+        <thead>
+        <tr>
+            <th class="text-left">Статус</th>
+            <th>Количество</th>
+            <th>Сумма</th>
+        </tr>
+        </thead>
+        <tbody>
+        {^{for rows}}
+            <tr>
+                <td class="text-left">
+                    {{:label}}
+                </td>
+                <td>
+                    {{:data}}
+                </td>
+                <td>
+                    {{formatMoney:total}}
+                </td>
+            </tr>
+        {{/for}}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td></td>
+                <th data-link="cnt"></th>
+                <th data-link="{formatMoney:total}"></th>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+</script>
+
+<script>
+
+
+SCRM._service['[[+rq]]'] = function(param) {
+    
+    SCRM.setClubStatus( [[!clubStatus?tbl=`idOrderItems`]] );
+    
+    SCRM.loadWSS('c3', function(){
+        var report = $.templates('#tpl_ReportShopChart')
+        .link(param.container, param);
+        
+        report.find('.reportDates')
+        .on('periodChange', function(e, dates) {
+            pDATA('idOrderItems', $.extend({
+                rows: 1001,
+                _report: 'idOrderItems_status'
+            }, dates), function(data) {
+                var nd = {
+                    cnt: 0, total: 0,
+                    rows: data.rows
+                },
+                dataChart = [ ];
+
+                $.each(data.rows, function(k, v){
+                    v.label = SCRM.getClubStatus('idOrderItems', v.label).name;
+                    dataChart.push([v.label+' ('+ v.data +')',  v.data]);
+                    nd.cnt += v.data *1;
+                    nd.total += v.total *1;
+                });
+
+                SCRM.link(param, nd);
+
+                c3.generate({
+                    bindto: report.find('.reportChart')[0],
+                    data: {
+                        columns: dataChart,
+                        type : 'pie'
+                    },
+                    size: {
+                        height: 330
+                    }
+                });
+            });
+        })
+        .panelPeriod('reportDates');
+    });
+};
+
+</script>
+
+
+
+
+<script id="tpl_ReportLeadChart" type="text/x-jsrender">
+    <div class="reportDates mb-3"></div>
+    <p data-link="{:introtext}"></p>
+    <div class="reportChart"></div>
+    <hr>
+    <div>Всего: <b data-link="cnt"></b></div>
+</script>
+
+[[-<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    
+    SCRM.setClubStatus( [[!clubStatus?tbl=`idLead`]] );
+    
+    SCRM.loadWSS('c3', function(){
+        var report = $.templates('#tpl_ReportLeadChart')
+        .link(param.container, param);
+        
+        report.find('.reportDates')
+        .on('periodChange', function(e, dates) {
+            pDATA('idLead', $.extend({
+                rows: 1001,
+                _report: 'idLead_status'
+            }, dates), function(data) {
+                var nd = {
+                    cnt: 0,
+                    introtext: data.introtext
+                },
+                dataChart = [ ];
+
+                $.each(data.rows, function(k, v){
+                    v.label = SCRM.getClubStatus('idLead', v.label).name;
+                    dataChart.push([v.label+' ('+ v.data +')',  v.data]);
+                    nd.cnt += v.data*1;
+                });
+
+                SCRM.link(param, nd);
+
+                c3.generate({
+                    bindto: report.find('.reportChart')[0],
+                    data: {
+                        columns: dataChart,
+                        type : 'pie'
+                    },
+                    size: {
+                        height: 330
+                    }
+                });
+            });
+        })
+        .panelPeriod('reportDates');
+    });
+};
+</script>]]

@@ -1,0 +1,55 @@
+<!-- clubReport -->
+<script id="report_tpl" type="text/x-jsrender">
+<div class="table-responsive">
+    <table class="table table-hover issue-tracker">
+    <tbody>
+{{for rows}}
+        <tr>
+            <td>
+                <span class="label label-primary">
+                {{:~formatStatus(status)}}
+                </span>
+            </td>
+            <td class="issue-info">
+                <a href="#">
+                    {{:name}}
+                </a>
+                <small>
+                    {{:info}}
+                </small>
+            </td>
+            <td>
+                {{:contact}}
+            </td>
+            <td>
+                {{formatDate:created}}
+            </td>
+        </tr>
+{{/for}}
+    </tbody>
+    </table>
+</div>
+</script>
+
+<script>
+var statuses = [[!clubStatus?tbl=`idGoal`]];
+var idStatus = { };
+$.each(statuses, function(i, v){
+    idStatus[v.id] = v;
+});
+//console.log(idStatus);
+
+$.views.helpers("formatStatus", function(id){
+    return idStatus[id].name;
+});
+
+$.observable(clubReport).setProperty({
+    opts: {
+        postData: {
+            table: 'idGoal',
+            _report: 'idGoal_status',
+            sidx: 'created', sord: 'asc'
+        }
+    }
+});
+</script>

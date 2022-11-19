@@ -1,0 +1,24 @@
+<script>
+SCRM._service['/chunk/cfg.shop'] = function(opts) {
+    SCRM.link(optsData, {
+        shopCfg: {
+            key: 'shop_config',
+            val: opts['shop_config']
+        },
+        optsTmpl: '#tpl_optsShop'
+    });
+    bindAceEditor();
+    SCRM.getPayMethods('0', 'Shop_Pay');
+}
+</script>
+
+
+<script id="tpl_optsShop" type="text/x-jsrender">
+<h6>Оплата <button class="btn btn-light btn-xs" data-link="{on ~addPayMethod '0' 'Shop_Pay'}"><i class="fa fa-plus"></i></button></h6>
+{^{for ~PayMethods(Shop_Pay, '0') tmpl="#tpl_idCityPayRow" /}}
+
+<h6>Валюта</h6>
+<p><a href="#" data-name="currency" data-roinplace="CfgInpSave" data-link="opts^currency" class="dashed"></a></p>
+{{include shopCfg tmpl="#tpl_AceBox" /}}
+
+</script>

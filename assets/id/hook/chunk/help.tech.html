@@ -1,0 +1,239 @@
+<!-- [[-Profile? &prefix=`usr.`]] -->
+<script>
+SCRM._service[ '[[+rq]]' ] = function(data) {
+    if (!SCRM.app.user) SCRM.app.user = {};
+    var usr = {
+        name: SCRM.app.user.fullname, // '[[-+usr.fullname]]',
+        email: SCRM.app.user.email, //'[[-+usr.email]]',
+        tel: SCRM.app.user.mobilephone// '[[-+usr.mobilephone]]'
+    };
+    var club_key = '[[++club_key]]';
+
+    if (!SCRM.SD) SCRM.SD = {
+        subj: '',
+        info: '',
+        key: club_key
+    };
+    $.extend(SCRM.SD, usr, {
+        url: window.btoa(unescape(encodeURIComponent(window.location.href))) //utf8_to_b64
+    });
+    var mdl = {
+        mdl_id: 'SdSCRM',
+        postData: SCRM.SD,
+        title: 'Техническая поддержка',
+        body: '#hlp_tech',
+        cm_size: 'lg',
+        files: [ 'file'+SCRM.uniqid() ],
+        new_sd: function(e) {
+            e.preventDefault();
+
+            var formData = new FormData(e.target);
+            $.each(mdl.postData, function(key, value){
+                formData.append(key, value);
+            });
+
+            SCRM.link(mdl, {loading: true});
+            $.ajax({
+                url: 'https://w.sportcrm.club/hook/sd/new',
+                type: 'POST',
+                dataType: 'json',
+                data: formData,
+                cache: false,
+                processData: false,
+                contentType: false // Set to false as jQuery will tell the server its a query string request
+            })
+            .done(function(data){
+                SCRM.link(mdl, {
+                    sent: true,
+                    'postData.subj': '',
+                    'postData.info': ''
+                });
+            })
+            .always(function(data){
+                SCRM.link(mdl, {loading: false});
+            })
+            .fail(failXHR);
+        }
+    };
+    
+    function addFileRow() {
+        SCRM.link(mdl.files).insert('file'+SCRM.uniqid());
+    }
+    
+    club_Drawer(mdl, {
+        pasteSD: function(e) {
+            var fid = 'file' + SCRM.uniqid(),
+                cd = (e.clipboardData || e.originalEvent.clipboardData);
+            
+            for (var index in cd.items||[]) {
+                if (cd.items[index].kind === 'file') {
+                    SCRM.link(mdl.files).insert(0, fid);
+                    document.getElementById(fid).files = cd.files;
+                    break;
+                }
+            }
+        },
+        fileDel: function(e, data) {
+            SCRM.link(mdl.files).remove( data.view.index );
+        }
+    });
+    mdl.mdl
+    .one('show.bs.tab', '[href="#t_list"]', function(e){
+        $('#TechSupportDates', mdl.mdl)
+        .on('periodChange', function(e, dates){
+            pJSON('https://w.sportcrm.club/hook/sd/list', $.extend(mdl.postData, dates), function(data){
+                SCRM.link(mdl, {list_sd: data.rows});
+            });
+        })
+        .panelPeriod();
+    });
+};
+
+// update label text with current input value
+$(document).on('change', '.custom-file > .custom-file-input', function () {
+    const files = this.files
+    const $fileLabel = $(this).next('.custom-file-label')
+    // use when no file chosen
+    const $originLabel = $fileLabel.data('label')
+    
+    // truncate text when user chose more than 2 files
+    $fileLabel.text(files.length + ' files selected')
+    
+    if (files.length <= 2) {
+        let fileNames = []
+        for (let i = 0; i < files.length; i++) {
+            fileNames.push(files[i].name);
+        }
+        $fileLabel.text(fileNames.join(', '));
+    }
+    
+    // reset label text if no file chosen
+    if (!files.length) {
+        $fileLabel.text($originLabel);
+    }
+});
+
+</script>
+
+[[-
+<script id="hlp_tech1" type="text/x-jsrender">
+    <iframe src="https://w.sportcrm.club/dhandlers/scrm-sd.html?contact={{url:u.name}}&email={{url:u.email}}&tel={{url:u.tel}}&key=[[++club_key]]&url={{:url}}"
+    scrolling="no" frameborder="0" style="height:300px;width:100%" name="scrm-tech" class="mt-n2"></iframe>
+</script>
+]]
+
+[[$panelPeriod]]
+
+<script id="hlp_tech" type="text/x-jsrender">
+    <nav class="nav-scroller border-bottom mb-3">
+        <div class="nav nav-tabs" role="tablist">
+            <a class="nav-item nav-link active" data-toggle="tab" href="#t_new"><i class="fa fa-plus"></i></a>
+            <a class="nav-item nav-link" data-toggle="tab" href="#t_list"><i class="fa fa-tasks"></i></a>
+        </div>
+    </nav>
+    
+    <div class="tab-content card1 card-body1">
+        <div id="t_new" class="tab-pane active" data-link="{include tmpl='#new_sd'}"></div>
+        <div id="t_list" class="tab-pane">
+            <div id="TechSupportDates" class="mb-3"></div>
+            <div class="spinner-parent table-responsive">
+                <table class="table table-hover mb-0">
+                <tbody data-link="{for list_sd tmpl='#list_sd'}">
+                    
+                </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="new_sd" type="text/x-jsrender">
+    <form action="" method="post" enctype="multipart/form-data" class="form-horizontal" data-link="{on 'submit' new_sd} {on 'paste' ~pasteSD}">
+    <fieldset data-link="disabled{:loading}">
+        <div class="form-group row">
+            <label for="name" class="col-lg-3 text-lg-right">Пользователь</label>
+            <div class="col-lg-9">
+                <a href="/login/profile.html" target="_blank"
+                    data-link="html{:postData.name+' | '+postData.email+' | '+postData.tel}"></a>
+            </div>
+        </div>
+        
+        <div class="form-group row">
+            <label for="sd_subj" class="col-lg-3 text-lg-right">Тема <abbr>*</abbr></label>
+            <div class="col-lg-9">
+            <input type="text" id="sd_subj" class="form-control clubmodal-focus" data-link="postData^subj" name="subj" />
+            </div>
+        </div>
+        
+        <div class="form-group row">
+            <label for="sd_info" class="col-lg-3 text-lg-right">Опишите проблему подробнее</label>
+            <div class="col-lg-9">
+            <textarea  class="form-control" rows="4" id="sd_info" name="info"
+                data-link="postData^info"></textarea>
+            </div>
+        </div>
+    
+        <div class="row">
+            <div class="col-lg-9 offset-lg-3">
+                {^{for files ~f=files}}
+                <div class="mb-3">
+                    <input type="file" multiple="multiple"
+                        data-link="name{:#data+'[]'} id{:#data}">
+                    <button type="button" class="btn btn-light btn-icon" data-link="{on ~fileDel} visible{:~f^length>1}"><i class="fa fa-trash"></i></button>
+                </div>
+                {{/for}}
+                <button type="submit" class="btn btn-sm btn-primary"
+                    data-link="disabled{:!postData^subj}">
+                    Отправить заявку
+                    <span class="spinner-border spinner-border-sm" role="status" data-link="visible{:loading}"></span>
+                </button>
+                <div class="alert alert-success mt-2 mb-0" role="alert"
+                    data-link="visible{:sent&&!postData^subj}">
+                Ваша заявка отправлена. Мы постараемся решить ваш вопрос в самое ближайшее время.</div>
+            </div>
+        </div>
+    </fieldset>
+    </form>
+</script>
+
+<script id="list_sd" type="text/x-jsrender">
+<tr>
+    <td>
+        {{:#index+1}}
+    </td>
+    <td>
+        <small>id: {{:id}}</small><br>
+        <span class="badge badge-{{:status_cls}}">
+        {{:status_name}}
+        </span>
+    </td>
+    <td class="issue-info">
+        <h6>{{:name}}</h6>
+        {{if info}}
+        <div class="text-muted">
+            {{:info}}
+        </div>
+        {{/if}}
+
+        {{if inforesult}}
+        <div class="conversation-inbound">
+            <div class="conversation-avatar">
+                <a href="#" class="tile tile-circle bg-muted">
+                    <i class="fa fa-wrench"></i>
+                </a>
+            </div>
+            <div class="conversation-message">
+                <div class="conversation-message-text">{{:inforesult}}</div>
+            </div>
+        </div>
+        {{/if}}
+
+    </td>
+    <td>
+        {{:contact}}
+    </td>
+    <td>
+        {{formatDate:created}}
+    </td>
+</tr>
+</script>

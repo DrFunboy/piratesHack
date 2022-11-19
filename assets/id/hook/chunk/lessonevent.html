@@ -1,0 +1,208 @@
+[[- *********************************************************************
+
+    Новый модуль аттестации
+
+***********************************************************************]]
+
+<script id="tpl_searchEvent" type="text/x-jsrender">
+    {{include ~placeholder="Наименование" tmpl="#tpl_searchinput"/}}
+    <div class="list-group list-group-reflow list-group-bordered">
+        {^{for idEvents sort="datestart" ~choosedEventId=choosedEventId}}
+            <a href="#" class="list-group-item list-group-item-action px-0 prevent-default" data-link="{on ~chEvent}">
+            <div>
+                <h4 class="list-group-item-title d-flex" data-link1="class{merge:~choosedEventId==id toggle='text-success'}">
+                    <div class="flex-grow-1">{{:name}}</div>
+                </h4>
+                <p class="list-group-item-text text-truncate text-muted">
+                    {{formatDate:datestart}} - {{formatDate:dateend}}
+                </p>
+            </div>
+            </a>
+        {{/for}}
+    </div>
+</script>
+
+<script id="tpl_RateEvent" type="text/x-jsrender">
+<div class="card-body d-flex">
+    <button type="button" class="btn btn-light btn-icon mr-2 ml-n2" data-link="{on ~S.link ~root 'lsn_mode' 'check'}">
+        <i class="fa fa-chevron-left"></i>
+    </button>
+    <div>
+        <a href="#" class="prevent-default d-block h6 mb-1" data-link="{on ~editEvent}">
+            {^{:idEvent? idEvent.name : 'Мероприятие не выбрано'}}
+            <i class="ml-2 fa fa-pencil"></i>
+        </a>
+        <small class="text-muted" data-link="visible{:idEvent}">{^{formatDate:idEvent^datestart}} &mdash; {^{formatDate:idEvent^datestart}}</small>
+    </div>
+</div>
+
+
+<div id="LessonSpEventBlock" class="card-expansion table border-bottom" data-link="visible{:idEventCategory && idEventCategory^length}">
+    {^{for idSportsmen itemVar="~sp" ~evc=idEventCategory ~spResult=eventResult}}
+        <div class="card-expansion-item m-0">
+            <div class="card-header" id="LessonSpEventHead{{:#index}}" data-lin1k="{on 'click' '.btn.btn-reset.collapsed' ~loadResults}">
+                <button class="btn btn-reset collapsed" data-toggle="collapse" data-target="#LessonSpEvent{{:#index}}">
+                    <span class="collapse-indicator mr-2">
+                        <i class="fa fa-fw fa-caret-right"></i>
+                    </span> 
+                    <span>{{:name}}</span>
+                </button>
+            </div>
+            <div id="LessonSpEvent{{:#index}}" class="collapse" aria-labelledby="LessonSpEventHead{{:#index}}" data-parent="#LessonSpEventBlock"
+                data-link="{on 'show.bs.collapse' ~getEventResult}">
+                <div class="card-body border-bottom"> 
+                {^{for ~evc sort=~sortMenuindexName ~spkey=id+'_'}}
+                    <div class="row mb-2"> 
+                        <div class="col-6">
+                            {{:name}}
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group">
+                                <input class="form-control" data-link="{:~spResult[~spkey+id]? ~spResult[~spkey+id].result : ''} {on 'change' ~eventResultChange ~sp.id}">
+                            </div>
+                        </div>
+                    </div>
+                {{/for}}
+                </div>
+            </div>
+        </div>
+    {{/for}}
+</div>
+</script>
+
+<script>
+$.views.helpers({
+    editEvent: function(e,data){
+        openEventMdl();
+    },
+    sortMenuindexName: function(a, b) {
+        // Return 1, -1 or 0 to specify relative position of 'a' and 'b' in the sort order
+        var m1 = a.menuindex||10, m2 = b.menuindex||10,
+            n1 = a.name.toLowerCase(), n2 = b.name.toLowerCase();
+        return (m1*1 > m2*1 ? 1 : m1*1 < m2*1 ? -1 : 0) // by menuindex
+            || (n1 > n2 ? 1 : n1 < n2 ? -1 : 0); // by name
+    },
+    eventResultChange: function(sportsmen, e, data) {
+        console.log('eventResultChange', sportsmen, e, data);
+        var ideventcategory = data.linkCtx.data.id,
+            evrKey = sportsmen+'_'+ideventcategory,
+            row = schData.lesson.eventResult[evrKey],
+            edata = {
+                result: $(e.target).val()
+            };
+        if (!row) {
+            $.extend(edata, {
+                oper: 'add',
+                idevent: data.linkCtx.data.idevent,
+                ideventcategory: ideventcategory,
+                sportsmen: sportsmen
+            });
+        } else {
+            edata.id = row.id;
+        }
+        pEDIT('idEventMember', edata, function(data) {
+            SCRM.link(schData.lesson.eventResult).setProperty(evrKey, data.row);
+            console.log('idEventMember_EDIT', data);
+            //data.linkCtx.data.prop.memberid = newrow.id;
+            SCRM.success("Сохранено");
+        });
+    },
+    getEventResult: function(e, data) {
+        pDATA('idEventMember', {
+            _where: {
+                idevent: schData.lesson.idevent,
+                sportsmen: data.linkCtx.data.id
+            }
+        }, function(data){
+            console.log('idEventMember', data);
+            var evRes = {};
+            $.each(data.rows, function(i, v) {
+                evRes[v.sportsmen+'_'+v.ideventcategory] = v;
+            });
+            SCRM.link(schData.lesson, {
+                eventResult: evRes
+            }); //"eventCats"
+        });
+    }
+});
+
+function checkLinkedEvent() {
+    var lsn = schData.lesson;
+    if (lsn.idSportsmen && lsn.idSportsmen.length) {
+        if (lsn.idEvent) {
+            pDATA('idEventCategory', { //Получение всех категорий в событии
+                _where: {idevent: lsn.idevent}
+            }, function(data){
+                SCRM.link(lsn, {
+                    idEventCategory: data.rows,
+                    //eventResult: {}
+                }); //"eventCats"
+            });
+        } else {
+            if (lsn.id) {
+                openEventMdl({
+                    autoevent: true
+                });
+            }
+        }
+    }
+}
+
+function openEventMdl(params) {
+    params = $.extend({}, params);
+    
+    var eventModalData = {
+        title: 'Выбор мероприятия',
+        body: '#tpl_searchEvent'
+    },
+    srchEvent = function(srchstr, callback) {
+        pDATA('idEvent', {
+            filters: (srchstr)? 
+                SCRM.obj2Filter({name: {data: srchstr, op: 'cn'}}) :
+                SCRM.obj2Filter({
+                    dateend: {data: schData.lesson.datestart, op: 'ge'}
+                })
+        }, function(data){
+            SCRM.link(eventModalData, {idEvents: data.rows});
+            if (callback) callback(data);
+        });
+    };
+    
+    srchEvent(null, function(data) {
+        function setSchedule(idevent) {
+            pEDIT('idSchedule', { //Привязка события к занятию
+                id: schData.lesson.id,
+                idevent: idevent
+            },function(){
+                schData.getLessonData(checkLinkedEvent);
+                SCRM.success('Привязял мероприятие');
+            });
+        }
+        if (data.rows.length == 1 && params.autoevent) {
+            setSchedule(data.rows[0].id);
+            return;
+        }
+        var mdl = club_Modal(eventModalData, {
+            srchSubmit: function(e, data) {
+                e.preventDefault();
+                srchEvent(eventModalData.srchTxt);
+            },
+            chEvent: function(e, d){
+                setSchedule(d.linkCtx.data.id);
+                eventModalData.mdl_hide();
+            }
+        });
+    });
+}
+
+$.observe(schData, 'lesson^idSportsmen', function(e, d){
+    if (schData.lsn_mode == '#tpl_RateEvent') checkLinkedEvent();
+});
+
+SCRM._service[ '[[+rq]]' ] = function(param) {
+    SCRM.link(schData, {
+        lsn_mode: '#tpl_RateEvent'
+    });
+    checkLinkedEvent();
+}
+</script>

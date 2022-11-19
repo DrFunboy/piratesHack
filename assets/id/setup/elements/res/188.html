@@ -1,0 +1,119 @@
+<script>
+optsData.hs['optsAmo'] = function(cfg_data) {
+    amoOpts = {
+        hook: '/hook/amo.crm/',
+        adata: { },
+        token: $.extend({client_id:'', client_secret:''}, JSON.parse(cfg_data.opts.amo_token||'{}')),
+        config: $.extend({
+            statuses: {}, fieldsLEADS: {}, fieldsCONTACTS: {},
+            remind: 1, script: ''
+        }, JSON.parse(cfg_data.opts.amo_config||'{}')),
+        saveOptions: function(e, data) {
+            var statuses = {};
+            $.each(amoOpts.adata.pipelines, function(ip, vp){
+                $.each(vp.statuses, function(i, v){
+                    if (v.config) statuses[v.key] = v.config;
+                });
+            });
+            amoOpts.config.statuses = statuses;
+
+            // --------------- ** ------------------
+            var nd = {fieldsLEADS: {}, fieldsCONTACTS: {}};
+            $.each(amoOpts.adata.fieldsLEADS, function(i, v){
+                if (v.config) nd.fieldsLEADS[v.id] = v.config;
+            });
+            $.each(amoOpts.adata.fieldsCONTACTS, function(i, v){
+                if (v.config) nd.fieldsCONTACTS[v.id] = v.config;
+            });
+            $.extend(amoOpts.config, nd);
+            console.log(amoOpts);
+            setConfigValue('amo_config', JSON.stringify(amoOpts.config));
+        },
+        saveToken: function(e, data) {
+            setConfigValue('amo_token', JSON.stringify(amoOpts.token));
+        }
+    };
+    
+    $.observable(cfg_data).setProperty('amoOpts', amoOpts);
+    
+    pJSON(amoOpts.hook+'list/', {}, function(data) {
+        $.each(data.pipelines, function(ip, vp){
+            $.each(vp.statuses, function(i, v){
+                v.key = v.pipeline_id +'_'+v.id;
+                v.config = amoOpts.config.statuses[v.key] || ''
+            });
+        });
+        $.each(data.fieldsLEADS, function(i, v){
+            v.config = amoOpts.config.fieldsLEADS[v.id] || ''
+        });
+        $.each(data.fieldsCONTACTS, function(i, v){
+            v.config = amoOpts.config.fieldsCONTACTS[v.id] || ''
+        });
+        $.observable(amoOpts).setProperty('adata', data);
+        console.log('amoOpts', amoOpts);
+    });
+}
+</script>
+
+
+<script id="optsTmpl_optsAmo" type="text/x-jsrender">
+{^{include amoOpts itemVar="~amo"}}
+<div class="nav nav-pills my-2" role="tablist">
+    <a class="nav-item nav-link active" data-toggle="tab" href="#amo_status">Статусы</a>
+    <a class="nav-item nav-link" data-toggle="tab" href="#amo_fields">Поля</a>
+    <a class="nav-item nav-link" data-toggle="tab" href="#amo_config">Настройки</a>
+</div>
+
+<div class="tab-content">
+    <div class="tab-pane active" id="amo_status">
+    
+    {^{for adata^pipelines itemVar="~pl"}}
+        {^{for statuses}}
+            <label>{{:~pl.name}}: <b>{{:name}}</b></label>
+            <select data-id="{{:id}}" class="form-control mb-2" data-link="config">
+                <option value="">-- --</option>
+                {{for ~amo.adata.idStatus}}
+                    <option value="{{:alias}}">{{:name}}</option>
+                {{/for}}
+            </select>
+        {{/for}}
+    {{/for}}
+    <button class="btn btn-success" data-link="{on 'click' saveOptions}">Сохранить Настройки</button>
+    </div>
+    <div class="tab-pane" id="amo_fields">
+        <h3>Сделки</h3>
+        {^{for adata^fieldsLEADS}}
+        <label>{{:name}}</label>
+        <select data-id="{{:id}}" class="form-control mb-2" data-link="config">
+            <option value="">-- --</option>
+            {{props ~amo.adata.idLead}}
+                <option value="{{>key}}">{{>key}}</option>
+            {{/props}}
+        </select>
+        {{/for}}
+        
+        <h3>Контакты</h3>
+        {^{for adata^fieldsCONTACTS}}
+        <label>{{:name}}</label>
+        <select data-id="{{:id}}" class="form-control mb-2" data-link="config">
+            <option value="">-- --</option>
+            {{props ~amo.adata.idLead}}
+                <option value="{{>key}}">{{>key}}</option>
+            {{/props}}
+        </select>
+        {{/for}}
+        <button class="btn btn-success" data-link="{on 'click' saveOptions}">Сохранить Настройки</button>
+    </div>
+    <div class="tab-pane" id="amo_config">
+        <input type="text" class="form-control mb-2" placeholder="client_id" data-link="token^client_id">
+        <input type="text" class="form-control mb-2" placeholder="client_secret" data-link="token^client_secret">
+        <hr>
+        <label>Напоминание (за X дней)</label>
+        <input type="text" class="form-control mb-2" data-link="config^remind">
+        <label>Script (в AMO)</label>
+        <input type="text" class="form-control mb-2" data-link="config^script">
+        <button class="btn btn-success" data-link="{on 'click' saveToken}">Сохранить Конфигурацию</button>
+    </div>
+</div>
+{{/include}}
+</script>

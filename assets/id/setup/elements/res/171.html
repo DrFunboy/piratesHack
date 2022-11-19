@@ -1,0 +1,9 @@
+<script>
+$(document)
+.on('scrmDATA', function(e, data){
+    if (data._report && (data._report=='idSchedule_table'||data._report=='RateReport')) {
+        $.extend(data, {_mode: 'trainer'});
+    }
+});
+</script>
+[[$tableInner]]

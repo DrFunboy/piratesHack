@@ -1,0 +1,687 @@
+<div class="tab-content section-block my-0" id="leadPanel" style="display:none" data-link="visible{:true}">
+    <div id="tab_list" class="tab-pane active">
+        <div class="mb-2 d-flex">
+            <div class="dropdown mr-2">
+                <button data-toggle="dropdown" class="btn btn-primary btn-sm">Действия
+                    <small data-link="{:cntRows} visible{:cntRows>0}" class="badge badge-pill badge-warning ml-1"></small>
+                </button>
+                <div class="dropdown-menu">
+                    <div class="dropdown-arrow"></div>
+                    <a href="#" class="dropdown-item prevent-default" data-link="{on ~exportLead}">
+                        <i class="fa fa-file-word-o dropdown-icon"></i> Анкеты</a>
+                    <a href="#" class="dropdown-item prevent-default" data-link="css-display{if (cntRows<1) tmpl='none'} {on ~masschange}">
+                        <i class="fa fa-refresh dropdown-icon"></i> Статус</a>
+                    [[-<a href="#" class="dropdown-item" data-hint="nyet">Экспорт в AmoCRM</a>]]
+                </div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm mr-1 d-none"
+                data-link="class{merge:(!~Util^sendMessage||!cntRows) toggle='d-none'} {on ~sendMessage}">
+                <i class="fa fa-envelope"></i>
+            </button>
+        </div>
+
+        <table id="grid_idLead" data-entity="idLead"></table>
+
+        <div class="mt-2 card" style="display:none" data-link="visible{:(cntRows==1)&&lead^id}">
+            <div class="card-header">
+                <h3 class="card-title section-title1 mb-2 d-flex align-items-center">
+                    <span data-link="{formatEmpty:lead^name} data-id{:lead^id}" data-field="idLead:name" data-roinplace="fieldEDIT"></span>
+                    <span class="dropdown ml-2">
+                        <button class="btn btn-sm btn-icon btn-light" data-toggle="dropdown">
+                            <i class="fa fa-fw fa-ellipsis-v" data-link="visible{:!loading}"></i>
+                            <span class="spinner-border spinner-border-sm" role="status" data-link="visible{:loading}"></span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-arrow"></div>
+                            <a href="#" data-link="href{:'/sportsmens/candidate.html?key='+lead^key}" target="_blank" class="dropdown-item">
+                                Карточка кандидата</a>
+                            <div data-link="{for leadCardMenu ~lead=lead^ tmpl='#tplMenuItem'}"></div>
+                            <div class="dropdown-divider"></div>
+                            <div class="d-flex small px-2">
+                            [[-<a href='#' class="d-block text-muted prevent-default" data-run="/chunk/sp.sysinfo">ID <u data-link="sp^id"></u></a>]]
+                            <a href="#" class="d-block text-muted ml-auto fmtCreated stop-propagation"
+                                data-link="data-id{:lead^id} text{formatDate:lead^created}" data-tbl="idLead"></a>
+                            </div>
+                        </div>
+                    </span>
+                </h3>
+                <button data-link="html{leadFmt:lead^status} {on changeLeadStatus}" class="btn btn-subtle-primary btn-xs"></button>
+                <span data-link="visible{:(lead^sportsmen_key)}">
+                    &raquo; <a href="#" data-link="data-sportsmen{:lead^sportsmen_key} text{:lead^sportsmen_name}"></a>
+                </span>
+            </div>
+            <div class="card-body pt-0">
+                <div class="row">
+                    <div class="col-md-6 pt-3" id="eCardLead">
+                        [[-<table class="table table-sm table-striped table-borderless mt-3">
+                            <tbody data-link="{for infoTable tmpl='#tpl_leadInfoTable'}">
+                            </tbody>
+                        </table>]]
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <form data-link="{on 'submit' ~newComment}">
+                            <fieldset class="publisher publisher-alt my-3" data-link="disabled{:commentLoading}">
+                                <div class="publisher-input">
+                                    <textarea class="form-control" placeholder="Комментарий" data-link="post^comment"></textarea>
+                                </div>
+                                <div data-link="class{:post^comment? 'publisher-actions' : 'd-none'}">
+                                    <button type="submit" class="btn btn-primary ml-auto mb-2">
+                                        Комментарий
+                                        <span class="spinner-border spinner-border-sm" role="status" data-link="visible{:commentLoading}"></span>
+                                    </button>
+                                </div>
+                            </fieldset>
+                        </form>
+                        <span role="status" data-link="class{merge:tascomLoading? 'd-block spinner-border mx-auto':'d-none'}"></span>
+                        <ul class="timeline" data-link="{for tascom tmpl='#tpl_tascom'}"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>        
+    </div>
+    
+    <div id="tab_new" class="tab-pane card card-body"></div>
+    <div id="tab_new1" class="tab-pane card card-body"
+        data-link="{if leadFormUrl tmpl='#tplLeadForm'}"></div>
+</div>
+
+[[-<script id="tpl_leadInfoTable" type="text/x-jsrender">
+    <tr class="crd_{{:name}}"><th>{{:label||name}}</th>
+    <td class="{{:CLS}}">{{:HTML}}</td></tr>
+</script>]]
+
+<script id="tpl_tascom" type="text/x-jsrender">
+<li class="timeline-item" data-tascom="{{:id}}">
+    <div class="timeline-figure">
+        <span class="tile tile-circle tile-sm"><i class="fa {{tascomIco:action}}"></i></span>
+    </div>
+    
+    <div class="timeline-body">
+    <div class="media">
+        <div class="media-body">
+            {{if header}}<h6 class="timeline-heading">{{:header}}</h6>{{/if}}
+            <div>{{:info}}</div>
+            [[-<p class="timeline-date d-sm-none1">{{formatDateTime:created}}</p>]]
+        </div>
+        <div class="d-none1 d-sm-block1">
+            <a href="#" class="fmtCreated small text-muted" data-id="{{:id}}" data-tbl="idTascom">
+                {{formatDate:created}}
+            </a>
+            [[-<small class="timeline-date" data-toggle="tooltip" title="{{formatDateTime:created}}">{{formatDate:created}}</small>]]
+        </div>
+    </div><!-- /.media -->
+    </div><!-- /.timeline-body -->
+</li>
+</script>
+
+<script id="tplLeadForm" type="text/x-jsrender">
+    <iframe src="{{:leadFormUrl}}" scrolling="no" width="100%" height="300" frameborder="0"
+        onload="window.addEventListener('message',(function(e){if(e.data.i_h)this.style.height=e.data.i_h+'px'}).bind(this));"></iframe>
+</script>
+
+<script id="tplField_squad" type="text/x-jsrender">
+    <select class="custom-select" id="chLeadField_squad" data-link="^{:val:} class{merge:err toggle='is-invalid'} html{:idSquadList}">
+    </select>
+</script>
+
+<script id="tplField_trainer" type="text/x-jsrender">
+    <select class="custom-select" data-link="^{:val:} class{merge:err toggle='is-invalid'}">
+        <option value="0">-- Тренер --</option>
+        {^{for ~S.dbValues^idTrainer tmpl='#tpl_selectOption' /}}
+    </select>
+</script>
+        
+<script id="masschange" type="text/x-jsrender">
+    <div class="list-group list-group-flush list-group-bordered"
+        data-link="{include tmpl='#tplStatus'} {radiogroup post^status}">
+    </div>
+    <div class="publisher publisher-alt mt-2">
+        <div class="publisher-input">
+            <textarea class="form-control" placeholder="Комментарий" data-link="post^comment"></textarea>
+        </div>
+    </div>
+</script>
+
+<script id="tplStatus" type="text/x-jsrender">
+    {{for newStatusList}}
+    <label class="list-group-item custom-control custom-radio">
+        <input name="radioStatus" type="radio" class="custom-control-input" value="{{:alias}}">
+        <span class="custom-control-label">{{:~S.statusName(#data, true)}}</span>
+    </label>
+    {{/for}}
+</script>
+
+<script id="tpl_changeLeadStatus" type="text/x-jsrender">
+    <div class="list-group list-group-flush list-group-bordered" data-link="{radiogroup post^status}">
+        {^{if !post^status tmpl='#tplStatus'}}
+        {{else}}
+            <a href="#" class="list-group-item list-group-item-action list-group-item-warning prevent-default"
+                data-link="{on 'click' ~clearStatus}">
+                <span data-link="html{leadFmt:lead^status}"></span>
+                <span class="mx-3 text-muted">&raquo;</span>
+                <span data-link="html{leadFmt:post^status}"></span>
+            </a>
+            {^{if newStatusEx^idSportsmen}}
+                {^{if !post^sportsmen}}
+                    <h5 class="section-title pb-1">Спортсмен</h5>
+                    {^{for idSportsmen ~cls="fa-pencil" tmpl='#tpl_rowSportsmen' /}}
+                
+                    <a href="#" class="list-group-item list-group-item-action list-group-item-success prevent-default" data-link="{on ~chSportsmen}">
+                        <div class="list-group-item-body">Создать нового</div>
+                        <div class="list-group-item-figure">
+                            <i class="fa fa-plus"></i>
+                        </div>
+                    </a>
+                {{else}}
+                    <a href="#" class="list-group-item list-group-item-action list-group-item-warning prevent-default d-block"
+                        data-link="{on 'click' searchSportsmen}">
+                        <div class="text-muted mb-1">{^{if post^sportsmen=='0'}}Создадим{{else}}Обновим{{/if}} спортсмена</div>
+                        <span data-link="{:(post^sportsmen=='0')? lead^name : post^sportsmen_name}"></span>
+                    </a>
+                {{/if}}
+            {{/if}}
+        {{/if}}
+    </div>
+
+    <div data-link="visible{:!disabledOK}">
+        {^{for fields ~ld=ld}}
+        <div class="mt-2" data-link="{include tmpl='#tplField_'+field}"></div>
+        {{/for}}
+
+        <div class="publisher publisher-alt my-2">
+            <div class="publisher-input">
+                <textarea class="form-control" placeholder="Комментарий" data-link="post^comment"></textarea>
+            </div>
+        </div>
+        [[-<button class="btn btn-primary ml-auto1" data-link="{on ~changeStatus}">Сменить статус</button>]]
+    </div>
+</script>
+
+[[$tplSearch]]
+[[$jsLeadStatus]]
+
+<script>
+SCRM.link(SCRM.app, {
+    topNavTabs: [
+        {href: '#tab_list', html: 'Кандидаты', active: true},
+        {href: '#tab_new', html: '<i class="fa fa-plus"></i>'}
+    ]
+});
+
+var leadFormUrl = '/sportsmens/request.html';
+
+var leadData = {
+    cntRows: 0,
+    lead: {},
+    leadCardMenu: [],
+    post: {},
+    exportDoc: 'lead_anketa.docx',
+    changeLeadStatus: function(e, data){
+        var leadStatusData = {
+            ok: 'Сменить статус',
+            mdl_id: 'LeadStatus',
+            OKdepends: {
+                status: true
+            },
+            disabledOK: true,
+            body: '#tpl_changeLeadStatus',
+            post: {
+                id: leadData.lead.id
+            },
+            fields: [],
+            newStatusEx: {},
+            lead: leadData.lead,
+            newStatusList: $.map(SCRM.clubStatus.idLead, function(v, k) {
+                if (v.alias != leadData.lead.status) return v;
+            }),
+            searchSportsmen: function() {
+                //console.log('searchSportsmen')
+                SCRM.link(leadStatusData, {
+                    idSportsmen: [],
+                    'post.sportsmen': null
+                });
+                var srchSportsmen = {
+                    groupOp: 'OR',
+                    rules: [
+                        //{field: 'key', op: 'eq', data: leadData.lead.key},
+                        {field: 'id', op: 'eq', data: leadData.lead.sportsmen},
+                        {field: 'name', op: 'cn', data: leadData.lead.name||'xx!xx'} // если name пустой
+                    ]
+                };
+                pDATA('idSportsmen', {
+                    sidx: 'idSportsmen.name', sord: 'asc',
+                    rows: 1001,
+                    filters: JSON.stringify(srchSportsmen)
+                }, function(data){
+                    var nd = {
+                        idSportsmen: data.rows
+                    };
+                    if (!data.rows.length) nd['post.sportsmen'] = '0'; // Создадим
+                    SCRM.link(leadStatusData, nd);
+                });
+            },
+            onOK: function(e, md) {
+                var hasErr = false,
+                    postData = { };
+                $.each(leadStatusData.fields, function(i, f) {
+                    //var el_val = $('#chLeadField_'+f.field).val(),
+                    var ok = f.val && f.val!='0'; // && f.val==el_val;
+                    if (ok) {
+                        postData[f.field] = f.val;
+                    } else {
+                        hasErr = true;
+                    }
+                    SCRM.link(f, {'err': !ok});
+                });
+
+                if (hasErr) {
+                    alrt('Не заполнены необходимые поля');
+                    return false;
+                }
+                pEDIT('idLead', $.extend(postData, leadStatusData.post), function(out){
+                    idLeadComments(leadData.lead.key);
+                    leadData.reloadGridData();
+                });
+                md.mdl_hide();
+            }
+        };
+
+        /*if (leadData.post.status == nd.lead.status) {
+            nd['post.status'] = '';
+        }*/
+        
+        club_Modal(leadStatusData, {
+            clearStatus: function(e, data){
+                SCRM.link(leadStatusData, {'post.status': ''});
+            },
+            chSportsmen: function(e, data){
+                var d = data.linkCtx.data;
+                var nd = {
+                    'post.sportsmen': d.id || '0',
+                    'post.sportsmen_name': d.name
+                };
+                SCRM.link(leadStatusData, nd);
+            }
+        });
+        
+        function set_OK() {
+            var nd = {
+                disabledOK: false
+            };
+            $.each(leadStatusData.OKdepends, function(i, v){
+                if (v && !leadStatusData.post[i]) nd.disabledOK = true;
+            });
+            SCRM.link(leadStatusData, nd);
+        }
+        
+        $.observe(leadStatusData, 'post^status', function(e, data) {
+            //console.log('post^status', data);
+            if (data.value) { // может обнулиться если пользователь выбрал другой статус
+                var nd = {
+                    newStatusEx: $.extend({}, leadStatuses[data.value].extended)
+                };
+                nd['OKdepends.sportsmen'] = nd.newStatusEx.idSportsmen? true : false;
+                console.log('post^status', data, nd);
+                nd.fields = $.map((nd.newStatusEx.fields||'').split(','), function(v, i) {
+                    if (v) return [{field: v, val: leadData.lead[v]}];
+                });
+                SCRM.link(leadStatusData, nd);
+                $.each(leadStatusData.fields, function(i, v) {
+                    if (v.field == 'squad') {
+                        SCRM._run('/chunk/squadlist', {
+                            idSquad0: '-- Зал, Группа --',
+                            callback: function(html){
+                                var sq = v.val;
+                                SCRM.link(v, {
+                                    idSquadList: html,
+                                    val: '0'
+                                });
+                                setTimeout(function(){
+                                    SCRM.link(v, {
+                                        val: sq
+                                    });
+                                }, 20);
+                            }
+                        });
+                    }
+                    if (v.field == 'trainer' && !SCRM.dbValues.idTrainer) {
+                        pJSON(dbvaluesUrl, {mode: 'idTrainer', city:'my'}, function(data){
+                            SCRM.link(SCRM.dbValues, data);
+                        })
+                    }
+                });
+
+                if (leadStatusData.OKdepends.sportsmen && !leadStatusData.post.sportsmen) {
+                    leadStatusData.searchSportsmen();
+                }
+            }
+            set_OK();
+        });
+        $.observe(leadStatusData, 'post^sportsmen', set_OK);
+    }
+};
+SCRM.idLead = leadData;
+
+var tascomAction = {
+    info: 'fa-comment-o',
+    status: 'fa-bolt',
+    call: 'fa-phone'
+};
+var callStatus = {
+    i: 'Входящий',
+    o: 'Исходящий',
+    a: 'Принят',
+    r: 'Записан'
+};
+
+$.views.converters({
+    tascomIco: function(str) {
+        return (str in tascomAction)? tascomAction[str] : 'fa-cube';
+    }
+});
+
+function idLeadComments(uid){
+    SCRM.link(leadData, {
+        tascomLoading: true
+    });
+    pDATA('idTascom', {
+        sidx: 'created', sord: 'desc',
+        rows: 1001,
+        _where: {uid: uid}
+    }, function(data){
+        $.each(data.rows, function(i, v){
+            if (v.action=='status') v.header = SCRM.statusName('idLead', v.name, null, true);
+            if (v.action=='call') v.header = $.map(v.name.split(''), function(c, k){
+                var cs = callStatus[c];
+                return cs? cs:'';
+            }).join(' ');
+        });
+        SCRM.link(leadData, {
+            tascom: data.rows,
+            tascomLoading: false
+        });
+    });
+}
+
+SCRM.loadWSS(['ready','grid'], function() {
+    
+    leadData.reloadGridData = function(e) {
+        leadData.grid
+        .trigger('reloadGrid', [{current:true}]);
+    };
+    
+    
+    $.link(true, "#leadPanel", leadData, {
+        newComment: function(e, data){
+            e.preventDefault();
+            if (!$.trim(leadData.post.comment)) return;
+            SCRM.link(leadData, {commentLoading: true});
+            var postData = {
+                oper: 'add',
+                action: 'info',
+                uid: leadData.lead.key,
+                info: leadData.post.comment
+            };
+            pEDIT('idTascom', postData, function(out) {
+                SCRM.link(leadData, {
+                    commentLoading: false,
+                    'post.comment':''
+                });
+                idLeadComments(leadData.lead.key);
+            });
+        },
+        exportLead: function(e, data){
+            var grid = data.grid;
+            getGridSelRows(grid, function(selIDs){
+                var data = $.extend({}, grid.jqGrid('getGridParam', 'postData'), {
+                    _export: 'idLead',
+                    tmpl: leadData.exportDoc,
+                    _where: 'id='+selIDs.join(','),
+                    filters: '',
+                    rows: 1001
+                });
+                clubPostForm(grid.jqGrid('getGridParam', 'url'), data);
+            });
+        },
+        masschange: function(e, data){
+            //if (!leadData.cntRows) return;
+            if (leadData.cntRows == 1) {
+                SCRM.idLead.changeLeadStatus();
+            } else {
+                club_Modal({
+                    post: {
+                        id: leadData.selRows.join(',')
+                    },
+                    newStatusList: $.map(SCRM.clubStatus.idLead, function(v, k) {
+                        if (v.extended && v.extended.masschange) return v;
+                    }),
+                    body: '#masschange',
+                    title: 'Сменить статус',
+                    onOK: function(e, md) {
+                        if (!md.post.status) {
+                            alrt('Не выбран Статус');
+                            return false;
+                        }
+                        pEDIT('idLead', md.post, function(data) {
+                            leadData.reloadGridData();
+                        });
+                        return true;
+                    }
+                });
+            }
+        },
+        sendMessage: function(e, data){
+            pDATA('idLead', {
+                _where: {id: leadData.selRows},
+                rows: 1001
+            }, function(data){
+                SCRM._service.sendMessage(data.rows);
+            });
+        }
+    });
+
+    var leadCols = [
+        {name: 'id', hidden: true, template: idFieldTemplate},
+        {name: 'status', label:'Статус', width:80,
+            template: selTemplate,
+            formatter: function(cv, options, rowObject) {
+                return '<a href="#" data-lead="'+ rowObject.id +'" class="prevent-default">'+ SCRM.statusName('idLead', cv, null, true) +'</a>';
+            },
+            unformat: function(cellValue, options, cell) {
+                return $(cell).find('i').data('status');
+            },
+            searchoptions: {
+                defaultValue: 'narc'
+            },
+            clubStatus: 'idLead', lookupKey: 'alias'
+        },
+        {name: 'name', label: 'ФИО', width: 200,
+            editable: true, setROW: true,
+            editrules: {edithidden: true, required: true}
+        },
+        {name: 'gender', label: 'Пол', width: 40, hidden: false, editable: true,
+            editoptions: {
+                defaultValue: '[[!clubConfig?name=`Gender_main`]]'
+            },
+            formoptions: {rowpos: 1, colpos: 2},
+            template: selTemplate,
+            clubStatus: 'Gender', lookupKey: 'alias'
+        },
+        {name: 'birth', label:'Дата рождения', editable: true, template: dateTemplate},
+        {name: 'contact', label:'Контакт', width: 200,
+            editable: true,  setROW: true
+        },
+        {template: telTemplate, editable: true},
+        {name: 'email', template: emailTemplate,
+            editable: true,
+            editrules: {
+                email: true,
+                required: false
+            }
+        },
+        {name: 'squad_name', index: 'idSquad.name', label: 'Зал, Группа', width: 80, hidden: true},
+        [[-{name:'squad', label: 'Зал, Группа', width: 55,
+            hidden: true, hidedlg: true,
+            editable: true, edittype: 'select',
+            editrules: {edithidden:true},
+            editoptions: {value: '0:'}
+        },]]
+        {name: 'squad', label: 'Зал, Группа', width: 55,
+            hidden: true, hidedlg: true,
+            editable: true, editrules: {edithidden: true}, //, required:true, integer:true
+            edittype: 'custom',
+            editoptions:{
+                custom_element: function(value, edopt) {
+                    var el = $('<select><option>...</option></select>');
+                    SCRM._run('/chunk/squadlist', function(html) {
+                        el.html(html).val(value||0);
+                    });
+                    return el;
+                }
+            }
+        },
+        {name: 'club', label: 'Зал', width: 120, editable: true,
+            template: selTemplate,
+            dbvalues: 'idClub', dbvalues0: 0
+        },
+        {name:'sport', label: 'Дисциплина', editable: true,
+            template: selTemplate,
+            dbvalues: 'idSport', dbvalues0: 0
+        },
+        {name: 'datestart', label: 'Дата/время', editable: true,
+            template: dateTimeTemplate,
+            clearButton: true,
+            dateDiffWarn: -1,
+            cellattr: cellInsuranceColor
+        },
+        {name: 'source', label: 'Источник', width: 200,
+            editable: true,  setROW: true
+        },
+        {template: createdTemplate, hidden: false, label: 'Создано', index: 'idLead.created'},
+        {name: 'info', template: infoTemplate, editable: true},
+        {name: 'sportsmen', editable: true, hidden: true},
+        {name: 'birth_y', hidden: true, label: 'Возраст',
+            formatter: function(cv, opts, row) {
+                return [row.birth_y, row.birth_m].join(',');
+            }
+        },
+        {name: 'key', hidden: true}
+    ];
+
+    var mngr = $.inArray('idManager', SCRM.app.ugroups) > -1;
+
+    leadData.grid = $("#grid_idLead")
+    .on('jqGridBeforeSetLookup', function(e, params){
+        if (params.f.name == 'status') {
+            params.rows.unshift({id: 'narc', name: '[Не в архиве]'});
+        }
+    })
+    .on('jqGridAddEditAfterShowForm', function (e, form) {
+        $('select.customelement', form).addClass( $('#name', form).attr('class') );
+    })
+    .on('jqGridDeleteBeforeShowForm', function (e, form) {
+        $('.delmsg', form).html('Удаляются кандидаты только в статусе <b>Архив</b>.<br>Продолжить?');
+    })
+    .one('jqGridBeforeInit', function(e, grOpts){
+        var editedRows,
+        gr = $(this)
+        .one('jqGridAfterInit', function(e, grOpts){
+            if (mngr) gr.jqGridExport().jqGridColumns();
+            grOpts.reloadAlert.link(true, leadData);
+        })
+        .on('jqGridAfterLoadComplete', function(e, data){
+            editedRows = {};
+            SCRM.link(leadData, {
+                lead_rows: array2obj(data.rows),
+                needReload: false
+            });
+            gr.trigger('reloadSelect.club');
+        })
+        .on('jqGridAddEditBeforeInitData', function (e, form, ddd) { // Редактируется строка
+            var id = gr.jqGrid('getGridParam', 'selrow');
+            console.log('jqGridAddEditBeforeInitData',  e, form, ddd, id, editedRows);
+            if (id in editedRows) {
+                SCRM.alert('Данные в строке неактуальны. Обновите таблицу');
+                return false;
+            }
+        })
+        .on('jqGridSelectRow jqGridSelectAll reloadSelect.club', function(e, rid, sel) {
+            var selRows = getGridSelRows(gr); //console.log(selRows)
+            var nd = {
+                selRows: selRows,
+                cntRows: selRows.length,
+                lead: { }
+            };
+            
+            if (selRows.length==1) {
+                nd.lead = leadData.lead_rows[ selRows[0] ] || {}; //gr.jqGrid('getRowData', selRows[0]);
+                [[-if (nd.lead.id) {
+                    var tr = gr.jqGrid('getGridRowById', selRows[0]);
+                    var mainCols = gr.jqGrid('getGridParam', 'colModel');
+                    nd.infoTable = $.map(mainCols, function(col, i){
+                        if (col.labelClasses||col.hideInfoTable||col.hidedlg) return null;
+                        var cdata = $.jgrid.getDataFieldOfCell.call(gr[0], tr, i);
+                        col.HTML = cdata.html();
+                        col.CLS = cdata.attr('class');
+                        return col;
+                    });
+                }]]
+                //if (leadData.post.status == nd.lead.status) nd['post.status'] = ''; // для присвоения одинаковых статусов подряд
+                SCRM._run('/chunk/ecard', {
+                    edata: nd.lead,
+                    block: '#eCardLead',
+                    ecard: 'cardLead',
+                    ev: 'setROW.idLead'
+                });
+            }
+            SCRM.link(leadData, nd);
+        })
+        .on('needReload.spGrid', function(e, data) {
+            SCRM.link(leadData, {needReload: true});
+        });
+    })
+    .jqGridInit({
+        /*postData: {
+            filters: SCRM.obj2Filter({status: 'narc'})
+        },*/
+        colModel: leadCols,
+        sortname: 'created', sortorder: 'desc',
+        search: true,
+        rownumbers: true,
+        multiselect: true,
+        rowattr: function(data) {
+            var ls = SCRM.getClubStatus('idLead', data.status);
+            return ls? {'class': ls.cls} : {};
+        },
+        reloadAlert: true,
+        navOpts: {add: true, edit: true, del: mngr},
+        fltrToolbar: true
+    });
+    
+    $.observe(leadData, 'lead', function(e, data){
+        SCRM.link(leadData, {tascom: [ ]});
+        if (data.value.key) idLeadComments(data.value.key);
+    });
+    
+    $(document)
+    .one('shown.bs.tab.leadNew', 'a[href="#tab_new"]', function (e) {
+        SCRM._run('/chunk/eform/welcome', {
+            container: '#tab_new'
+        });
+        //SCRM.link(leadData, {leadFormUrl: leadFormUrl});
+    })
+    .on('shown.bs.tab', 'a[href="#tab_list"]', function (e) {
+        // TODO: При подаче заявки обновлять таблицу
+        //grids.idLead.trigger('reloadGrid', [{current:true}]);
+    })
+    .on('click', '[data-lead]', function(e){
+        var link = $(this);
+        link.closest('[data-entity]').trigger('clearSelection', link.data('lead'));
+        SCRM.idLead.changeLeadStatus();
+    });
+    SCRM.setClubStatus([[!clubStatus?tbl=`ecard`]]);
+});
+</script>
+
+[[!runHook?hook=`chunk/ecard`]]

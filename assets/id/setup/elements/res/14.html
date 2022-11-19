@@ -1,0 +1,836 @@
+<div class="spinner-parent section-block my-0" id="scheduler"></div>
+
+<script id="tpl_scheduler" type="text/x-jsrender">
+<div class="row">
+    <div class="col-md-4">
+        <fieldset data-link="{checkboxgroup sel_tr_key} disabled{:idTrainer^length < 2}">
+            {^{for idTrainer}}
+            <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" data-link="id{:'tr_'+uid} name{:'tr_'+uid} value{:id}">
+            <label class="custom-control-label font-weight-bold" data-link="for{:'tr_'+uid} text{:name}"></label>
+            </div>
+            {{/for}}
+        </fieldset>
+        <div class="d-flex my-2">
+            <label class="flex-grow-1 input-group">
+                <span class="input-group-prepend" for12="calTrainerSchedule">
+                    <span class="spinner-grow spinner-grow-sm" role="status" data-link="visible{:loading}"></span>
+                    <span class="input-group-text" data-link="visible{:!loading}"><i class="fa fa-calendar"></i></span>
+                </span>
+                <input type="text" class="form-control" id="calTrainerSchedule">
+            </label>
+            <div class="dropdown ml-2">
+                <button class="btn btn-secondary" data-toggle="dropdown"><i class="fa fa-filter"></i></button>
+                <div class="dropdown-menu dropdown-menu-right [[-dropdown-menu-rich]] stop-propagation"
+                    data-link="{checkboxgroup sel_stype}">
+                    <div class="dropdown-arrow"></div>
+                    [[-<div class="dropdown-header"> Add members </div>]]
+                    {{for ~S.clubStatus.idSchedule}}
+                        <label class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" name="st_{{:id}}" value="{{:alias}}">
+                        <span class="custom-control-label">{{:name}}</span>
+                        </label>
+                    {{/for}}
+                    [[-<div class="form-group px-3 py-2 m-0">
+                        <input type="text" class="form-control" placeholder="e.g. @bent10" data-toggle="tribute" data-remote="assets/data/tribute.json" data-menu-container="#people-list" data-item-template="true" data-autofocus="true" data-tribute="true">
+                        <small class="form-text text-muted">Search people by username or email address to invite them.</small>
+                    </div>
+                    <div id="people-list" class="tribute-inline stop-propagation"></div>
+                    <a href="#" class="dropdown-footer">Invite member by link <i class="far fa-clone"></i></a>]]
+                </div>
+            </div>
+        </div>
+        {^{for scheduleList sort="d_s"}}
+            <div class="card" data-rownum="{{:#index}}" id="lesson{{:id}}">
+                <div class="card-header d-flex align-items-center">
+                    <div>
+                    {{:d_s}} - {{:d_e}}
+                    
+                    {{if repeat==1 || parent!=0}}
+                        <small><i class="fa fa-repeat text-muted"></i></small>
+                    [[-{{else}}<i class="fa fa-calendar-o"></i>]]
+                    {{/if}}
+                    </div>
+                    {{if planfact==0}}
+                        <button class="btn btn-primary btn-sm my-n2 mr-n1 ml-auto" data-link="{on ~root.newLesson}"><i class="fa fa-plus"></i> Начать</button>
+                    {{else planfact==1}}
+                    <button data-link="{on ~root.editLesson id}
+                        class{:'btn btn-sm my-n2 mr-n1 edit-lesson ml-auto '+((~root.lesson&&~root.lesson.id==id)? 'btn-success':'btn-subtle-success')}">
+                        <i class="fa fa-pencil"></i> Изменить</button>
+                    {{/if}}
+                </div>
+                <div class="card-body">
+                    {{if squad!=0}}<div class="mb-1">
+                        <i class="fa fa-users text-muted fa-fw"></i>
+                        {{:squadname}}</div>{{/if}}
+                    <div class="mb-1">
+                        <i class="fa fa-map-marker text-muted fa-fw"></i>
+                        {{:clubname}}{{:location? ', '+location:''}}
+                    </div>
+                    <div>
+                        <span class="badge badge-secondary" data-toggle="tooltip"
+                        data-link="title{:sportname} css-background-color{:sportcolor} {:ssportname}"></span>
+                        <small class="text-muted1 border-bottom1 border-primary1">
+                            {{:trainername}}{{:trainername2? ', '+trainername2:''}}</small>
+                    </div>
+                </div>
+            </div>
+        {{else}}
+            <div class="alert alert-warning">Нет занятий на эту дату</div>
+        {{/for}}
+        <button class="btn btn-subtle-dark btn-block my-3" data-link="{on ~addSchedule} visible{:canAdd}"><i class="fa fa-plus"></i></button>
+    </div>
+    <div class="col-md-8" id="lessonBox" data-link="{include lesson ~lsnMode=lsn_mode tmpl=lesson^id?'#tpl_lesson':' '}">
+        [[-{^{if lesson^id}}
+            <div class="card mb-0" data-link="{include lesson ~o=opts ~lsnMode=lsn_mode tmpl='#tpl_lesson'}"></div>
+        {{/if}}]]
+    </div>
+</div>
+</script>
+
+<script id="tpl_lesson" type="text/x-jsrender">
+<div class="card mb-0">
+<div class="card-body d-flex justify-content-between align-items-start pb-0">
+    <div>
+        <span class="badge badge-secondary" data-toggle="tooltip"
+        data-link="title{:sportname} css-background-color{:sportcolor} {:ssportname}"></span>
+        {{:squadname}}
+        <div>
+            {{:clubname}}{{:location? ', '+location:''}}
+        </div>
+    </div>
+    <div class="btn-group mx-auto1">
+        <button data-toggle="dropdown" class="btn btn-light dropdown-toggle">
+            {{:d_s}} - {{:d_e}}
+        </button>
+        <div class="dropdown-menu dropdown-menu-right">
+            <div class="dropdown-arrow"></div>
+            [[-<button class="dropdown-item" data-link="{on ~showMode 'rate'}">
+                [[-<i class="fa fa-check-square-o dropdown-icon"></i>]]
+                Аттестация</button>]]
+            <button class="dropdown-item" data-run="/chunk/lessonevent">Аттестация</button>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item prevent-default" data-link="{on ~delSchedule}">Удалить занятие</a>
+        </div>
+    </div>
+</div>
+
+[[-{^{if (~root^lsn_mode=='rate' && ~o^rate_mode<2) tmpl='#tpl_Rate'+~o^rate_mode /}}]]
+
+<div data-link="{if sp_loading ~loadingStyle='m-3' tmpl='Loading'}"></div>
+<div data-link="{if ~lsnMode!='check' tmpl=~lsnMode}"></div>
+<div data-link="visible{:(~lsnMode=='check')&&idSportsmen}">
+    <div class="card-body">
+        <div class="d-flex">
+            <div class="dropdown">
+                <button class="btn btn-light1 btn-outline-secondary btn-sm"  data-toggle="dropdown"><i class="fa fa-check-square-o"></i>
+                    {^{:cnt_y}} / {^{:idSportsmen^length}}
+                </button>
+                <div class="dropdown-menu">
+                    <div class="dropdown-arrow"></div>
+                    <button class="dropdown-item" data-link="{on ~checkAll}">Отметить всех</button>
+                </div>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm mx-2" data-link="{on ~addSportsmen}">
+                <i class="fa fa-user-plus"></i> Добавить
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" data-link="visible{:idLead && idLead^length} {on ~addLead}">
+                Кандидаты <span class="badge badge-subtle badge-primary" data-link="idLead^length"></span>
+            </button>
+        </div>
+    </div>
+    <div class="list-group list-group-bordered list-group-reflow" id="lessonSportsmen"
+        data-link="{for idSportsmen tmpl='#tpl_lesSportsmen'}"></div>
+</div>
+
+<div class="card-body publisher keep-focus" data-link="class{merge:info toggle='focus'}">
+    <div class="publisher-input">
+        <textarea class="form-control" placeholder="Заметки" data-link="new_info"></textarea>
+    </div>
+    
+    <div class="publisher-actions">
+        <div class="mr-auto" data-link="{on photo_uid ~S.linkFile '#tpl_lsnPhotoBtn'}" data-linkfile=""></div>
+        <button type="button" class="btn btn-primary btn-sm publisher-tools"
+            data-link="disabled{:info==new_info} {on ~saveInfo}">Сохранить</button>
+    </div>
+</div>
+
+[[-<div id="lessonPhoto" class="spinner-parent px-3"
+    data-link="{include tmpl='#tpl_gallery_edit' photo_lesson ~item_cls='col-xl-3 col-lg-3 col-md-4 col-6'}"></div>
+<hr>]]
+<div id="lessonPhoto1" class="spinner-parent px-3"
+    data-link="{on photo_uid ~item_cls='col-xl-3 col-lg-3 col-md-4 col-6 rrr' ~S.linkFile '#tpl_gallery_edit'}" data-linkfile=""></div>
+
+</div>
+</script>
+
+<script id="tpl_lsnPhotoBtn" type="text/x-jsrender">
+    <button class="btn btn-light btn-icon"
+        data-link="{on ~S.uploadFile}" accept="image/*">
+        {^{if loading}}
+        <span class="spinner-border spinner-border-sm" role="status"></span>
+        {{else}}
+        <i class="fa fa-camera"></i>
+        {{/if}}
+    </button>
+</script>
+
+
+<script id="tpl_lesSportsmen" type="text/x-jsrender">
+<div data-id="{{:lsn_id}}" class="list-group-item row_idLesson">
+    <div class="lstatus list-group-item-figure align-items-start pt-1"
+        data-link="{on ~changeStatus} html{fmtStatus:lsn_status tbl='idLesson'}"></div>
+    <div class="list-group-item-body">
+        <h4 class="list-group-item-title">
+            {{:name}}
+            <span class="badge badge-warning pulse_fast" data-link="visible{:todaybirth} text{:todaybirth}"></span>
+        </h4>
+        {{if todaybirth}}
+            <h5 class="list-group-item-subtitle text-muted">
+                {{formatDate:birth}}
+            </h5>
+        {{/if}}
+        <div class="mt-2 trainer_gdpr">
+            [[-{^{if (saldo < 0) }}]]
+                <span class="sp_badsaldo text-danger mr-2" data-link="{:saldo} visible{:(saldo < 0)}"></span>
+            [[-{{/if}}]]
+
+            {^{if ~checkInvLes(lsn_status)}}
+            <span class="sp_invles text-muted small">
+                {^{if (!lsn_invoice || lsn_invoice==0)}}
+                    <span class="text-warning">Без абонемента</span>
+                    [[-<i class="fa fa-battery-0 text-warning animated flash infinite" data-toggle="tooltip" title="Без абонемента"></i>]]
+                {{else}}
+                    {^{if duedate}}
+                        <i class="mr-1 fa fa-battery-3"></i>
+                        {^{:(cnt_lesson != 0)? cnt_lesson+' ~ ' : ''}}
+                        {^{formatDate:duedate}}
+                    {{else}}
+                        <i class="mr-1 fa fa-battery-0"></i> Абонемент закончился
+                    {{/if}}
+                {{/if}}
+            </span>
+            {{/if}}
+        </div>
+        <div class="mt-1" data-link="visible{:lsn_info}">
+            <a href="#" class="dashed" data-roinplace="lsnInfo" data-link="{on 'lsnInfo' ~lsnInfoEdit}">{{:lsn_info}}</a>
+        </div>
+    </div>
+    
+    <div class="ml-auto mr-n2 mt-n1 dropdown">
+        <button class="btn btn-sm1 btn-icon btn-light" data-toggle="dropdown" 
+            data-link="class{merge:lsn_mark toggle='btn-outline-primary'} class{merge:!lsn_mark toggle='btn-light'}">
+            <span data-link="{:lsn_mark||''} class{merge:!lsn_mark toggle='fa fa-fw fa-ellipsis-v'}"></span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-right">
+            <div class="dropdown-arrow"></div>
+            {{if ~root.marks.length>1 tmpl="#tpl_lessonMark" /}}
+            <a href="#" class="dropdown-item prevent-default" data-link="{on ~addComment}">Добавить комментарий</a>
+            <div class="trainer_gdpr">
+                <div class="dropdown-divider"></div>
+                <a href="/sportsmens/sportsmen.html?key={{:key}}" target="_blank" class="dropdown-item">Личный кабинет</a>
+                <a href="#" class="dropdown-item btn-addinvoice prevent-default" data-link="{on ~addInvoice}">Продажа/Оплата</a>
+            </div>
+        </div>
+    </div>
+</div>
+</script>
+
+<script id="tpl_lessonMark" type="text/x-jsrender">
+<div class="px-3">
+    {{for ~root.marks ~lsn_mark=lsn_mark ~lsn=#data}}
+        <button class="btn btn-sm mb-1" data-link="html{:'&nbsp;'+#data+'&nbsp;'}
+            class{merge:(#data == ~lsn_mark) toggle='btn-success'}
+            class{merge:(#data != ~lsn_mark) toggle='btn-secondary'}
+            {on 'click' ~changeMark ~lsn}"></button>
+    {{/for}}
+</div>
+<div class="dropdown-divider"></div>
+</script>
+
+<script id="tpl_idLead" type="text/x-jsrender">
+    {^{if !loading}}
+    <div class="list-group list-group-flush list-group-bordered"
+        data-link="{for idLead tmpl='#tpl_rowSportsmen'}"></div>
+    {{else}}
+    <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+            aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 75%"></div>
+    </div>
+    {{/if}}
+</script>
+
+[[-
+<script id="tpl_Rate0" type="text/x-jsrender">
+    <div class="d-flex justify-content-between align-items-center card-body">
+        <button type="button" class="btn btn-light1 btn-icon mr-2" data-link="{on ~showMode 'check'}">
+            <i class="fa fa-chevron-left"></i>
+        </button>
+        <select class="form-control" data-link="sel_sportsmen">
+        {^{for idSportsmen}}
+            <option value="{{:id}}">{{:name}} :: {^{:~root.rateTotal(id)}}</option>
+        {{/for}}
+        </select>
+    </div>
+    {^{if sel_sportsmen}}
+        <table class="table border-bottom">
+        <tbody>
+        {^{for ~root.statuses.idRate itemVar="~rs" ~sp_id=sel_sportsmen ~r=~root^idRate }}
+        <tr>
+            <td>{{:name}}</td>
+            <td>
+                <div class="input-group">
+                    {{if ~root.rateAvgFields[alias]}}
+                        <input class="form-control"
+                            data-link="{:~root.rateAvg(~sp_id, id)}">
+                    {{else}}
+                    <input class="form-control"
+                        data-link="{:~r[~sp_id +'_'+ id]} {on 'change' ~rateChange ~sp_id ~rs}">
+                    {{/if}}
+                    {{if (~rs.extended&&~rs.extended.sum=='total')}}
+                    <label class="input-group-append"><span class="input-group-text"><i class="fa fa-plus-square"></i></span></label>
+                    {{/if}}
+                </div>
+
+            </td>
+        </tr>
+        {{/for}}
+        </tbody>
+        <tfoot>
+        <tr>
+            <th>Итого</th>
+            <th data-link="~root.rateTotal(sel_sportsmen)" class="text-success font-weight-bold"></th>
+        </tr>
+        </tfoot>
+        </table>
+    {{/if}}
+</script>
+
+<script id="tpl_Rate1" type="text/x-jsrender">
+<div class="table-responsive">
+    <table class="table border-bottom">
+        <thead><tr>
+            <th>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-link="{on ~showMode 'check'}">
+                <i class="fa fa-chevron-left"></i>
+                </button>
+            </th>
+            {^{for ~root.statuses.idRate}}
+                <th>{{:name}}</th>
+            {{/for}}
+            <th>Итого</th>
+        </tr></thead>
+        <tbody>
+        {^{for idSportsmen itemVar="~sp"}}
+        <tr>
+        <td>{{:name}}</td>
+            {^{for ~root.statuses.idRate itemVar="~rs" ~r=~root^idRate }}
+            <td>
+                <div class="input-group">
+                    {{if ~root.rateAvgFields[alias]}}
+                        <input class="form-control"
+                            data-link="{:~root.rateAvg(~sp.id, id)}">
+                    {{else}}
+                    <input class="form-control"
+                        data-link="{:~r[~sp.id +'_'+ id]} {on 'change' ~rateChange ~sp.id ~rs}">
+                    {{/if}}
+                    {{if (~rs.extended&&~rs.extended.sum=='total')}}
+                    <label class="input-group-append"><span class="input-group-text"><i class="fa fa-sort-numeric-asc"></i></span></label>
+                    {{/if}}
+                </div>
+            </td>
+            {{/for}}
+            <th data-link="~root.rateTotal(id)"></th>
+        </tr>
+        {{/for}}
+        </tbody>
+    </table>
+</div>
+</script>
+]]
+
+[[$tplSearch]]
+
+<script id="tpl_sp_search" type="text/x-jsrender">
+{{include ~placeholder="ФИО" tmpl="#tpl_searchinput"/}}
+
+<div class="list-group list-group-flush list-group-bordered mt-2"
+    data-link="visible{:srchShow} {for idSportsmens sort='name' tmpl='#tpl_rowSportsmen'}"></div>
+</script>
+
+<style>
+    .lstatus {
+        cursor: pointer;
+        font-size: 1.2em;
+        text-align: center;
+    }
+    .mnu_spinfo .fa {
+        margin-right: 8px;
+    }
+    .sp_badsaldo, .sp_invles {
+        display: inline-block;
+    }
+    /*.input-total {
+        background-color: lightyellow;
+    }*/
+</style>
+
+[[$tplGallery]]
+
+<script>
+SCRM.scheduleEditUrl = '/hook/schedule.start/';
+var tr_opts_path = 'trainer_lessons_opts';
+
+var schData = {
+    marks: '[[!clubConfig?name=`marks`]]'.split(','),
+    sel_stype: [ ],
+    sel_tr_key: [ ],
+    y_status: [ ],
+    tr_key: 'my',
+    //idSchedule: [ ],
+    idTrainer: [ ],
+    scheduleList: [ ],
+    lesson: { },
+    lsn_mode: 'check',
+    opts: $.extend({
+        //rate_mode: 1
+    }, getObjectFromLocalStorage(tr_opts_path)),
+    /*rateTotal: function(sp){
+        var total = 0;
+        $.each(schData.statuses.idRate, function(i, v){
+            var val = schData.idRate[sp +'_'+ v.id];
+            if (v.extended && v.extended.sum && val) total += val*1;
+        });
+        return total;
+    },
+    rateAvg: function(sp, rs){
+        var v = schData.idRate[sp +'_'+ rs];
+        return (v)? v : '';
+    },
+    rateAvgFields: {},
+    statuses: {
+        idRate: [ ],
+        idSchedule: [ ]
+    },*/
+    newLesson: function(e, data) {
+        var d = data.linkCtx.data;
+        pJSON(SCRM.scheduleEditUrl, {
+	        start_id: d.id,
+	        datestart: schData.datestart+' '+d.d_s
+	    }, function(start_data){
+	        schData.getSchData(function(){
+	            schData.editLesson(start_data.idSchedule.id);
+	        });
+        });
+    },
+    editLesson: function(id, e, data) {
+        var sch = schData.scheduleKeys[id];
+        if (sch) {
+            var lsn = $.extend({
+                sp_loading: true,
+                sel_sportsmen: 0,
+                new_info: sch.info
+            }, sch);
+            SCRM.link(schData, {
+                lesson: lsn
+            });
+            
+            schData.getLessonData();
+            
+            /*SCRM.jqXHRarray([
+                function(){
+                    return pDATA('idRate', {
+                        rows: 1001,
+                        filters: SCRM.obj2Filter({schedule: schData.lesson.id})
+                    }, function(data) {
+                        var rate = {};
+                        $.each(data.rows, function(i, v){
+                            rate[v.sportsmen +'_'+ v.status] = v.value;
+                        });
+                        SCRM.link(schData, {idRate: rate});
+                    });
+                }
+            ]);*/
+
+            clubScroll('#lessonBox');
+        }
+    },
+    getSchData: function(callback){
+        SCRM.link(schData, {
+            lesson: { },
+            loading: true
+        });
+		pJSON('/hook/schedule.data/', {
+		    mode: 'trainer',
+		    datestart: schData.datestart,
+		    key: schData.tr_key
+		}, function(data){
+		    if ((schData.sel_tr_key.length == 0) && data.idTrainer) {
+		        data.sel_tr_key = $.map(data.idTrainer, function(v, i){
+		            return ""+v.id;
+		        });
+		    }
+
+            data.loading = false;
+            SCRM.link(schData, data);
+            console.log(schData)
+            
+            if (callback) callback(data);
+        });
+	}
+};
+//schData.rateAvg.depends = ["idRate^*"];
+//schData.rateTotal.depends = ["idRate^*","sel_sportsmen"];
+
+
+/*$.each([[-!clubStatus?tbl=`idRate,idSchedule`]], function(i, v) {
+    if (v.extended && v.extended.avg) schData.rateAvgFields[v.extended.avg] = 1; // idRateStatus
+    schData.statuses[v.tbl].push(v);
+    if (v.tbl == 'idSchedule') schData.sel_stype.push(v.alias)
+});*/
+
+SCRM.setClubStatus([[!clubStatus?tbl=`idSchedule`]]);
+$.each(SCRM.clubStatus.idSchedule||[], function(i, v) {
+    if ((v.extended||{}).canAdd) key2obj(schData, 'canAdd').push(v);
+    schData.sel_stype.push(v.alias)
+});
+
+var uparam = getUrlVars();
+if (uparam.trainer) schData.tr_key = uparam.trainer;
+
+var scheduler = $("#scheduler");
+
+var wIdSportsmen = {
+    sidx: 'name', sord: 'asc',
+    rows: 1001,
+    _stype: function() {
+        return schData.lesson.stype;
+    }
+}
+SCRM.loadWSS('ready', function() {
+    function recalcSportsmen(lesson) {
+        var idSportsmen = (lesson || schData.lesson).idSportsmen || [];
+        var nd = $.extend({
+            not_checked: [],
+            cnt_y: 0
+        }, lesson);
+        $.each(idSportsmen, function(i, v){
+            if ($.inArray(v.lsn_status, schData.y_status) >= 0) nd.cnt_y++; else nd.not_checked.push(v.lsn_id);
+        });
+        SCRM.link(schData.lesson, nd);
+    }
+    
+    $.templates('#tpl_scheduler').link(scheduler, schData, {
+        checkInvLes: function(lsn_status) {
+            return (schData.lesson.stype_cfg||'').indexOf(lsn_status) > -1;
+        },
+        changeStatus: function(e, data) {
+            var row = data.linkCtx.data,
+                nextStatus = SCRM.getClubStatus('idLesson', row.lsn_status).next;
+
+            function chSportsmenRow(data){
+                SCRM.link(row, data);
+                recalcSportsmen();
+            }
+
+            chSportsmenRow({
+                lsn_status: nextStatus
+            });
+	        
+            pEDIT('idLesson', {
+                id: row.lsn_id,
+                status: nextStatus
+            }, function(data){
+                pDATA('idSportsmen', $.extend({
+                    _where: {'idLesson.id': row.lsn_id}
+                }, wIdSportsmen), function(data){
+                    if (data.rows.length == 1) {
+                        var lesson_row = data.rows[0];
+                        //clearTooltip();
+                        chSportsmenRow(lesson_row);
+                    }
+                });
+            });
+        },
+        changeMark: function(lsn, e, data) {
+            var pd = {
+                id: lsn.lsn_id,
+                mark: data.linkCtx.data
+            };
+                
+            if (pd.mark == lsn.lsn_mark) pd.mark = null;
+            if (pd.mark && $.inArray(lsn.lsn_status, schData.y_status) < 0) pd.status = schData.y_status[0];
+            
+            pEDIT('idLesson', pd, function(data){
+                SCRM.link(lsn, {
+                    lsn_mark: pd.mark,
+                    lsn_status: pd.status || lsn.lsn_status
+                });
+            });
+        },
+        addComment: function(e, data) {
+            $(e.target).closest('.row_idLesson').find('a[data-roinplace="lsnInfo"]')
+            .click().closest('div').show();
+        },
+        addLead: function(e, data) {
+            var md = {
+                body: '#tpl_idLead',
+                title: 'Добавить кандидата',
+                idLead: schData.lesson.idLead
+            };
+            club_Modal(md, {
+                chSportsmen: function(e, data){
+                    e.preventDefault();
+                    var d = data.linkCtx.data;
+                    var nextStatus = schData.lesson.leadStatus[d.status].extended['nextStatus'];
+                    //console.log(d, nextStatus)
+                    if (nextStatus) {
+                        SCRM.link(md, {loading: true});
+                        pEDIT('idLead', {
+                            id: d.id,
+                            status: nextStatus,
+                            trainer: schData.lesson.trainer
+                        }, function(data){
+                            if (data.row && data.row.sportsmen && (data.row.sportsmen*1 != 0)) {
+                                ySportsmen(data.row.sportsmen, d.name)
+                                .always(function() {
+                                    md.mdl_hide();
+                                    //schData.getLeads();
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        },
+        addInvoice: function(e, data) {
+            var d = data.linkCtx.data;
+            $(document)
+            .off('clubUpdateSpData.TrainerLesson')
+            .on('clubUpdateSpData.TrainerLesson', function(e, data) {
+                if (d.id == data.id) schData.getLessonData();
+            });
+            SCRM._run('/chunk/newinvoice', {
+                paymode: true,
+                payd: true,
+                key: d.key
+            });
+        },
+        delSchedule: function(e, data) {
+            var d = data.linkCtx.data;
+            rocnfrm('Отменить занятие?', function() {
+                pEDIT('idSchedule', {
+        	        id: d.id,
+        	        planfact: -1
+        	    }, function(del){
+        	        schData.getSchData();
+                });
+            });
+        },
+        addSchedule: function(e, data) {
+            console.log(schData.canAdd)
+            SCRM._run('/chunk/schedule.edit', {
+                Trainer: schData.idTrainer[0],
+                stypes: schData.canAdd,
+                repeat_mode: false,
+                postData: {
+                    datestart: schData.datestart,
+                    stype: schData.canAdd[0].alias,
+                }
+            });
+            $(document)
+            .off('editSchedule.changed.TrainerLesson')
+            .on('editSchedule.changed.TrainerLesson', function(e, data){
+                console.log('editSchedule.changed.TrainerLesson', e, data, schData);
+                schData.getSchData();
+            });
+        },
+        [[-rateChange: function(sp, d, e, data) {
+            //console.log('rateCh', this, sp, d, data.linkCtx.data);
+            var r = {
+                oper: 'add',
+                status: d.id,
+                sportsmen: sp,
+                schedule: schData.lesson.id,
+                value: $(e.target).val()
+            };
+            pEDIT('idRate', r, function(data){
+                SCRM.success('Сохранил');
+            });
+            SCRM.link(schData.idRate).setProperty(sp +'_'+ r.status, r.value);
+
+            if (d.extended&&d.extended.avg) {
+                var sum=0, cnt=0;
+                r.status = null;
+                $.each(schData.statuses.idRate, function(i, v) {
+                    var sp_val_key = sp +'_'+ v.id;
+                    if (v.extended && v.extended.avg && v.extended.avg==d.extended.avg && (sp_val_key in schData.idRate)) {
+                        var vRate = schData.idRate[sp_val_key]*1;
+                        if (vRate) {
+                            sum += vRate;
+                            cnt++;
+                        }
+                    }
+                    if (v.alias == d.extended.avg) r.status = v.id;
+                });
+                if (r.status) {
+                    r.value = (cnt)? sum/cnt : 0;
+                    pEDIT('idRate', r);
+                    SCRM.link(schData.idRate).setProperty(sp +'_'+ r.status, r.value);
+                    //console.log('sum_new', sum, cnt, schData.idRate);
+                }
+            }
+        },
+        showMode: function(mode, e, data) {
+            //SCRM.alert('Оценки выставляются в меню каждого спортсмена.<br>Функционал нормативов перерабатывается.')
+            var nd = {lsn_mode: mode};
+            if (mode=='rate' && schData.lsn_mode=='rate') {
+                nd['opts.rate_mode'] = Math.abs(schData.opts.rate_mode - 1);
+            }
+            SCRM.link(schData, nd);
+            saveObjectInLocalStorage(tr_opts_path, schData.opts);
+        },]]
+        checkAll: function(e) {
+            pEDIT('idLesson', {
+                id: schData.lesson.not_checked.join(','),
+                status: schData.y_status[0]
+    	    }, schData.getLessonData);
+        },
+        addSportsmen: function(e, d) {
+            var srchData = {
+                body: '#tpl_sp_search',
+                title: 'Добавить спортсмена'
+            };
+            var mdl = club_Modal(srchData, {
+                srchSubmit: function(e, data) {
+                    e.preventDefault();
+                    SCRM.link(srchData, {srchShow: 0});
+                    if (!srchData.srchTxt||srchData.srchTxt.length<2) return;
+                    pDATA('idSportsmen', {
+                        //sidx: 'idSportsmen.name', sord: 'asc',
+                        rows: 100,
+                        filters: SCRM.obj2Filter({
+                            name: {op: 'bw', data: srchData.srchTxt},
+                            status: 'narc'
+                        })
+                    }, function(data){
+                        SCRM.link(srchData, {
+                            idSportsmens: data.rows,
+                            srchShow: 1
+                        });
+                    });
+                },
+                chSportsmen: function(e, data){
+                    e.preventDefault();
+                    var d = data.linkCtx.data;
+                    ySportsmen(d.id, d.name)
+                    .always(function() {
+                        srchData.mdl_hide();
+                    });
+                }
+            });
+        },
+        saveInfo: function(e, d){
+            SCRM.link(schData.scheduleKeys[schData.lesson.id], {info: schData.lesson.new_info});
+            pEDIT('idSchedule', {
+                id: schData.lesson.id,
+                info: schData.lesson.new_info
+            }, function(result){
+                SCRM.success('Saved');
+            });
+        },
+        lsnInfoEdit: function(e, d, txt){
+            pEDIT('idLesson', {
+                id: d.linkCtx.data.lsn_id, //$(e.target).closest('[data-id]').data('id'),
+                info: txt
+            }, function(result){ });
+        }
+    });
+    
+    function ySportsmen(id, name) {
+        return pEDIT('idLesson', {
+            oper: 'add',
+            status: schData.y_status[0],
+            sportsmen: id,
+            schedule: schData.lesson.id
+        }, function(add_data){
+            SCRM.success('Добавил: ' + name);
+            schData.getLessonData();
+        });
+    }
+    
+    $.observe(schData, 'idSchedule','sel_tr_key','sel_stype', function(e, data) {
+        var nd = {scheduleKeys: {}};
+        nd.scheduleList = $.map(schData.idSchedule, function(v, i){
+            nd.scheduleKeys[v.id] = v;
+            return (($.inArray(""+v.trainer, schData.sel_tr_key) >= 0 || $.inArray(""+v.trainer2, schData.sel_tr_key) >= 0)
+            && ($.inArray(v.stype, schData.sel_stype) >= 0))? v : null;
+        });
+        SCRM.link(schData, nd);
+    });
+
+    $('#calTrainerSchedule')
+    .on('onChangeDateEdit', function(e, data) {
+        SCRM.link(schData, {datestart: data.sqlDates[0]});
+        schData.getSchData();
+    })
+    .initDateEdit({
+        defaultDate: 'today'
+    });
+
+	schData.getLessonData = function(callback) {
+	    //var cfg_name = 'schedule_'+schData.lesson.stype;
+	    var postData = $.extend({
+            _where: {'idLesson.schedule': schData.lesson.id},
+            _process: 'idSportsmenLesson'
+        }, wIdSportsmen);
+        if (!SCRM.clubStatus.idLesson) postData.clubStatus = 'idLesson';
+        pDATA('idSportsmen', postData, function(data){
+            console.log('idSportsmenLesson', data)
+            if (data.clubStatus) {
+                SCRM.setClubStatus(data.clubStatus);
+                var s_1, s_prev;
+                $.each(SCRM.clubStatus.idLesson, function(s, v){
+                    if ((v.extended||{}).visit) schData.y_status.push(v.alias);
+                    if (s_prev) v.next = s_prev.alias; else s_1 = v;
+                    s_prev = v;
+                });
+                s_1.next = s_prev.alias;
+            }
+            
+            var lesson = $.extend(true, { // Если вдруг пустой ответ
+                idSportsmen: data.rows,
+                sp_loading: false,
+                stype_cfg: '',
+                idLead: [],
+                leadStatus: [],
+                photo: {
+                    postData: {}
+                }
+            }, data.idSportsmenLesson);
+            lesson.photo_uid = lesson.photo.postData.uid;
+
+            var bnow = data.created.substr(5,5), ynow = data.created.substr(0,4)*1;
+            $.each(lesson.idSportsmen, function(i, row){
+                if (i==0) lesson.sel_sportsmen = row.id;
+                if (row.birth && (row.birth.substr(5,5) == bnow)) {
+                    row.todaybirth = ynow - row.birth.substr(0,4)*1;
+                }
+            });
+            recalcSportsmen(lesson);
+
+            $('#lessonBox').trigger('getLessonData', schData.lesson);
+            $('[data-linkfile]').trigger(lesson.photo_uid, $.extend({
+                hide_upload: true,
+                post: {filetype: 'photo_lesson'}
+            }, lesson.photo));
+            
+            //if (callback) callback(schData.lesson);
+        });
+	}
+
+    /*function clearTooltip() {
+        $('[data-toggle="tooltip"]', scheduler).tooltip('dispose');
+    }*/
+});
+</script>

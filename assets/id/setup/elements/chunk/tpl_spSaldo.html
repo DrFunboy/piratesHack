@@ -1,0 +1,4 @@
+<script id="tpl_spSaldo" type="text/x-jsrender">
+    <span data-link="visible{:saldo!=0} class{:saldo > 0? 'text-success':'text-danger'} html{formatMoney:saldo}"></span>
+    <span class="text-muted" data-link="visible{:saldo==0}">Баланс: 0</span>
+</script>

@@ -1,0 +1,71 @@
+<script>
+SCRM._service[ '[[+rq]]' ] = function(data) {
+    console.log('[[+rq]]', $.view(this), this);
+    var spCardData = $.view(this).data;
+    
+    if (!spCardData.spTechTab) {
+        SCRM.link(spCardData.spTabs).insert(1, {
+            id: 't_spSysinfo',
+            html: '<i class="fa fa-plug"></i>',
+            tpl: '{{include ~SP tmpl="#tpl_spSysinfo" /}}'
+        });
+
+        spCardData.spTechTab = $('a[href="#t_spSysinfo"]', spCardData.pnlSp);
+        
+        $('#grExtid', spCardData.pnlSp)
+        .on('jqGridSerializeGridData', function(e, postData) {
+            postData._where = {
+                parent: spCardData.sp.id,
+                'wExtype.cls': 'idSportsmen'
+            };
+        })
+        .jqGridInit({
+            sortname: 'created', sortorder: 'desc',
+            colModel:[
+                {name:'id', hidden: true, template: idFieldTemplate},
+                {name:'name', index: 'wExtype.name',
+                    template: editRowLinkTemplate
+                },
+                {name:'parent', width:100, hidden:true},
+                {name:'extid', editable: true},
+                {name:'extoken', editable: true},
+                {name:'duedate', editable: true, template: dateTimeTemplate},
+                {name:'extended', label: 'extended', editable: true, template: infoTemplate},
+                {name:'created', hidden: false, label:'Создано', template: createdTemplate}
+            ],
+            navOpts: {add:false, edit:true, search:false},
+            fltrToolbar: true
+        })
+        .jqGridColumns();
+    }
+    spCardData.spTechTab.tab('show');
+};
+</script>
+
+<script id="tpl_spSysinfo" type="text/x-jsrender">
+    <ul class="nav nav-pills mb-2">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#t_spSysinfo_qr"><i class="fa fa-qrcode"></i></a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#t_spSysinfo_extid"><i class="fa fa-link"></i></a>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div id="t_spSysinfo_qr" class="tab-pane active">
+            <p><img data-link="src{:'[[++crm_url]]qrcode.php?text=[[++site_url]]qr?key='+ sp^key}"></p>
+            <p class="small">ID: <b data-link="sp^id"></b></p>
+            <p>
+                <div class="small">key</div>
+                <a href="#" data-link="{formatEmpty:sp^key} data-id{:sp^id}" data-field="idSportsmen:key" data-roinplace="roEDIT"></a>
+            </p>
+            <p>
+                <div class="small">code1s</div>
+                <a href="#" data-link="{formatEmpty:sp^code1c} data-id{:sp^id}" data-field="idSportsmen:code1c" data-roinplace="roEDIT"></a>
+            </p>
+        </div>
+        <div id="t_spSysinfo_extid" class="tab-pane">
+            <table id="grExtid" data-entity="idExtid" class="calculateReload"></table>
+        </div>
+    </div>
+</script>

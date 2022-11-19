@@ -1,0 +1,26 @@
+<!-- clubReport -->
+<script>
+var statuses = [[!clubStatus?tbl=`idLead` &fields=`alias`]];
+var stLead = { };
+$.each(statuses, function(k, v){
+    stLead[v.alias] = v;
+});
+
+$.observable(clubReport).setProperty('opts', {
+    postData : {
+        table: 'idLead',
+        _report: 'idLead_status'
+    },
+    callback: function(data) {
+        var allcount = 0;
+        var dataChart = [ ];
+        $.each(data.rows, function(k, v){
+            v.label = stLead[v.label].name;
+            dataChart.push([v.label+' ('+ v.data +')',  v.data])
+            allcount += 1*v.data;
+        });
+        clubCountsChart(dataChart, allcount);
+        if (data.introtext) clubReport.opts.result.prepend('<p>'+data.introtext+'</p>');
+    }
+});
+</script>

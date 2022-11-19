@@ -1,0 +1,68 @@
+<div class="row" id="idCity" data-link="{for idCity tmpl='#tpl_city'}"></div>
+
+<script id="tpl_city" type="text/x-jsrender">
+<div class="col-md-6">
+    <div class="card">
+        <div class="card-header">
+            {{:name}}
+        </div>
+        <table class="table table-borderless"><tbody>
+            <colgroup>
+            <col width="30%">
+            <col>
+            </colgroup>
+            {{if fullname}}
+            <tr>
+                <td colspan="2">{{:fullname}}</td>
+            </tr>
+            {{/if}}
+            {{if tel}}
+            <tr>
+                <td class="text-muted">Телефон</td>
+                <td>{{:tel}}</td>
+            </tr>
+            {{/if}}
+            
+            {{if email}}
+            <tr>
+                <td class="text-muted">E-mail</td>
+                <td><a href="mailto:{{:email}}">{{:email}}</a></td>
+            </tr>
+            {{/if}}
+            
+            {{if chief}}
+            <tr>
+                <td class="text-muted">Директор</td>
+                <td>{{:chief}}</td>
+            </tr>
+            {{/if}}
+            
+            {{if inn}}
+            <tr>
+                <td class="text-muted">ИНН{{if kpp}}/КПП{{/if}}</td>
+                <td>{{:inn}}{{if kpp}}/{{:kpp}}{{/if}}</td>
+            </tr>
+            {{/if}}
+            
+            {{if ogrn}}
+            <tr>
+                <td class="text-muted">ОРГН</td>
+                <td>{{:ogrn}}</td>
+            </tr>
+            {{/if}}
+            
+            {{if bankrs}}
+            <tr>
+                <td class="text-muted">р/с</td>
+                <td>{{:bankrs}} (БИК: {{:bankbik}})</td>
+            </tr>
+            {{/if}}
+        </tbody></table>
+    </div>
+</div>
+</script>
+
+<script>
+var idCity = [[!dbvalues?mode=`idCity`]];
+$.link(true, '#idCity', idCity);
+</script>

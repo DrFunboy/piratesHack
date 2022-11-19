@@ -1,0 +1,93 @@
+<script>
+$(function(){
+    $.observable(SCRM._service)
+    .setProperty('sendMessage', function(rows) {
+        var sendData = {
+            sendCnt: 0,
+            title: 'Выберите рассылку',
+            opts: JSON.parse('[[!clubConfig?name=`sendpulse`]]'||'{}'),
+            body: '#sendPulseBody',
+            sendPulse: function(e, data) {
+                e.preventDefault();
+                if (sendData.sendCnt!=0) return;
+                var d = data.linkCtx.data;
+                function send_Pulse() {
+                    $.observable(sendData).setProperty('sendCnt', rows.length);
+                    if (rows.length>0) {
+                        var row = rows.shift();
+                        row.phone = row.tel;
+                        $.post(d.url, row)
+                        .always(send_Pulse);
+                    } else {
+                        sendData.mdl_hide();
+                    }
+                }
+                send_Pulse();
+            }
+        };
+        club_Modal(sendData);
+    });
+    
+    if (window.optsData) {
+        SCRM._service.optsSendPulse = function(opts) {
+            var spOpts = {
+                opts: $.extend({rows:[]},
+                    JSON.parse(opts.sendpulse||'{}')
+                ),
+                save: function(e, data) {
+                    setConfigValue('sendpulse', JSON.stringify(spOpts.opts));
+                },
+                delRow: function(e, data) {
+                    $.observable(spOpts.opts.rows).remove(data.linkCtx.view.index);
+                },
+                addRow: function(e, data) {
+                    $.observable(spOpts.opts.rows).insert({name:'', url:''});
+                }
+            };
+            
+            SCRM.link(optsData, {
+                optsSendPulse: spOpts,
+                optsTmpl: '#tpl_optsSendPulse'
+            });
+        };
+
+        $.observable(optsData.idConfig).insert({
+            name:'SendPulse',
+            alias:'optsSendPulse',
+            menuindex: 202,
+            extended: {fields:'sendpulse', run: 'optsSendPulse'}
+        });
+    }
+});
+</script>
+
+
+<script id="sendPulseBody" type="text/x-jsrender">
+<div class="list-group list-group-reflow list-group-bordered">
+    {{for opts.rows}}
+        <a href="#" class="list-group-item list-group-item-action list-group-item-success"
+            data-link="{on ~root.sendPulse}">
+        {{:name}}
+        </a>
+    {{/for}}
+</div>
+<div class="alert alert-info" data-link="visible{:sendCnt}">Отправляю: <b data-link="sendCnt"></b></div>
+</script>
+
+<script id="tpl_optsSendPulse" type="text/x-jsrender">
+{^{include optsSendPulse itemVar="~pulse"}}
+<table class="table"><tbody>
+{^{for opts^rows}}
+    <tr><td>
+    <input class="form-control mb-2" placeholder="Название" data-link="name">
+    <input class="form-control mb-2" placeholder="POST URL (SendPulse)" data-link="url">
+    <div class="text-right">
+    <button class="btn btn-secondary btn-sm" data-link="{on ~pulse.delRow}">Удалить</button>
+    </div>
+    </td></tr>
+{{/for}}
+</tbody></table>
+<button  class="btn btn-success" data-link="{on save}">Сохранить</button>
+<button  class="btn btn-primary" data-link="{on addRow}">Добавить</button>
+{{/include}}
+</script>

@@ -1,0 +1,8 @@
+assets/id/saas/
+assets/id/v1/
+assets/id/wss/editable/
+assets/id/wss/tagsinput
+assets/id/setup/schema
+assets/id/elements
+assets/id/tmpl
+assets/id/setup/trigger

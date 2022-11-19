@@ -1,0 +1,85 @@
+<script id="tpl_ReportCityNAR" type="text/x-jsrender">
+    <div class="reportDates mb-3"></div>
+    <table class="table table-hover m-0">
+        <thead>
+            <tr>
+                <th>Филиал</th>
+                <th>Новые</th>
+                <th>Архив</th>
+                <th>Вернулись</th>
+            </tr>
+        </thead>
+        <tbody>
+        {^{for rows}}
+          <tr>
+            <th>{{:name}}</th>
+            <td>
+                {{if cnt_new > 0}}
+                <a href="#" class="show-sportsmen-pnl badge badge-pill badge-primary" data-w="idChanges.newvalue=new;idSportsmen.city={{:id}}"
+                    data-link="{on ~showSpGrid 'new'}">
+                    {{:sportsmen_new}}
+                </a>
+                {{/if}}
+            </td>
+            <td>
+                {{if cnt_arc > 0}}
+                <a href="#" class="show-sportsmen-pnl badge badge-pill badge-primary"
+                    data-w="idChanges.newvalue=Архив;idSportsmen.city={{:id}}"
+                    data-link="{on ~showSpGrid 'arc'}">
+                    <span data-toggle="tooltip" title="Количество записей">{{:cnt_arc}}</span> /
+                    <span data-toggle="tooltip" title="Количество спортсменов">{{:sportsmen_arc}}</span>
+                </a>
+                {{/if}}
+            </td>
+            <td>
+                {{if cnt_back > 0}}
+                <a href="#" class="show-sportsmen-pnl badge badge-pill badge-primary"
+                    data-w="idChanges.oldvalue=Архив;idSportsmen.city={{:id}}"
+                    data-link="{on ~showSpGrid 'return'}">
+                    <span data-toggle="tooltip" title="Количество записей">{{:cnt_back}}</span> /
+                    <span data-toggle="tooltip" title="Количество спортсменов">{{:sportsmen_back}}</span>
+                </a>
+                {{/if}}
+            </td>
+          </tr>
+        {{/for}}
+        </tbody>
+    </table>
+</script>
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    var postData = {
+        _report: 'idCity_archive'
+    };
+    $.templates('#tpl_ReportCityNAR')
+    .link(param.container, param, {
+        showSpGrid: function(NAR, e, data) {
+            var d = data.linkCtx.data,
+            w = {
+                'idSportsmen.city': d.id,
+                NAR: NAR
+            };
+
+            SCRM._run('/chunk/report.spgrid/', {
+                container: param.container,
+                callback: function(gr) {
+                    gr.data('start_status', '*')
+                },
+                postData: $.extend({
+                    _where: w
+                }, postData)
+            });
+        }
+    })
+    .find('.reportDates')
+    .on('periodChange', function(e, dates) {
+        $.extend(postData, dates);
+        pDATA('idCity', $.extend({rows: 1001}, postData), function(data) {
+            SCRM.link(param, {rows: data.rows});
+        });
+    })
+    .panelPeriod('reportDates');
+};
+</script>
+

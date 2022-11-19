@@ -1,0 +1,500 @@
+[[$tplClubFrameTop]]
+<style>
+    .nowr { white-space: nowrap; }
+    td { padding: 0; border: 0;}
+
+    body { background-color: white; margin: 0px; text-align: center; }
+    .ramka { border-top: black 1px dashed; border-bottom: black 1px dashed; border-left: black 1px dashed; border-right: black 1px dashed; margin: 0 auto 12mm auto; height: 145mm; }
+    .kassir { font-weight: bold; font-size: 10pt; font-family: "Times New Roman", serif; padding: 7mm 0 7mm 0; text-align: center; }
+    .cell { font-family: Arial, sans-serif; border-left: black 1px solid; border-bottom: black 1px solid; border-top: black 1px solid; font-weight: bold; font-size: 8pt; line-height: 1.1; height: 4mm; vertical-align: bottom; text-align: center; }
+    .cells { border-right: black 1px solid; width: 100%; }
+    .subscript { font-size: 6pt; font-family: "Times New Roman", serif; line-height: 1; vertical-align: top; text-align: center; }
+    .string, .dstring { font-weight: bold; font-size: 8pt; font-family: Arial, sans-serif; border-bottom: black 1px solid; text-align: center; vertical-align: bottom; }
+    .dstring { font-size: 9pt; letter-spacing: 1pt; }
+    .floor { vertical-align: bottom; padding-top: 0.5mm; }
+    .stext { font-size: 8.5pt; font-family: "Times New Roman", serif; vertical-align: bottom; }
+    .stext7 { font-size: 7.5pt; font-family: "Times New Roman", serif; vertical-align: bottom; }
+    #toolbox { border-bottom: dashed 1pt black; margin-bottom: 15px; padding: 2mm 0 0 0; text-align: justify; width: 180mm; margin-left: auto; margin-right: auto; }
+</style>
+<style media="print">
+    #toolbox { display: none; }
+    body{min-width: 0 !important;}
+    @page {
+        size: 210mm 297mm; /* portrait */
+        margin: 1.5cm;
+    }
+</style>
+<style>
+    table.c22 {width: 180mm;}
+    td.c21 {width: 130mm; height: 80mm; padding: 0mm 4mm 0mm 3mm; border-left: black 1.5px solid;}
+    table.c20 {width: 100%; height: 8mm;}
+    td.c19 {width: 50mm; height: 80mm; vertical-align: bottom;}
+    td.c18 {width: 130mm; height: 65mm; padding: 0mm 4mm 0mm 3mm; border-left: black 1.5px solid; border-bottom: black 1.5px solid;}
+    table.c17 {width: 123mm; height: 100%;}
+    td.c16 {padding-bottom: 0.5mm;}
+    td.c15 {font-weight: bold}
+    td.c14 {text-align: justify}
+    td.c13 {width: 11%;}
+    td.c12 {width: 5%;}
+    td.c11 {width: 10%;}
+    table.c10 {width: 100%;}
+    td.c9 {width: 1mm;}
+    td.c8 {font-style: italic; text-align: right; vertical-align: middle}
+    td.c7 {height: 5mm;}
+    td.c6 {width: 50mm; height: 65mm; border-bottom: black 1.5px solid;}
+    table.c5 {width: 50mm; height: 100%;}
+    td.c4 {vertical-align: bottom;}
+    td.c3 {vertical-align: top; letter-spacing: 0.2em;}
+    div.c2 {text-align: center; font-size: 80%; margin-top:1em;}
+</style>
+
+<script>
+var payInit = [[+payInit]];
+$.views.converters({
+    td: function(str) {
+        return $.map(str.split(""), function(v, i){
+            return '<td class="cell">'+v+'</td>';
+        }).join('');
+    },
+    qr: function(str) {
+        return str
+            .replace(new RegExp('"', 'g'), "'")
+            .replace(new RegExp('<br>', 'g'), ' ');
+    }
+});
+if (payInit.sp && payInit.sp.name) $('title').text( payInit.sp.name + $('title').text());
+$(function(){
+    $('#invoice').link(true,  payInit);
+});
+
+</script>
+
+<div id="toolbox">
+    <p>Квитанция формы «ПД-4» свободно располагается на листе формата А4. Никаких особых настроек для печати документа обычно не требуется.</p>
+    
+    <button onclick="window.print();">Напечатать</button>
+    <button onclick="history.back();">Закрыть</button>
+
+    
+    <div class="c2">
+    информационный блок от начала страницы до пунктирной линии на печать не выводится
+    </div>
+</div>
+
+<div id="invoice">
+  <table class="ramka c22" cellspacing="0">
+    <tr>
+      <td class="c6">
+        <table class="c5" cellspacing="0">
+          <tr>
+            <td class="kassir c3">Извещение</td>
+          </tr>
+
+          <tr>
+            <td class="kassir c4">Кассир</td>
+          </tr>
+        </table>
+      </td>
+
+      <td class="c18">
+        <table cellspacing="0" class="c17">
+          <tr>
+            <td>
+              <table width="100%" cellspacing="0">
+                <tr>
+                  <td class="stext c7"></td>
+
+                  <td class="stext7 c8">Форма ПД-4</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="c4">
+              <table class="c10" cellspacing="0">
+                <tr>
+                  <td class="string"><span class="nowr" data-link="idCity.fullname"></span></td>
+                  <td class="string nowr c9">КПП: <span data-link="idCity.kpp"></span></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="subscript nowr">(наименование получателя платежа)</td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td width="30%" class="floor">
+                    <table class="cells" cellspacing="0">
+                        <tr data-link="html{td:idCity.inn}"></tr>
+                    </table>
+                  </td>
+
+                  <td width="10%" class="stext7"> </td>
+                  <td width="60%" class="floor">
+                    <table class="cells" cellspacing="0">
+                        <tr data-link="html{td:idCity.bankrs}"></tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td class="subscript nowr">(ИНН получателя платежа)</td>
+                  <td class="subscript"></td>
+                  <td class="subscript nowr">(номер счета получателя платежа)</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td width="2%" class="stext">в</td>
+
+                  <td width="64%" class="string"><span class="nowr" data-link="idCity.bankname"></span></td>
+
+                  <td width="7%" class="stext" align="right">БИК </td>
+
+                  <td width="27%" class="floor">
+                    <table class="cells" cellspacing="0">
+                        <tr data-link="html{td:idCity.bankbik}"></tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td class="subscript"> </td>
+
+                  <td class="subscript nowr">(наименование банка получателя платежа)</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext7 nowr" width="40%">Номер кор./сч. банка получателя платежа</td>
+
+                  <td width="60%" class="floor">
+                    <table class="cells" cellspacing="0">
+                        <tr data-link="html{td:idCity.bankks}"></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="string" width="55%" data-link="html{:paytext}"></td>
+
+                  <td class="stext7" width="5%"></td>
+
+                  <td class="string" width="40%"></td>
+                </tr>
+
+                <tr>
+                  <td class="subscript nowr">(наименование платежа)</td>
+
+                  <td class="subscript"> </td>
+
+                  <td class="subscript nowr">(номер лицевого счета (код) плательщика)</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext" width="1%">Ф.И.О плательщика</td>
+
+                  <td class="string"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext" width="1%">Адрес плательщика</td>
+
+                  <td class="string"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext" width="1%">Сумма платежа </td>
+                  <td class="string" width="8%" data-link="total"></td>
+                  <td class="stext" width="1%"> руб. </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="1%"> коп.     Сумма платы за услуги </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="1%"> руб. </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="1%"> коп.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext" width="5%">Итого </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="5%"> руб. </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="5%"> коп. </td>
+                  <td class="stext" width="20%" align="right">« </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="1%"> » </td>
+                  <td class="string" width="20%"></td>
+                  <td class="stext" width="3%"> 20 </td>
+                  <td class="string" width="5%"> </td>
+                  <td class="stext" width="1%"> г.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="stext7 c14">С условиями приема указанной в платежном документе суммы, в т.ч.
+            с суммой взимаемой платы за услуги банка, ознакомлен и согласен.</td>
+          </tr>
+
+          <tr>
+            <td class="c16">
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext7" width="50%"> </td>
+                  <td class="stext7 c15" width="1%">Подпись плательщика </td>
+                  <td class="string" width="40%"> </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+        <td class="kassir c19">
+            <div data-link="{if cfg.qr tmpl='#qr_img'}"></div>
+            Квитанция<br>
+            <br>
+            Кассир
+        </td>
+
+      <td class="c21">
+        <table cellspacing="0" class="c17">
+          <tr>
+            <td class="c4">
+              <table class="c20" cellspacing="0">
+                <tr>
+                  <td class="string"><span class="nowr" data-link="idCity.fullname"></span></td>
+                  <td class="string nowr c9">КПП: <span data-link="idCity.kpp"></span></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="subscript nowr">(наименование получателя платежа)</td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td width="30%" class="floor">
+                    <table class="cells" cellspacing="0">
+                        <tr data-link="html{td:idCity.inn}"></tr>
+                    </table>
+                  </td>
+
+                  <td width="10%" class="stext7"> </td>
+
+                  <td width="60%" class="floor">
+                    <table class="cells" cellspacing="0">
+                        <tr data-link="html{td:idCity.bankrs}"></tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td class="subscript nowr">(ИНН получателя платежа)</td>
+
+                  <td class="subscript"> </td>
+
+                  <td class="subscript nowr">(номер счета получателя платежа)</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td width="2%" class="stext">в</td>
+                  <td width="64%" class="string"><span class="nowr" data-link="idCity.bankname"></span></td>
+                  <td width="7%" class="stext" align="right">БИК </td>
+                  <td width="27%" class="floor">
+                    <table class="cells" cellspacing="0">
+                        <tr data-link="html{td:idCity.bankbik}"></tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td class="subscript"> </td>
+                  <td class="subscript nowr">(наименование банка получателя платежа)</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext7 nowr" width="40%">Номер кор./сч. банка получателя платежа</td>
+
+                  <td width="60%" class="floor">
+                    <table class="cells" cellspacing="0">
+                        <tr data-link="html{td:idCity.bankks}"></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="string" width="55%" data-link="html{:paytext}"></td>
+                  <td class="stext7" width="5%"> </td>
+                  <td class="string" width="40%"> </td>
+                </tr>
+
+                <tr>
+                  <td class="subscript nowr">(наименование платежа)</td>
+                  <td class="subscript"> </td>
+                  <td class="subscript nowr">(номер лицевого счета (код) плательщика)</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext" width="1%">Ф.И.О плательщика </td>
+                  <td class="string"> </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext" width="1%">Адрес плательщика </td>
+                  <td class="string"> </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext" width="1%">Сумма платежа </td>
+                  <td class="string" width="8%" data-link="total"></td>
+                  <td class="stext" width="1%"> руб. </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="1%"> коп.     Сумма платы за услуги </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="1%"> руб. </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="1%"> коп.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext" width="5%">Итого </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="5%"> руб. </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="5%"> коп. </td>
+                  <td class="stext" width="20%" align="right">« </td>
+                  <td class="string" width="8%"> </td>
+                  <td class="stext" width="1%"> » </td>
+                  <td class="string" width="20%"></td>
+                  <td class="stext" width="3%"> 20 </td>
+                  <td class="string" width="5%"> </td>
+                  <td class="stext" width="1%"> г.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="stext7 c14">С условиями приема указанной в платежном документе суммы, в т.ч.
+            с суммой взимаемой платы за услуги банка, ознакомлен и согласен.</td>
+          </tr>
+
+          <tr>
+            <td class="c16">
+              <table cellspacing="0" width="100%">
+                <tr>
+                  <td class="stext7" width="50%"> </td>
+                  <td class="stext7 c15" width="1%">Подпись плательщика</td>
+                  <td class="string" width="40%"> </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<script id="qr_img" type="text/x-jsrender">
+    <img style="margin:3px" src="[[++crm_url]]qrcode.php?text=ST00012|NAME={{qr:idCity.fullname||''}}|PERSONALACC={{:idCity.bankrs}}|BANKNAME={{qr:idCity.bankname||''}}|BIC={{:idCity.bankbik}}|CORRESPACC={{:idCity.bankks}}|PAYEEINN={{:idCity.inn}}|KPP={{:idCity.kpp}}|CONTRACT={{qr:contract||''}}|CHILDFIO={{qr:sp.name}}|PURPOSE={{qr:paytext||''}}|LASTNAME={{qr:sp.contact||''}}|SUM={{:total*100}}">
+</script>
+
+</body></html>

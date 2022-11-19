@@ -1,0 +1,67 @@
+<p>Услуги он-лайн страхования <a href="https://21-vek.spb.ru/" target="_blank" rel="nofollow">Компании "Двадцать первый век"</a>
+    (Лицензии: СЛ 2027, ОС 2027-03, СИ 2027, ЦБ РФ от 24.03.2017).</p>
+<ul>
+    <li>После оплаты электронный страховой полис высылается на указанную при оформлении электронную почту.</li>
+    <li>Электронный страховой полис обладает такой же юридической силой, как и бумажный, в соответствии с
+        <a rel="nofollow" target="_blank" href="http://www.consultant.ru/document/cons_doc_LAW_1307/61adda5c68d69b48c5db8818ca5d54777fd2dc33/">"Законом об организации страхового дела в РФ"</a></li>
+    <li><a href="https://sport.insure/strahovoj_sluchaj" target="_blank" rel="nofollow">Что делать если произошел страховой случай?</a></li>
+    <li><a href="https://sport.insure/vopros_otvet" target="_blank" rel="nofollow">Ответы на частые вопросы по работе сервиса.</a></li>
+</ul>
+<style>
+    [data-range-selector] .help-special { display:none }
+    [data-paper-check] { display:none }
+</style>
+<div id="insureBox"></div>
+
+<script>
+$(function(){
+    var insure_data = $.extend({
+        phonedig: '',
+        user: { email: '' },
+        rows: []
+    }, SCRM.insureData);
+    var si_data = {
+        amount: { value: 250000 },
+        promo: {
+            value: insure_data.config.insure_promo
+        },
+        type: "workout",
+        buyer: {
+            phone: insure_data.phonedig,
+            email: insure_data.user.email
+        }
+    };
+    si_data.peoples = $.map(insure_data.rows, function(v,i){
+        if (i===0) insure_data.key = v.key;
+        var fio = v.name.split(' ');
+        //var doc = v.doc.split(' ');
+        return {
+            //doctype: 2,
+            //birthplace: insure_data.city.name,
+            //serial: doc[0],
+            //number: doc[1]? doc[1] : '',
+            cardnum: v.id,
+            f: fio[0],
+            n: fio[1]||'',
+            o: fio[2]||'',
+            birthdate: str2date(v.birth, 'd')
+        };
+    });
+    var site_url = window.location.origin;
+    if (SCRM.app.club_id=='52') {
+        si_data.success_url = site_url+"/database/db.html?order=";
+        si_data.decline_url = site_url+"/database/db.html?order=";
+        si_data.amount.value = 50000;
+    } else {
+        si_data.success_url = site_url+"/sportsmens/sportsmen.html?key="+ insure_data.key +"&order=";
+        si_data.decline_url = site_url+"/sportsmens/sportsmen.html?key="+ insure_data.key +"&order=";
+    }
+    $('body').trigger('sport.insure', si_data);
+    $.post('https://api.sport.insure/calculator?v=2', si_data, function(response) {
+        $('#insureBox').html(response);
+        $.getScript("https://api.sport.insure/application.min.js").done(function(script, textStatus) {
+            $('#insureLoader').remove();
+        });
+    });
+});
+</script>

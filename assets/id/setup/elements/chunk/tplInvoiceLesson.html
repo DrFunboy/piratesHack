@@ -1,0 +1,35 @@
+<script id="tpl_InvoiceLesson" type="text/x-jsrender">
+<a href="#" id="cntLesson{{:id}}" data-link="visible{:InvoiceLesson} data-spkey{:key}" data-run="/chunk/invoice.lesson">
+    {^{if InvoiceLesson.length}}
+        <i class="fa fa-battery-3 mr-1"></i>
+        {^{:(rest_lesson > 0)? rest_lesson+' ~ ' : ''}}
+        {^{formatDate:duedate}}
+    {{else}}
+        <i class="fa fa-battery-0 text-warning animated flash infinite" data-toggle="tooltip" title="Без абонемента"></i>
+    {{/if}}
+</a>
+[[-
+<div class="dropdown" data-link="visible{:InvoiceLesson}">
+    <a href="#" id="dropdownCntLesson{{:id}}"
+        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        {^{if InvoiceLesson.length}}
+            <i class="fa fa-battery-3 mr-1"></i>
+            {^{:(rest_lesson > 0)? rest_lesson+' ~ ' : ''}}
+            {^{formatDate:duedate}}
+        {{else}}
+            <i class="fa fa-battery-0 text-warning animated flash infinite" data-toggle="tooltip" title="Без абонемента"></i>
+        {{/if}}
+    </a>
+    <div class="dropdown-menu" aria-labelledby="dropdownCntLesson{{:id}}" style="z-index:1001">
+        {^{for InvoiceLesson}}
+        <div data-link="class{merge:(#index>0) toggle='mt-1 pt-1 border-top'}" class="mx-2">
+        {{:invoice_name}}<br>
+        <span class="text-muted">{{:(lesson_amount-cnt_lesson)}} ~ {{formatDate:duedate}}</span></div>
+        {{/for}}
+        {{if ~addMenu}}
+            <div class="dropdown-divider" data-link="visible{:InvoiceLesson.length}"></div>
+            {{include tmpl=~addMenu /}}
+        {{/if}}
+    </div>
+</div>]]
+</script>

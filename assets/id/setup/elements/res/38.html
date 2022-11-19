@@ -1,0 +1,1165 @@
+<style>
+    /*header.page-navs{display:none;}*/
+    .cp-color-picker {
+        z-index: 1051;
+    }
+</style>
+
+<div class="card card-fluid" id="optsPanel">
+    <div class="tab-content card-body">
+        <div id="tab_idConfig" class="tab-pane active">
+            <div data-link="{include tmpl='#tplIdConfig'}"></div>
+        </div>
+        <div id="tab_idCity" class="tab-pane">
+            <table id="grid_idCity" data-entity="idCity" class="loadGrid"></table>
+            <div class="nav nav-pills my-2" role="tablist">
+                <a class="nav-item nav-link active" data-toggle="tab" href="#tab_cityPay">Прием платежей</a>
+            </div>
+            <div class="tab-content">
+                <div id="tab_cityPay" class="tab-pane active" data-link="{if idCity_Pay tmpl='#tpl_PayMethods'}"></div>
+            </div>
+        </div>
+        <div id="tab_idInvoiceType" class="tab-pane">
+            <div class="nav nav-pills mb-2" role="tablist">
+                <button class="btn btn-success btn-xs mr-2" data-run="/chunk/invoiceType.gridAdd"><i class="fa fa-plus px-1"></i></button>
+                <a class="nav-item nav-link active" data-toggle="tab" href="#itype_list">Услуги</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#itype_stype">Абонементы</a>
+            </div>
+            <div class="tab-content">
+                <div id="itype_list" class="tab-pane active">
+                    <div class="small mb-1">
+                        <i class="fa fa-info-circle"></i>
+                        Списание занятий происходит только если указан тип в столбце "Абонемент" и настроены
+                        <a href="#" onclick="$('[href$=itype_stype]').click();return false;">правила списания</a>
+                    </div>
+                    <table id="grid_idInvoiceType" data-entity="idInvoiceType" class="loadGrid"></table>
+                </div>
+                <div id="itype_stype" class="tab-pane">
+                    <table class="table w-auto">
+                        <tbody data-link="{include tmpl='#tpl_stype_ed'}"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="tab_idLevel" class="tab-pane">
+            <table id="grid_idLevel" data-entity="idLevel" class="loadGrid"></table>
+        </div>
+        <div id="tab_idSport" class="tab-pane">
+            <table id="grid_idSport" data-entity="idSport" class="loadGrid"></table>
+        </div>
+        <div id="tab_idStatus" class="tab-pane">
+            <div class="mb-2 d-flex">
+                <div data-link="{include ~link=statusType ~rows=~S.clubStatus.idStatus ~opt_id='alias' tmpl='#tpl_Select'}"></div>
+                <button class="ml-2 btn btn-primary" data-link="visible{:showIsMainBtn} {on 'click' ~setIsMain}">По умолчанию</button>
+            </div>
+            <table id="grid_idStatus" data-entity="idStatus" class="loadGrid"></table>
+            <div class="d-flex mt-3">
+                <div class="d-flex flex-column nav nav-pills">
+                    <a class="nav-item nav-link active" href="#tStatus_props" data-toggle="tab"><i class="fa fa-th-list"></i></a>
+                    <a class="nav-item nav-link" href="#tStatus_ext" data-toggle="tab"><i class="fa fa-code"></i></a>
+                </div>
+                <div class="tab-content ml-3 flex-grow-1">
+                    <div class="tab-pane active mb-0 card card-body" id="tStatus_props">
+                        <div data-link="visible{:showArcStatus}">
+                            <h6>Архивные статусы</h6>
+                            <a href="#" data-roinplace="CfgInpSave" data-link="text{:cfgArcStatus} data-name{:statusType+'_arc'}" class="dashed"></a>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="tStatus_ext" data-link="{include idStatusExt tmpl=idStatusExt?'#tpl_AceBoxExtended':''}"></div>
+                </div>
+            </div>
+            
+            
+        </div>
+        <div id="tab_idTmpl" class="tab-pane" data-link="{if tmplEdit tmpl='#tpl_tmpl'}"></div>
+    </div>
+</div>
+
+<script>
+var optsData = $.extend({
+    opts: {},
+    idSchedule: [],
+    cS: SCRM.clubStatus
+}, SCRM.setClubStatus([[!clubStatus?tbl=`idStatus,idConfig,idSchedule,idLesson,idHTML`]]));
+
+SCRM.link(SCRM.app, {
+    topNavTabs: [
+        {href: '#tab_idConfig', html: 'Настройки', active: true},
+        {href: '#tab_idCity', html: 'Филиалы'},
+        {href: '#tab_idInvoiceType', html: 'Начисления'},
+        {href: '#tab_idLevel', html: 'Уровни'},
+        {href: '#tab_idSport', html: 'Дисциплины'},
+        {href: '#tab_idStatus', html: 'Списки'},
+        {href: '#tab_idTmpl', html: 'Шаблоны'}
+    ]
+});
+
+[[!+modx.user.id:userinfo=`sudo`:notempty=`
+optsData.idConfig.push({name:'SportCRM', alias:'sportcrm', extended:{fields:'club_key,club_modules,dbXML'}, menuindex:9980});
+optsData.sudo = true;
+optsData.save2git = function(e, data) {
+    var d = data.linkCtx.data,
+        commit = prompt('Version description');
+    if ( commit ) {
+        pJSON('/hook/bitbucket', {
+            commit: commit,
+            folder: 'HTML/' +d.key+ '.html',
+            content: d.val || d.prop
+        }, function(data){
+            SCRM.success('Saved');
+        });
+    }
+}
+optsData.cS.idStatus.push({id:-1, name:'Setup script', alias:'SetupScript', menuindex: 9980});
+$('#grid_idStatus')
+.on('jqGridAddEditAfterShowForm', function(e, form, oper) {
+    if (oper == 'edit' && optsData.statusType == 'SetupScript') {
+        var hook = $('#alias', form).val();
+        $('<a href="/setup/'+ hook +'" target="_blank" class="ml-2 mt-3 btn btn-primary">Запустить</b>').insertAfter(form);
+    }
+});
+`]]
+
+function setConfigValue(key, value) {
+    return pEDIT('idConfig', {
+        id: key,
+        val: value
+    }, function(result) {
+        SCRM.success('Saved');
+        optsData.opts[key] = value;
+    });
+}
+
+function bindAceEditor(opts) {
+    $('[data-ace]')
+    .clubAce(opts)
+    .removeAttr('[data-ace]');
+}
+
+$.extend(SCRM._service, {
+    optsHTML: function(runOpts) {
+        SCRM.link(optsData, {
+            optsTmpl: '#tpl_optsHTML',
+            addHTMLBlock: function() {
+                SCRM.prompt('Alias блока (латиница)', function (alias) {
+                    var ad = {
+                        oper:'add',
+                        tbl:'idHTML',
+                        name: alias,
+                        alias: alias
+                    };
+                    pEDIT('idStatus', ad, function(){
+                        SCRM.link(SCRM.clubStatus.idHTML).insert(ad);
+                        SCRM.link(optsData, {selHTML: alias});
+                        SCRM.success('Добавил');
+                    });
+                });
+            }
+        });
+        if (!optsData.selHTML) {
+            $.observe(optsData, 'selHTML', function(e, data){
+                //var d = array2obj(SCRM.clubStatus.idHTML, {}, 'alias')[data.value];
+                var d = SCRM.getClubStatus('idHTML', data.value, 'alias');
+                var cfg_key = data.value+'HTMLBlock';
+                config2ace(cfg_key, 'optsHTMLEdit', d.cls);
+            });
+            SCRM.link(optsData, {
+                selHTML: 'Startup'
+            });
+        } else {
+            bindAceEditor(); // Вернулся с другой вкладки
+        }
+    },
+    optsMain: function(runOpts) {
+        SCRM.link(optsData, {
+            optsTmpl: '#tpl_optsMain'
+        });
+        
+        pJSON(SCRM.files_url, {
+            uid: 'logoClub',
+            thumb: 1
+        }, function(logodata){
+            $('#logoClub').trigger('logoClub', logodata);
+        });
+    },
+    optsPays: function(runOpts) {
+        getConfigFields(runOpts.paym, function(fields, opts) {
+            SCRM.link(optsData, {
+                payOpts: runOpts,
+                paym: opts,
+                optsTmpl: '#tpl_optsPays'
+            });
+            bindAceEditor();
+        });
+    }
+});
+
+SCRM.getPayMethods = function(parent, ptype) {
+    ptype = ptype || 'idCity_Pay';
+    pDATA('idStatus', {
+        rows: 1001,
+        sidx: 'menuindex',
+        _where: {
+            //tbl: 'idPayMethod',
+            idPayMethod: ptype,
+            'idPayMethod.parent': [0, parent]
+        }
+    }, function(data) {
+        var nd = {};
+        nd[ptype] = data.rows;
+        SCRM.link(optsData, nd);
+    });
+}
+
+$.views.helpers({
+    PayMethods: function(rows, parent){
+        var nr = $.map(rows, function(v, i){
+            //if (!v.ext) v.ext = v.extended? JSON.parse(v.extended) : {};
+            return (v.parent == parent)? v : null;
+        });
+        return nr;
+    },
+    editPayMethod: function(e, data) {
+        console.log(e, data);
+        var d = data.linkCtx.data;
+        var cfg_key = 'idPayMethod_'+d.id;
+        d.oper = 'edit';
+        var epmData = {
+            post: d,
+            body: '#tpl_editPayMethod',
+            onOK: function(e, md) {
+                pEDIT('idStatus', epmData.post, function(){
+                    var ext = epmData.getValue();
+                    if (ext) setConfigValue(cfg_key, ext);
+                    md.mdl_hide();
+                });
+            }
+        };
+        club_Modal(epmData);
+        
+        getConfigFields(cfg_key, function(fields, opts) {
+            $('#configPayMethod')
+            .val(opts[cfg_key]||d.extended)
+            .clubAce();
+        });
+    },
+    addPayMethod: function(parent, ptype) {
+        var apmData = {
+            body: '<select class="custom-select" data-link="selPayMethod">{^{for idPayMethods tmpl="#tpl_selectOption" /}}</select>',
+            onOK: function(e, md) {
+                if (md.selPayMethod) {
+                    var mtd = array2obj(md.idPayMethods)[md.selPayMethod];
+                    var postData = {
+                        oper: 'add',
+                        tbl: 'idPayMethod',
+                        name: mtd.name,
+                        cls: mtd.alias,
+                        extended: mtd.extended,
+                        info: mtd.info,
+                        idExtid: ptype +':'+ parent
+                    };
+                    pEDIT('idStatus', postData, function(data){
+                        SCRM.getPayMethods(parent, ptype);
+                        md.mdl_hide();
+                    });
+                }
+            }
+        };
+        club_Modal(apmData);
+        pJSON('/data/status/idPay', function(data){
+            SCRM.link(apmData, {idPayMethods: data.rows});
+        })
+    }
+});
+
+function getConfigFields(fields, callback) {
+    fields = fields.split(',');
+    pDATA('idConfig', {
+        rows: 1001,
+        _where: {
+            name: fields
+        }
+    }, function(data) {
+        var opts = {};
+        $.each(fields, function(i, v){
+            opts[v] = '';
+        });
+        $.each(data.rows, function(i, v){
+            opts[v.name] = v.val;
+        });
+        SCRM.link(optsData.opts, opts);
+        //console.log('getConfigFields', optsData);
+        if (callback) callback(fields, opts);
+    });
+}
+
+function config2ace(cfg_key, dataKey, cls, value) {
+    getConfigFields(cfg_key, function(fields, opts) {
+        var nd = {};
+        nd[dataKey] = {
+            key: cfg_key,
+            val: opts[cfg_key]||value||'',
+            cls: cls||'html'
+        };
+        SCRM.link(optsData, nd);
+        bindAceEditor();
+    });
+}
+
+SCRM.loadWSS('files', function() {
+    var idConfig = function(cfg) {
+        cfg.extended = cfg.extended || {};
+        function showConfig(opts) {
+            if (cfg.extended.run) {
+                SCRM._run(cfg.extended.run, opts);
+                return true;
+            }
+            SCRM.link(optsData, {
+                optsFields: opts,
+                optsTmpl: '#tpl_optsDefault'
+            });
+            bindAceEditor();
+        }
+        if (cfg.extended.fields) {
+            getConfigFields(cfg.extended.fields, function(fields, opts){
+                showConfig(opts);
+            });
+        } else showConfig({});
+    };
+    
+    var optsPanel = $('#optsPanel')
+    .link(true, optsData, {
+        checkOpts: function(key, e, data){
+            var el = $(e.target),
+                val = el.prop('checked')? el.val() : '';
+            setConfigValue(key, val);
+        },
+        idConfig: function(e, data) {
+            idConfig(data.linkCtx.data);
+        },
+        idConfigCustom: function(e, data) {
+            e.preventDefault();
+            if (optsData.cfgCustom) idConfig({
+                extended: {
+                    fields: optsData.cfgCustom
+                }
+            });
+        },
+        saveConfig: function(e, data) {
+            //console.log('saveConfig', e, data)
+            var d = data.linkCtx.data;
+            SCRM.link(d, {val: d.getValue()})
+            setConfigValue(d.key, d.val);
+        },
+        delConfig: function(e, data) {
+            var d = data.linkCtx.data;
+            var cfg_name = d.key;
+            rocnfrm('Delete <b>'+cfg_name+'</b>?', function(){
+                //console.log(e, data)
+                pEDIT('idConfig', {
+                    oper: 'del',
+                    id: cfg_name
+                }, function(){
+                    $(e.target).closest('.card').remove();
+                });
+            });
+        },
+        resizeEditor: function(e, data) {
+            var d = data.linkCtx.data;
+            d.resizeEditor(d);
+        },
+        setIsMain: function(e, data) {
+            setConfigValue(optsData.statusType+'_main', optsData.showIsMainBtn)
+            .always(function(e){
+                grids.idStatus
+                .trigger('reloadGrid');
+            });
+        },
+        saveExtended: function(e, data) {
+            var d = data.linkCtx.data; // idStatusExt
+            pEDIT('idStatus', {
+                id: d.id,
+                extended: d.getValue()
+            }, function() {
+                $('[data-entity="idStatus"]').trigger('reloadGrid'); //, [{current:true}]
+            });
+        }
+    })
+    .on('CfgInpSave', function(e, txt) {
+        setConfigValue($(e.target).data('name'), txt);
+    });
+    
+    $(document)
+    .one('shown.bs.tab', 'a[href="#tab_idTmpl"]', function (e) { // Работа с Шаблонами
+        $.views.helpers({
+            newTmpl: function(e, data){
+                SCRM.link(optsData, {
+                    tmplEdit: {
+                        oper: 'add',
+                        type: 'email',
+                        content: ''
+                    }
+                });
+            },
+            saveTmpl: function(e, data){
+                if (!optsData.tmplEdit.name) {
+                    SCRM.alert('Name field empty');
+                    return;
+                }
+                var d = data.linkCtx.data;
+                //console.log('saveTmpl', optsData.tmplEdit, d )
+                pEDIT('idTmpl', $.extend(optsData.tmplEdit, {
+                    content: d.getValue()
+                }), function(result) {
+                    SCRM.success('Saved');
+                    if (optsData.tmplEdit.oper=='add') SCRM.link(optsData, {tmplEdit: {}});
+                    refreshTmpl();
+                });
+            },
+            delTmpl: function(e, data){
+                rocnfrm('Delete tmpl?', function(){
+                    pEDIT('idTmpl', {oper: 'del', id: optsData.tmplEdit.id}, function(data){
+                        SCRM.link(optsData, {tmplEdit: {}});
+                        refreshTmpl();
+                    });
+                });
+            },
+            editTmpl: function(e, data){
+                var d = $.extend({oper:'edit'}, data.linkCtx.data);
+                SCRM.link(optsData, {tmplEdit: d});
+            }
+        });
+        
+        SCRM.link(optsData, {tmplEdit: {}});
+        
+        var ed_elm = $('#tab_idTmpl textarea')
+        .on('clubAce', function(e, editor){
+            $.observe(optsData, 'tmplEdit^content', function(e, data){
+                editor.setValue(data.value.content || '');
+            });
+        })
+        .clubAce({
+            mode: 'html'
+        });
+        
+        function refreshTmpl(opts){
+            return pDATA('idTmpl', $.extend({
+                rows: 1001
+            }, opts), function(data) {
+                SCRM.link(optsData, {idTmpl: data});
+            });
+        }
+        
+        // Загрузить документы при первом запуске:
+        refreshTmpl({_process: 'idTmplFile'})
+        .done(function(data){
+            if (data.usertmpl) {
+                $.extend(data.usertmpl, {
+                    post: {filetype: 'sysfile'}
+                });
+                $('#tmplFiles').trigger('usertmpl', data.usertmpl);
+            }
+        })
+        
+    })
+    .one('shown.bs.tab', 'a[href="#tab_idInvoiceType"]', function (e) {
+        var sch = {},
+        keys = $.map(optsData.idSchedule, function(v, i) {
+            var key = 'schedule_' + v.alias;
+            sch[key] = {idx: i, chLesson:[]};
+            return key;
+        });
+        getConfigFields(keys.join(','), function(fields, opts) {
+            $.each(opts, function(i, v){
+                sch[i].chLesson = v.split('');
+            });
+            $.each(sch, function(i, v){
+                SCRM.link(optsData.idSchedule[v.idx], {chLesson: v.chLesson});
+            });
+            $.observable(optsData.idSchedule).observeAll(function(e, data){
+                if (data.path == 'chLesson') {
+                    setConfigValue('schedule_' + e.target.alias, data.value.join(''));
+                }
+            });
+        });
+    })
+    
+
+    idConfig(optsData.idConfig[0]);
+});
+
+(function ( $ ) {
+    $.fn.clubAce = function(opts){
+        opts = $.extend({mode:'javascript'}, opts);
+        var elms = this;
+        
+        SCRM.loadWSS('ace', function(){
+            elms.each(function(i, v) {
+                var textarea = $(this),
+                    view = textarea.view(),
+                    editor = ace.edit(this);
+                
+                console.log(textarea.data('ace') || opts.mode, view, editor);
+
+                editor.setTheme('ace/theme/chrome');
+                editor.session.setMode('ace/mode/' + (textarea.data('ace') || opts.mode));
+                editor.setOptions({
+                    minLines: 8,
+                    //maxLines: Infinity,
+                    maxLines: 20,
+                    useWorker: false,
+                    wrap: true
+                });
+
+                editor.commands.addCommand({
+                    name: 'save',
+                    bindKey: {win: 'Ctrl-S', mac: 'Cmd-S'},
+                    exec: function(editor) {
+                        textarea.trigger('saveAce')
+                    }
+                });
+
+                editor.session.on('change', function () {
+                    SCRM.link(view.data, {edited: true});
+                });
+                SCRM.link(view.data, {
+                    getValue: function(){
+                        return editor.session.getValue();
+                    },
+                    resizeEditor: function(){
+                        var eparent = $(editor.container).parent(),
+                            maxLines = editor.getOption('maxLines'),
+                            minLines = editor.getOption('minLines'),
+                        mdl = club_Drawer({
+                            cm_size: 'lg',
+                            title: view.data.key,
+                            body: ''
+                        })
+                        .on('shown.bs.modal', function(e) {
+                            var mb = $('.modal-body', mdl).toggleClass('p-0 my-2 m-0'),
+                                rowcnt = Math.ceil(mb.height() / editor.renderer.lineHeight);
+                            mb.append(editor.container);
+                            editor.setOptions({
+                                minLines: rowcnt-2,
+                                maxLines: rowcnt-2
+                            });
+                        })
+                        .on('hide.bs.modal', function(e) {
+                            eparent.append(editor.container);
+                            editor.setOptions({
+                                minLines: minLines,
+                                maxLines: maxLines
+                            });
+                        });
+                    }
+                });
+                textarea.trigger('clubAce', editor);
+            });
+        });
+        return this;
+    }
+}( jQuery ));
+
+$(document)
+.on('shown.bs.tab', function (e) {
+    var grid = $( $(e.target).attr('href') ).find('.loadGrid');
+    if (grid.length) SCRM.loadWSS('grid', function() {
+        grid.removeClass('loadGrid').trigger('reloadGrid');
+    });
+});
+
+$("#grid_idInvoiceType")
+.one('reloadGrid', function(e){
+    $(this)
+    .jqGridInit({
+        postData: {
+            // clubStatus: 'idSchedule,idLesson',
+            filters: SCRM.obj2Filter({published: 1})
+        },
+        multiSort: true,
+        sortname: 'menuindex asc, name',
+        sortorder: 'asc',
+        search: true,
+        rowNum: 25, rowList: false, pginput: false,
+        colModel:[
+            {name: 'id', hidden: true, template: idFieldTemplate},
+            {name: 'name', label: 'Наименование', width: 250, editable: true,
+                editrules:{required: true, edithidden: true},
+                template: editRowLinkTemplate
+            },
+            {name: 'price', label: 'Стоимость', editable: true,
+                template: numberTemplate
+            },
+            {name: 'amount', label: 'Количество занятий', editable: true,
+                template: numberTemplate
+            },
+            {name: 'period', label: 'Период', editable: true, width: 200,
+                formoptions: {
+                    //elmprefix:"&nbsp;&nbsp;(<span class='mystar' style='color:red'>*</span>)&nbsp;",
+                    label: 'Период '+SCRM.hintLink('options_typeinvoice_period')
+                    //label: "<span>Date<span><span style='float:right'>XXX</span>"
+                }
+            },
+            {name: 'stype', label:'Абонемент', width: 150,
+                search: false,
+                formatter: function(cellValue, opts, rObj) {
+                    return '<a href="#" data-run="/chunk/invoiceType.gridAdd" data-id="'+ rObj.id +'">' +
+                        ((cellValue)? cellValue : '<i class="fa fa-plus"></i>') +
+                        '</a>';
+                }
+            },
+            {template: menuindexTemplate},
+            {template: publishedTemplate}
+        ],
+        navOpts: {add: false, edit: true, del: false, search: false},
+        fltrToolbar: true
+    })
+    .jqGridColumns()
+    .jqGridExport();
+});
+
+$("#grid_idCity")
+.one('reloadGrid', function(e){
+    $(this)
+    .jqGridInit({
+        sortname: 'menuindex', sortorder: 'asc',
+        autowidth: true,
+        colModel:[
+            {name:'id', hidden: true, template: idFieldTemplate},
+            {name:'name', label:'Наименование', width:100, editable: true,
+                template: editRowLinkTemplate
+            },
+            {name:'fullname', label:'Юр. наименование', width:200, editable: true},
+            {name:'alias', label:'Алиас', width:50, editable: true,
+                formoptions:{rowpos:2, colpos:2}
+            },
+            {name:'address', label:'Юр.Адрес', width:100, editable: true},
+            {name:'chief', label:'Директор', width:150, editable: true},
+            {name:'tel', label:'Телефон', width:100, editable: true},
+            {name:'email', label:'E-mail', width:120, editable: true},
+            {name:'inn', label:'ИНН', width:80, editable: true},
+            {name:'kpp', label:'КПП', width:80, editable: true,
+                formoptions:{rowpos: 8, colpos:2}
+            },
+            {name:'ogrn', label:'ОГРН', width:80, editable: true},
+    
+            {name:'bankname', label:'Банк', width:200, editable: true},
+            {name:'bankbik', label:'БИК', width:80, editable: true,
+                formoptions:{rowpos:11, colpos:2}
+            },
+            {name:'bankks', label:'КС', width:100, editable: true},
+            {name:'bankrs', label:'РС', width:100, editable: true,
+                formoptions:{rowpos:13, colpos:2}
+            },
+            {template: menuindexTemplate,
+                formoptions: {rowpos:1, colpos:2}
+            },
+            {template: publishedTemplate}
+        ],
+        rowattr: function(data) {
+            if (data.published != '1'){
+                return {'class': 'rowArc'};
+            }
+        },
+        navOpts: {add: true, edit: true, del: false}
+    })
+    .jqGridColumns()
+    .jqGridExport()
+    .on('jqGridSelectRow', function(e, rid) {
+        var city = $(e.target).jqGrid('getRowData', rid);
+        SCRM.link(optsData, {
+            selCity: city
+        });
+        SCRM.getPayMethods(city.id);
+    });
+        
+    SCRM.getPayMethods(0);
+});
+
+$("#grid_idLevel")
+.one('reloadGrid', function(e){
+    $(this)
+    .jqGridInit({
+        sortname: 'name', sortorder: 'asc',
+        colModel:[
+            {name:'id', hidden: true, template: idFieldTemplate},
+            {name:'name', label:'Наименование', width:450, editable: true,
+                template: editRowLinkTemplate
+            }
+        ],
+        navOpts: {add: true, edit: true, del: false}
+    })
+    .jqGridColumns();
+});
+
+$("#grid_idSport")
+.one('reloadGrid', function(e){
+    $(this)
+    .jqGridInit({
+        multiSort: true,
+        sortname: 'menuindex asc, name',
+        sortorder: 'asc',
+        colModel: [
+            {name:'id', hidden: true, template: idFieldTemplate},
+            {name:'name', label:'Наименование', width:200, editable: true,
+                editrules:{required:true, edithidden:true},
+                template: editRowLinkTemplate
+            },
+            {name: 'shortname', label: 'Сокращенно', width: 50, editable: true,
+                editrules: {required: true, edithidden: true}
+            },
+            {name: 'color', label: 'Цвет', width: 80, editable: true,
+                editoptions: {
+                    dataInit: function(elem) {
+                        var el = $(elem);
+                        if (!el.val()) el.val('#FFFFFF');
+                        el.css('background', el.val());
+                        SCRM.loadWSS('colorpick', function() {
+                            el.colorPicker();
+                        });
+                    }
+                },
+                cellattr: function(rowId, cellValue, rawObject, cm, rdata){
+                    return ' style="background:'+ (cellValue || '#fff') +';"';
+                }
+            },
+            {template: menuindexTemplate,
+                formoptions:{rowpos:1, colpos:2}
+            },
+            {template: publishedTemplate}
+        ],
+        rowattr: function(data) {
+            if (data.published != '1'){
+                return {'class': 'rowArc'};
+            }
+        },
+        navOpts:  {add: true, edit: true, del: false}
+    })
+    .jqGridColumns();
+});
+
+$("#grid_idStatus")
+.one('reloadGrid', function(e){
+    var grid_idStatus = $(this)
+    .on('jqGridSerializeGridData', function(e, postData) {
+        postData._where = {tbl: optsData.statusType};
+    })
+    .on('jqGridAddEditSerializeEditData', function(e, data){
+        if (data.oper=='add') data.tbl = optsData.statusType;
+    });
+    
+    $.observe(optsData, 'statusType', function(e, data){
+        optsData.selStatus = (SCRM.getClubStatus('idStatus', optsData.statusType)||{}).extended||{};
+        grid_idStatus.trigger('clearSelection').trigger('reloadGrid');
+        var nd = {
+            showArcStatus: optsData.selStatus.arc,
+            showIsMainBtn: ''
+        };
+        SCRM.link(optsData, nd);
+        if (nd.showArcStatus) {
+            var cfgArcStatusType = optsData.statusType+'_arc'
+            getConfigFields(cfgArcStatusType, function(fields, opts) {
+                SCRM.link(optsData, {
+                    cfgArcStatus: opts[cfgArcStatusType]
+                });
+            });
+        }
+    });
+    SCRM.link(optsData, {statusType: 'idSportsmen'});
+    
+    var statusData = {};
+    
+    grid_idStatus.jqGridInit({
+        sortname: 'menuindex', sortorder: 'asc',
+        colModel: [
+            {name:'id', hidden: true, template: idFieldTemplate},
+            {name:'is_main', label:'По умолчанию', template: 'booleanCheckbox'},
+            {name:'name', label:'Наименование', width:140, editable: true,
+                editrules: {required: true, edithidden: true},
+                template: editRowLinkTemplate
+            },
+            {name:'alias', width:75, editable: true,
+                editrules: {required: true, edithidden: true}
+            },
+            {name:'ico', label:'Значок', width:75, editable: true},
+            {name:'cls', label:'Класс', width:75, editable: true},
+            {name:'extended', label: 'extended', template: infoTemplate, 
+                width:250,
+                //editable: true, editrules: {edithidden: true},
+                formatter: function(cellValue, opts, rObj) {
+                    if (cellValue) {
+                        cellValue = JSON.stringify( JSON.parse(cellValue) )
+                        //.replace(/&/g, "&amp;")
+                        //.replace(/"/g, "&quot;")
+                        //.replace(/'/g, "&#39;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+                        if (cellValue.length > 140) {
+                            return cellValue.substring(0, 140) + '...';
+                        }
+                    }
+                    return cellValue || '';
+                }
+            },
+            {name:'info', template: infoTemplate,
+                hidden: true, editable: true, editrules: {edithidden:true}
+            },
+            {template: menuindexTemplate,
+                formoptions: {rowpos: 1, colpos: 2}
+            },
+            {template: publishedTemplate},
+            {name:'club_id', label: makeIco('fa-gear'), width: 30,
+                formatter: function(cv, e, row) {
+                    if (row.club_id*1) {
+                        if (!row.edited) return makeIco('fa-gear');
+                        return '<a href="#" data-clubid="'+ row.id +'">'+ makeIco('fa-undo ') +'</a>';
+                    }
+                    return '';
+                }
+            }
+        ],
+        rowattr: function(data) {
+            if (data.published != '1'){
+                return {'class': 'rowArc'};
+            }
+        }
+        [[- grouping:true,
+       	groupingView : {
+       		groupField : ['tbl'],
+            groupColumnShow : [false],
+            groupText : ['<b>{0} - {1}</b>'],
+            groupCollapse : true,
+            groupOrder: ['asc']   		
+       	} ]]
+    })
+    .on('jqGridSelectRow', function(e, rn) {
+        var row = grid_idStatus.jqGrid('getRowData', rn) || {},
+        extended = statusData[row.id],
+        nd = {
+            idStatusExt: {
+                id: row.id,
+                key: row.name,
+                val: (extended)? JSON.stringify(JSON.parse(extended), null, "\t") : ''
+            }
+        };
+        if (optsData.selStatus.ismain) {
+            nd.showIsMainBtn = (row.is_main != '1')? row[ optsData.selStatus.ismain ] : '';
+        }
+        SCRM.link(optsData, nd);
+        bindAceEditor();
+    })
+    .on('jqGridLoadComplete', function(e, data){
+        $(this).jqGrid( optsData.selStatus.ismain? 'showCol':'hideCol', ['is_main']);
+        $.each(data.rows, function(i, v) {
+            statusData[v.id] = v.extended;
+        });
+    })
+    .on('jqGridBeforeProcessing', function(e, data, textStatus, jqXHR) {
+        var ismain_fld = optsData.selStatus.ismain;
+        $.each(data.rows, function(n, r) {
+            r.is_main = (r.is_main == r[ismain_fld])? 1 : 0;
+        });
+    })
+    .on('jqGridAddEditInitializeForm', function(e, form, oper) {
+        var tr = $('#tr_extended,#tr_info', form);
+        $('td:eq(1)', tr).attr('colspan', 3); 
+        $('td:gt(1)', tr).remove();
+        if (oper=='add' && optsData.selStatus) {
+            $.each(optsData.selStatus.default || {}, function(k, v) {
+                $('#'+k, form).val(v);
+            });
+        }
+    })
+    .jqGridColumns();
+});
+</script>
+
+<script id="tplIdConfig" type="text/x-jsrender">
+<div class="row">
+    <div class="col-md-4 mb-3 mb-md-0">
+        <div class="list-group">
+        {^{for idConfig sort="menuindex"}}
+        <a href="#" class="list-group-item list-group-item-action list-group-item-primary prevent-default"
+            data-link="{on ~idConfig}">{{:name}}</a>
+        {{/for}}
+        </div>
+        <form class="input-group input-group-alt srch-group mt-3" data-link="{on 'submit' ~idConfigCustom}">
+            <input type="text" class="form-control" data-link="cfgCustom">
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-secondary"><i class="fa fa-edit"></i></button>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-8" data-link="{if optsTmpl tmpl=optsTmpl}">
+    [[-<div class="col-md-8" data-link="{include ^tmpl=optsTmpl||''}">]]
+    </div>
+</div>
+</script>
+
+<script id="tpl_AceBoxExtended" type="text/x-jsrender">
+    <div class="card card-fluid ace-parent">
+        <div class="card-header d-flex">
+            <span class="cfgname" data-link="key"></span>
+            <span class="ml-auto mr-n1">
+                <button class="btn btn-light btn-xs" data-link="{on ~resizeEditor}">
+                    <i class="fa fa-arrows-alt"></i>
+                </button>
+            </span>
+        </div>
+        <div>
+        <textarea data-ace="javascript" data-link="{on 'saveAce' ~saveExtended}">{{>val}}</textarea>
+        </div>
+        <div class="card-footer p-1 d-flex">
+            <button class="btn btn-primary btn-xs" data-link="disabled{:!edited} {on ~saveExtended}">Сохранить</button>
+        </div>
+    </div>
+</script>
+
+<script id="tpl_AceBox" type="text/x-jsrender">
+    <div class="card card-fluid ace-parent">
+        <div class="card-header d-flex">
+            <span class="cfgname" data-link="key"></span>
+            <span class="ml-auto mr-n1">
+                <button class="btn btn-light btn-xs" data-link="{on ~resizeEditor}">
+                    <i class="fa fa-arrows-alt"></i>
+                </button>
+            </span>
+        </div>
+        <div>
+        <textarea data-link="data-ace{:cls||''} data-name{:key} {on 'saveAce' ~saveConfig}">{{>val||prop}}</textarea>
+        </div>
+        <div class="card-footer p-1 d-flex">
+            <button class="btn btn-primary btn-xs" data-link="disabled{:!edited} {on ~saveConfig}">Сохранить</button>
+            <button class="btn btn-light btn-xs ml-2" data-link="visible{:~root.save2git} {on ~root.save2git}">.git</button>
+            
+            <button class="btn btn-light btn-xs ml-auto" data-link="{on ~delConfig}">
+                <i class="fa fa-trash"></i>
+            </button>
+        </div>
+    </div>
+</script>
+
+<script id="tpl_optsHTML" type="text/x-jsrender">
+<div class="mb-2 d-flex">
+    <select class="custom-select" data-link="selHTML">
+        {^{for cS.idHTML}}
+        <option value="{{:alias}}">{{:name}}</option>
+        {{/for}}
+    </select>
+    <button class="btn btn-success ml-2" data-link="{on addHTMLBlock}"><i class="fa fa-plus"></i></button>
+</div>
+<div data-link="{include optsHTMLEdit tmpl=optsHTMLEdit?'#tpl_AceBox':''}"></div>
+[[- {^{for optsHTMLEdit tmpl="#tpl_AceBox" /}} ]]
+[[-{^{include optsHTMLEdit tmpl=optsHTMLEdit?'#tpl_AceBox':'' /}}]]
+</script>
+
+<script id="tpl_optsDefault" type="text/x-jsrender">
+{^{props optsFields tmpl="#tpl_AceBox" /}}
+</script>
+
+<script id="tpl_optsPays" type="text/x-jsrender">
+{^{props payOpts tmpl="#tpl_AceBox" /}}
+{^{props paym tmpl="#tpl_AceBox" /}}
+</script>
+
+<script id="tpl_logoClub" type="text/x-jsrender">
+    <button type="button" class="btn btn-subtle-primary btn-sm btn-block"
+         data-link="{on ~S.uploadFile}" accept="image/*">
+    <i class="fa fa-picture-o"></i> Загрузить логотип</button>
+    <img class="img-fluid mt-2" src="" alt="" style="max-height:200px"
+        data-link="src{:file1^logo||~S.emptyImg()}">
+</script>
+
+<script id="tpl_optsMain" type="text/x-jsrender">
+    <div id="logoClub" class="text-center mb-3" data-linkfile="" data-file1type="logo"
+        data-link="{on 'logoClub' ~S.linkFile '#tpl_logoClub'}">
+    </div>
+
+    <h6>Заголовок</h6>
+    <p><a href="#" data-name="site_name" data-roinplace="CfgInpSave" data-link="opts^site_name" class="dashed"></a></p>
+    <h6>Полное название</h6>
+    <p><a href="#" data-name="site_fullname" data-roinplace="CfgInpSave" data-link="opts^site_fullname" class="dashed"></a></p>
+    <p class="custom-control custom-checkbox">
+        <input type="checkbox" class="custom-control-input" id="https" value="1"
+            data-link="checked{:opts^https=='1'} {on 'change' ~checkOpts 'https'}">
+        <label class="custom-control-label" for="https">https</label>
+    </p>
+    
+    [[-<h6>Email отправитель</h6>
+    <p><a href="#" data-name="emailsender" data-roinplace="CfgInpSave" class="dashed">[[-!++emailsender]]</a></p>]]
+    <h6>Email администрации</h6>
+    <p><a href="#" data-name="emailtech" data-roinplace="CfgInpSave" data-link="opts^emailtech" class="dashed"></a></p>
+    <h6>Личный кабинет</h6>
+    <div class="custom-control custom-checkbox">
+        <input type="checkbox" class="custom-control-input" id="autouser" value="1"
+            data-link="checked{:opts^autouser=='1'} {on 'change' ~checkOpts 'autouser'}">
+        <label class="custom-control-label" for="autouser">Автосоздание (при внесении email)</label>
+    </div>
+</script>
+
+<script id="tpl_tmpl" type="text/x-jsrender">
+<div class="nav nav-pills mb-2" role="tablist">
+    <a class="nav-item nav-link active" data-toggle="tab" href="#tmpl_msg">Сообщения</a>
+    <a class="nav-item nav-link" data-toggle="tab" href="#tmpl_file">Документы</a>
+</div>
+<div class="tab-content">
+    <div id="tmpl_msg" class="tab-pane active">
+
+<div class="row" data-link="visible{:idTmpl}">
+    <div class="col-md-4">
+        <div class="list-group">
+        {^{for idTmpl^rows}}
+        <a href="#" class="list-group-item list-group-item-action list-group-item-primary prevent-default"
+            data-link="{on ~editTmpl}">{{:name}}</a>
+        {{/for}}
+        <a href="#" class="list-group-item list-group-item-action list-group-item-success prevent-default"
+            data-link="{on ~newTmpl}">Создать</a>
+        </div>
+    </div>
+    <div class="col-md-8" data-link="visible{:tmplEdit^oper}">
+        <div class="card card-fluid mb-0">
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="col-sm-8">
+                        <label>Name</label>
+                        <input class="form-control" placeholder="name" data-link="tmplEdit^name">
+                    </div>
+                    <div class="col-sm-4">
+                        <label>Type</label>
+                        <select class="form-control" placeholder="type" data-link="tmplEdit^type">
+                            <option value="email">Email</option>
+                            <option value="sms">SMS</option>
+                            <option value="push">Push</option>
+                            <option value="club">Клуб</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group my-2">
+                    <label>Handler</label>
+                    <input class="form-control" placeholder="handler" data-link="tmplEdit^handler">
+                </div>
+                <div data-link="class{:tmplEdit^type=='email'? 'form-group':'d-none'}">
+                    <label>Subj</label>
+                    <input class="form-control" placeholder="subj" data-link="tmplEdit^subj">
+                </div>
+            </div>
+            <textarea data-link="{on 'saveAce' ~saveTmpl}"></textarea>
+            <div class="card-footer p-1 d-flex">
+                <button class="btn btn-primary btn-xs" data-link="{on ~saveTmpl}">Сохранить</button>
+                <button class="ml-auto btn btn-secondary btn-xs" data-link="visible{:tmplEdit^id} {on ~delTmpl}"><i class="fa fa-trash"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    </div>
+    <div id="tmpl_file" class="tab-pane">
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="list-group list-group-bordered list-group-reflow">
+                    <div class="list-group-header">Системные</div>
+                    {^{for idTmpl^systmpl}}
+                    <a href="[[++crm_url]]export/tmpl/{{:basename}}" target="_blank"
+                        class="list-group-item">
+                        {{:filename}}
+                    </a>
+                    {{/for}}
+                </div>
+            </div>
+            <div class="col-sm-6" id="tmplFiles" data-linkfile=""
+                data-link="{on 'usertmpl' ~S.linkFile '#tpl_files'}">
+                
+            </div>
+        </div>
+    </div>
+</div>
+</script>
+
+<script id="tpl_idSInvType_edit" type="text/x-jsrender">
+{^{for idSchedule}}
+    <div class="custom-control custom-checkbox">
+        <input type="checkbox" class="custom-control-input" id="its_{{:id}}" value="{{:alias}}"
+            data-link="checked{:SInvType} {on 'change' ~idSInvType}">
+        <label class="custom-control-label" for="its_{{:id}}">
+            {{:name}}
+        </label>
+    </div>
+{{/for}}
+</script>
+
+<script id="tpl_stype_ed" type="text/x-jsrender">
+{^{for idSchedule itemVar="~sc" ~lsn=cS.idLesson}}
+<tr>
+    <th>{{:name}}</th>
+    <td data-link="{checkboxgroup chLesson}">
+    {{for ~lsn}}
+        <div class="custom-control custom-control-inline custom-checkbox">
+            <input type="checkbox" class="custom-control-input"
+                id="cr_{{:~sc.id}}_{{:id}}" value="{{:alias}}">
+            <label class="custom-control-label" for="cr_{{:~sc.id}}_{{:id}}">
+                {{fmtStatus:alias tbl="idLesson"}} {{:name}}
+            </label>
+        </div>
+    {{/for}}
+    </td>
+</tr>
+{{/for}}
+</script>
+
+<script id="tpl_PayMethods" type="text/x-jsrender">
+<h6>Общие <button class="btn btn-light btn-xs" data-link="{on ~addPayMethod '0' 'idCity_Pay'}"><i class="fa fa-plus"></i></button></h6>
+{^{for ~PayMethods(idCity_Pay, '0') tmpl="#tpl_idCityPayRow" /}}
+
+{^{if selCity}}
+    <h6 class="mt-2">{^{:selCity^name}} <button class="btn btn-light btn-xs" data-link="{on ~addPayMethod selCity^id 'idCity_Pay'}"><i class="fa fa-plus"></i></button></h6>
+    {^{for ~PayMethods(idCity_Pay, selCity^id) tmpl="#tpl_idCityPayRow" /}}
+{{/if}}
+</script>
+
+<script id="tpl_idCityPayRow" type="text/x-jsrender">
+    <p>
+        <a href="#" class="prevent-default" data-link="{:name} {on ~editPayMethod}"></a>
+    </p>
+    [[-<div class="d-flex" data-link="data-parent{:parent} data-id{:id}">
+        <div><a href="#" data-link="{:name||'Name'}" data-roinplace="PayMethodName" class="dashed"></a></div>
+        <div class="ml-2">
+            <button class="btn btn-subtle-primary btn-xs mr-1" data-link="{on ~editPayMethod}"><i class="fa fa-gear"></i></button>
+            <button class="btn btn-subtle-primary btn-xs"><i class="fa fa-ban"></i></button>
+        </div>
+    </div>]]
+</script>
+
+<script id="tpl_editPayMethod" type="text/x-jsrender">
+    <div class="form-group">
+        <input type="text" class="form-control" data-link="post^name">
+    </div>
+    
+    <div class="form-group">
+        <input type="text" class="form-control" data-link="post^menuindex">
+    </div>
+    [[-<div class="form-group">
+        <div class="input-group">
+            <label class="input-group-prepend" for="ni_sum"><span class="input-group-text"><i class="fa fa-money"></i></span></label>
+            <input type="text" class="form-control clubmodal-focus" id="ni_sum" placeholder="0.00" data-link="post^sum">
+        </div>
+        <label data-link="visible{:post^typeinvoice}">
+            <input type="checkbox" data-link="payd"> Оплачено
+        </label>
+    </div>]]
+
+    <div class="form-group">
+        <textarea rows="2" class="form-control" data-link="post^info" placeholder="Шаблон"></textarea>
+    </div>
+
+    <textarea id="configPayMethod"></textarea>
+    
+    [[-<div class="d-flex" data-link="data-parent{:parent} data-id{:id}">
+        <div><a href="#" data-link="{:name||'Name'}" data-roinplace="PayMethodName" class="dashed"></a></div>
+        <div class="ml-2">
+            <button class="btn btn-subtle-primary btn-xs mr-1" data-link="{on ~editPayMethod}"><i class="fa fa-gear"></i></button>
+            <button class="btn btn-subtle-primary btn-xs"><i class="fa fa-ban"></i></button>
+        </div>
+    </div>]]
+</script>
+
+[[$tplFiles]]

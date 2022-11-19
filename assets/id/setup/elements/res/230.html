@@ -1,0 +1,177 @@
+<div class="tab-content section-block my-0">
+    <div id="tabExpense" class="tab-pane active">
+        <div class="mb-2">
+            <button class="btn btn-success btn-sm" data-link="{on 'click' addExp}"><i class="fa fa-plus"></i></button>
+        </div>
+        <table id="grExpense" data-entity="idExpense"></table>
+    </div>
+    <div id="tabExpenseReport" class="tab-pane"></div>
+</div>
+
+<script id="mdl_addExp" type="text/x-jsrender">
+<div class="row">
+    <div class="col-12 mb-3">
+        <label>Статья <abbr>*</abbr></label> 
+        <select class="custom-select" data-link="{:newRow.typeexpence.val:} class{merge:newRow.typeexpence.bad toggle='is-invalid'}">
+            {{for ~S.clubStatus.idExpense}} 
+                <option value="{{:id}}">{{:name}}</option>
+            {{/for}}
+        </select>
+    </div>
+    <div class="col-6 mb-3">
+        <label>Сумма <abbr>*</abbr></label>
+        <input type="number" class="form-control" data-link="{:newRow.sum.val:} class{merge:newRow.sum.bad toggle='is-invalid'}" required>
+    </div>
+    
+    <div class="col-6 mb-3">
+        <label>Дата и время <abbr>*</abbr></label> 
+        <input type="text" class="form-control" id="addExpDate" data-link="class{merge:newRow.dateexpence.bad toggle='is-invalid'}">
+    </div>
+    
+    <div class="col-12 mb-3 d-none">
+        <label class="text-success" for="addrow_planfact">Факт</label>
+        <label class="switcher-control"><input type="checkbox" id="addrow_planfact" class="switcher-input" data-link="{:newRow.plan.val:} class{merge:newRow.plan.bad toggle='is-invalid'}">
+            <span class="switcher-indicator"></span>
+        </label>
+        <label class="text-primary" for="addrow_planfact">План (ежемесячно)</label>
+    </div>
+    
+    <div class="col-12 mb-3">
+        <label>Комментарий</label> 
+        <textarea class="form-control" data-link="{:newRow.info.val:} class{merge:newRow.info.bad toggle='is-invalid'}"></textarea>
+    </div>
+</div>
+</script>
+
+
+
+<script>
+SCRM.link(SCRM.app, {
+    topNavTabs: [
+        {href: '#tabExpense', html: 'Расходы', active: true},
+        {href: '#tabExpenseReport', html: 'Аналитика', url:'/chunk/report.invexp_charts'}
+    ]
+});
+
+SCRM.loadWSS(['grid'], function(){
+    SCRM.setClubStatus([[!clubStatus?tbl=`idExpense`]]);
+
+    var grExpense = $('#grExpense')
+    .jqGridInit({
+        sortname: 'dateexpence', sortorder: 'desc',
+        colModel:[
+            {name: 'id', template: idFieldTemplate},
+            {name: 'dateexpence', label: 'Дата', template: dateTemplate, editable: true,
+                formoptions: {rowpos: 2, colpos: 1}
+            },
+            {name:'typeexpence_name', index: 'TypeExpence.name', label: 'Статья', width: 120,
+                formoptions: {rowpos: 1, colpos: 1},
+                editable: 'readonly',
+                template: editRowLinkTemplate,
+                unformat: function(cellValue, options, cell) {
+                    return $('a', cell).html();
+                }
+            },
+            /*{name: 'typeexpence', editable: true, label: 'Статья', width: 180, 
+                template: selTemplate,
+                clubStatus: 'idExpense', lookupKey: 'id',
+                template: editRowLinkTemplate
+                },
+            },*/
+            {name: 'sum', editable: true, label: 'Сумма', template: numberTemplate},
+            //{name: 'plan', editable: true, label: 'План-факт'},
+            {name: 'info', editable: true, label: 'Комментарий', width: 250, template: infoTemplate},
+            {name: 'created', label: 'Создано', template: createdTemplate}
+        ],
+        navOpts: {add:false, edit:true, search:false},
+        fltrToolbar: true
+    })
+    .on('jqGridAddEditAfterShowForm', function (e, form) {
+        $('#sum', form).focus();
+    })
+    .jqGridColumns();
+    
+    
+    var expense = {
+        newRow: {
+            typeexpence: {
+                val: (SCRM.clubStatus.idExpense[0] || {}).id,
+                req: true
+            },
+            sum: {
+                val: "",
+                req: true
+            },
+            dateexpence: {
+                //val: str2date("now", "d"),
+                req: true
+            },
+            info: {
+                val: ""
+            },
+            plan: {
+                val: 0
+            }
+        },
+        addExp: function(e, data) {
+            console.log('mdl_addExp', e, data);
+            
+            var addMdl = {
+                title: "Добавить расход",
+                body: "#mdl_addExp",
+                newRow: expense.newRow,
+                onOK: function(){
+                    var postData = {
+                        oper: "add",
+                        plan: addMdl.newRow.plan? '1m' : 'fact',
+                    },
+                    error = false;
+
+                    $.each(addMdl.newRow, function(k,v){
+                        if (v.req) {
+                            if (!v.val) {
+                                SCRM.link(v, {bad: true});
+                                error = true;
+                            } else {
+                                SCRM.link(v, {bad: false});
+                            }
+                        }
+                        postData[k] = v.val
+                    });
+                    console.log(postData, addMdl.newRow);
+                    if (error) {
+                        alert("Не все поля заполнены");
+                        return;
+                    }
+                    SCRM.link(addMdl, {loading: true});
+                    pEDIT("idExpense", postData, function(row){
+                        addMdl.mdl_hide();
+                        grExpense.trigger('reloadGrid');
+                    });
+                }
+            };
+            club_Modal(addMdl)
+            .on('shown.bs.modal', function(){
+                $('#addExpDate')
+                .on('onChangeDateEdit', function(e, data) {
+                    SCRM.link(addMdl.newRow.dateexpence, {val: data.sqlDates[0]});
+                })
+                .initDateEdit({
+                    defaultDate: 'today'
+                });
+            });
+        }
+    };
+    
+    $.link(true, "#tabExpense", expense);
+    
+});
+
+$(document)
+.one('shown.bs.tab', '[href="#tabExpenseReport"]', function(e) {
+    console.log('#tabExpenseReport', e);
+    SCRM._run('/chunk/report.invexp_charts', {
+        container: '#tabExpenseReport'
+    });
+});
+</script>

@@ -1,0 +1,146 @@
+<div id="shop" class="row" data-link="{for rows tmpl='#tpl_shop'}"></div>
+
+<script id="tpl_shop" type="text/x-jsrender">
+<div class="col-xl-3 col-lg-4 col-sm-6 shop-item pb-3">
+    <div class="card card-figure h-100 m-0">
+      <figure class="figure h-100 d-flex">
+        <div class="figure-img text-center">
+          <img class="img-fluid" src="" alt="" data-link="src{:sm||~S.emptyImg()}" id="img_shop{{:id}}">
+          <a href="#" class="img-link" data-link="{on ~imgShow}">
+            <div class="tile tile-circle bg-info">
+              <i class="fa fa-eye"></i>
+            </div>
+          </a>
+        </div>
+        <figcaption class="figure-caption flex-grow-1">
+            <h6 class="figure-title">
+                <a href="#" data-link="{on ~imgShow}">{{:name}}</a>
+            </h6>
+            <div class="text-muted mb-0 product-descr" onclick="$(this).removeClass('product-descr');">{{:info}}</div>
+        </figcaption>
+        <div data-link="{if opts tmpl='#tpl_shopts'}"></div>
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="mr-auto price">
+                {{shopPrice:price}}
+            </div>
+            <div class="spinner-grow text-success" role="status" data-link="visible{:load}">
+                <span class="sr-only">Loading...</span>
+            </div>
+            <div data-link="visible{:!load}">
+                <button class="btn btn-success rounded-pill col" data-link="{on ~shopOrder}"><i class="fa fa-shopping-basket"></i> В корзину</button>
+            </div>
+        </div>
+      </figure>
+    </div>
+</div>
+</script>
+
+<script id="tpl_shopts" type="text/x-jsrender">
+<select class="form-control my-2" data-link="{:sel_opts:} visible{:opts[0]!='-'}">
+    {^{if opts^length > 1}}<option value="">-- Выбрать опции --</option>{{/if}}
+    {^{for opts}}
+    <option value="{{:}}">{{:}}</option>
+    {{/for}}
+</select>
+</script>
+
+<style>
+    .shop-item .price {
+        font-weight: 600;
+        font-size: 24px;
+        line-height: 1em;
+    }
+    .product-descr {
+        cursor: pointer;
+        overflow: hidden; /* Обрезаем содержимое */
+        height: 42px;
+        position: relative; /* Относительное позиционирование */
+    }
+    .product-descr::after {
+        content: '';
+        position: absolute;
+        left:0; bottom: 0;
+        width: 100%;
+        height: 20px;
+        background: -moz-linear-gradient(bottom, rgba(255,255,255, 0.2), #fff 100%);
+        background: -webkit-linear-gradient(bottom, rgba(255,255,255, 0.2), #fff 100%);
+        background: linear-gradient(to bottom, rgba(255,255,255, 0.2), #fff 100%);
+    }
+</style>
+
+<script>
+var shopData = [[!dbdata?
+    &table=`idShopItem`
+    &_process=`idFilesPhoto`
+    &_where=`published=1;status=c`
+    &sidx=`menuindex`
+    &rows=`1001`
+]];
+var currency = '[[!clubConfig?name=`currency`]]';
+$(function() {
+    var uids = $.map(shopData.rows, function(v,i){
+        var opts = (v.opts||'-').split(',');
+        if (opts.length==1) shopData.rows[i].sel_opts = opts[0];
+        shopData.rows[i].opts = opts;
+        return 'shop'+v.id;
+    }).join(',');
+    var images = {};
+    pJSON('/hook/files', {uid: uids, thumb:'photo_shop:sm'}, function(data) {
+        $.each(data.rows, function(i, v){
+            var im = key2obj(images, v.uid);
+            im.push(v.filepath);
+        });
+    });
+    $.views.converters({
+        shopPrice: function(value){
+            return (value*1) +' <small class="text-muted">'+ currency +'</small>';
+        }
+    });
+    
+    $.link(true, "#shop", shopData, {
+        imgShow: function(e, data) {
+            e.preventDefault();
+            var item = data.linkCtx.data;
+            var imgs = $.map(images['shop'+item.id], function(r, i){
+                return {
+                    title: item.name,
+                    //type: 'image/jpeg',
+                    //thumbnail: 'https://example.org/thumbnails/banana.jpg',
+                    href: r
+                };
+            });
+            SCRM.loadWSS('blueimp', function() {
+                blueimp.Gallery(imgs);
+            });
+        },
+        shopOrder: function(e, data) {
+            e.preventDefault();
+            var item = data.linkCtx.data;
+            if (!item.sel_opts) {
+                // Если нет опций будет "-"
+                SCRM.alert('Не выбраны параметры');
+                return false;
+            }
+            addOrder(item);
+        }
+    });
+});
+
+function addOrder(item, addData) {
+    SCRM.link(item, {load: true});
+    
+    pJSON(shop_url, $.extend({
+        oper: 'order',
+        shopitem: item.id,
+        opts: item.sel_opts
+    }, addData), function(data) {
+        $('body').trigger('shop.counts');
+        SCRM.success('Добавил в корзину', null, {
+            onclick: function() {
+                window.location = '/shop/cart.html';
+            }
+        });
+        SCRM.link(item, {load: false});
+    });
+}
+</script>

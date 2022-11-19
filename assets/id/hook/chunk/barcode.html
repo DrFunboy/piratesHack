@@ -1,0 +1,67 @@
+<script>
+$(function(){
+    var input = $('#barCodeInput').prependTo('#main-menu')
+    .on('submit', function(e){
+        e.preventDefault();
+        var txt = input.select().val();
+        //alrt(txt);
+        let isnum = /^\d+$/.test(txt);
+        if (isnum) {
+            pDATA('idSportsmen', {
+                extype: 'idSportsmen_barcode',
+                _where: 'idExtid.extid=' + txt
+            }, function(data){
+                if (data.rows.length > 0){
+                    window.open("/qr.html?key="+data.rows[0].key, "_blank"); 
+                    focusSelect();
+                } else {
+                    if (window.clubSpCard && clubSpCard.sp.id) {
+                        rocnfrm('Привязать карту "'+ txt +'" для "'+ clubSpCard.sp.name +'"?',
+                        function() {
+                            pDATA('idExtid', {
+                                extype: 'idSportsmen_barcode',
+                                _where: 'idExtid.parent=' + clubSpCard.sp.id
+                            }, function(data){
+                                if (data.rows.length > 0) {
+                                    SCRM.alert('У спортсмена уже есть привязанные карты');
+                                } else pEDIT('idExtid', {
+                                    oper: 'add',
+                                    extype: 'idSportsmen_barcode',
+                                    parent: clubSpCard.sp.id,
+                                    extid: txt
+                                }, function(){
+                                    SCRM.success('Привязал');
+                                    //focusSelect();
+                                });
+                            })
+                        })
+                        .on('hidden.bs.modal', function(){
+                            focusSelect();
+                        })
+                    } else {
+                        focusSelect();
+                        SCRM.alert(txt+' не найден');
+                    }
+                }
+            })
+        }
+    })
+    .find('input')
+    .on('focusin', function(e){
+        $(this).select();
+    });
+    function focusSelect(){
+        input.focus();//.select();
+    }
+    setTimeout(focusSelect, 100);
+});
+</script>
+
+<form id="barCodeInput" class="p-3">
+    <div class="input-group">
+        <label class="input-group-prepend" for="barCodeInput1">
+            <span class="input-group-text"><i class="fa fa-barcode"></i></span>
+        </label>
+        <input type="text" class="form-control" id="barCodeInput1" placeholder="">
+    </div>
+</form>

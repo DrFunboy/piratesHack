@@ -1,0 +1,464 @@
+<style>
+    #tab_SquadSchedule .fltr_squad {
+        display:none;
+    }
+</style>
+
+<div id="squadManager" style="display:none" data-link="visible{:true}">
+    <div class="tab-content section-block my-0">
+        <div id="tab_idSquad" class="tab-pane active">
+            <div class="mb-2 d-flex align-items-center">
+                <button class="btn btn-sm btn-success mr-2" data-link="{on ~newSquad}"><i class="fa fa-plus"></i></button>
+                <div class="dropdown">
+                    <button data-toggle="dropdown" class="btn btn-sm btn-primary" data-link="disabled{:cntSquad<2}" disabled>Действия
+                        <small data-link="text{:cntSquad} css-display{if !cntSquad tmpl='none'}" class="badge badge-pill badge-warning ml-1"></small>
+                    </button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-arrow"></div>
+                        <a href="#" class="dropdown-item prevent-default" data-link="{on ~unionSquad}">Объединить</a>
+                    </div>
+                </div>
+                <div class="dropdown mx-2">
+                    <button class="btn btn-sm btn-outline-primary" data-toggle="dropdown"><i class="fa fa-filter"></i></button>
+                    <div class="dropdown-menu dropdown-menu-right stop-propagation" data-link="{include tmpl='#tpl_sqIsmain'}"></div>
+                </div>
+
+                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-sm btn-outline-primary">
+                        <input type="checkbox" data-link="sqPeriod">
+                        <i class="fa fa-calendar"></i><span class="d-none d-sm-inline"> За период</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mb-2" style="display:none" id="sqPeriod" data-link="visible{:sqPeriod}"></div>
+            
+            <table id="grid_idSquad" data-entity="idSquad"></table>
+
+            <div style="display:none" data-link="visible{:cntSquad}">
+                <nav class="nav-scroller">
+                    <div class="nav nav-tabs" role="tablist">
+                        [[-<span class="nav-link border-0">
+                            <span class="badge badge-warning" data-link="cntSquad"></span>
+                        </span>]]
+                        <a class="nav-link active" data-toggle="tab" href="#tab_SquadSportsmen">Спортсмены</a>
+                        <a class="nav-link" data-toggle="tab" href="#tab_SquadSchedule">Расписание</a>
+                        <a class="nav-link" data-toggle="tab" href="#tab_SquadScheduleLessons">Занятия</a>
+                    </div>
+                </nav>
+                <div class="tab-content card card-body">
+                    <div id="tab_SquadSportsmen" class="tab-pane active">
+                        <div data-link="visible{:cntSquad>1}" class="text-muted mb-2">
+                            Выделено групп: <span data-link="cntSquad"></span>
+                        </div>
+                        <div data-link="visible{:sqPeriod} {include tmpl='#tplPlusMinus'}" class="text-muted mb-2"></div>
+                        <table id="sqSportsmens"></table>
+                    </div>
+                    <div id="tab_SquadSchedule" class="tab-pane" data-mode="squad">
+                        
+                    </div>
+                    <div id="tab_SquadScheduleLessons" class="tab-pane">
+                        <table id="t_ScheduleLessons" data-entity="idSchedule"></table>
+                    </div>
+                </div>
+            </div><!-- Tabs 2 -->
+        </div>
+        <div id="tab_idClub" class="tab-pane">
+            <table id="grid_idClub" data-entity="idClub"></table>
+            <div class="row mt-2">
+                <div class="col-12 col-md-6 col-xl-5"
+                     id="idClub_Files" data-link="{on 'club'+clubid ~S.linkFile '#tpl_files'}" data-linkfile="">
+                </div>
+            </div>
+            
+        </div>
+        <div id="tab_sqEmpty" class="tab-pane">
+            <table id="emptySqSportsmens"></table>
+        </div>
+    </div>
+</div>
+
+[[$dbInner?actions=`1`]]
+
+[[$schedInner]]
+[[$tplFiles]]
+[[$panelPeriod]]
+
+<script>
+var squadManager = {
+    cntSquad: 0,
+    pmSquad: ['minus','plus'],
+    sq_ismain: ['0','1']
+};
+
+SCRM.link(SCRM.app, {
+    topNavTabs: [
+        {href: '#tab_idSquad', html: 'Группы', active: true},
+        {href: '#tab_idClub', html: 'Залы'},
+        {href: '#tab_sqEmpty', html: 'Без групп'}
+    ]
+});
+
+SCRM.loadWSS(['ready','grid'], function(){
+    $.link(true, '#squadManager', squadManager, {
+        newSquad: function(e) {
+            grids.idSquad.jqGrid('editGridRow', 'new');
+        },
+        unionSquad: function(e) {
+            rocnfrm('Отмеченные группы будут удалены и связанная с ними информация будет перенесена в "'+ squadManager.squad1.name +'"',
+            function() {
+                pEDIT('idSquad', {
+                    id: squadManager.selSq,
+                    unite: true
+                }, function(data){
+                    grids.idSquad.trigger('reloadGrid');
+                });
+            });
+        }
+    });
+    
+    function reloadSquadAndSportsmen() {
+        grids.idSquad.trigger('reloadGrid');
+        if (squadManager.cntSquad > 0) {
+            showSqSportsmen();
+        }
+    }
+    
+    $.observe(squadManager, 'sqPeriod', function(e, data){
+        grids.idSquad
+        .jqGrid(data.value? 'showCol':'hideCol', ['cnt_plus','cnt_minus']);
+
+        //setFilter = (data.value)? '*':'narc';
+        spGrid
+        .data('start_status', (data.value)? '*' : 'narc');
+
+        if ('dates' in squadManager) {
+            reloadSquadAndSportsmen();
+        } else {
+            $('#sqPeriod')
+            .on('periodChange', function(e, dates) {
+                SCRM.link(squadManager, {dates: dates});
+                reloadSquadAndSportsmen();
+            })
+            .panelPeriod();
+        }
+    });
+
+    $.observe(squadManager, 'pmSquad', function(e, data) {
+        if (!data.value.length) {
+            SCRM.link(squadManager, {pmSquad: ['minus','plus']});
+        }
+        console.log('pmSquad', data.value.length)
+        showSqSportsmen();
+    });
+
+    $.observe(squadManager, 'sq_ismain', function(e, data) {
+        if (!data.value.length) {
+            SCRM.link(squadManager, {sq_ismain: ['0','1']});
+        }
+        //console.log('sq_ismain', data.value.length)
+        reloadSquadAndSportsmen();
+    });
+
+    var clubSchedule = $('#tab_SquadSchedule')
+    .on('clubSchedule.reload', function() {
+        spinnr(true, $(this));
+    })
+    .on('clubSchedule.onload', function() {
+        spinnr(false, $(this));
+    })
+    .clubSchedule();
+
+    function showSqSportsmen() {
+        spGrid.trigger('sportsmenGrid', {
+            multiselect: true,
+            showDuedate: true
+        });
+    }
+
+    var spGrid = $('#sqSportsmens')
+    .one('jqGridAfterInit', function(e){
+        $(this).jqGridExport();
+    })
+    .on('jqGridSerializeGridData', function(e, pd) {
+        delete pd._where;
+        delete pd.sq_ismain;
+        delete pd.d1;
+        delete pd.d2;
+        delete pd._report;
+        delete pd.cnt_sqchanges;
+        
+        if (!squadManager.sqPeriod) {
+            pd._where = {squad: squadManager.selSq}
+        }
+        if (squadManager.sqPeriod) {
+            pd._report = 'idSportsmen_cntsqchanges';
+            pd.cnt_sqchanges = squadManager.pmSquad.join(',')+';'+squadManager.selSq;
+            $.extend(pd, squadManager.dates);
+        } else {
+            if (squadManager.sq_ismain.length==1) {
+                pd.sq_ismain = squadManager.sq_ismain[0];
+            }
+        }
+        /*if (setFilter) {
+            var fltrs = SCRM.filterObj(pd.filters);
+            fltrs.rules = $.map(fltrs.rules, function(v, i){
+                if (v.field != 'status') return v;
+            });
+            if (setFilter!='*') fltrs.rules.push({field:'status', op:'eq', data: setFilter});
+            setFilter = null;
+            pd.filters = JSON.stringify(fltrs);
+        }*/
+        //return $.extend(d, pd);
+    });
+
+    grids.idSquad = $("#grid_idSquad")
+    .on('jqGridSerializeGridData', function(e, pd) {
+        if (squadManager.sq_ismain.length==1) {
+            pd.sq_ismain = squadManager.sq_ismain[0];
+        } else {
+            delete pd.sq_ismain;
+        }
+        //return 
+        $.extend(pd, squadManager.dates);
+    })
+    .jqGridInit({
+        multiselect: true,
+        postData: {
+            tableadd: 'idSportsmen',
+            cnt_changes: function() {
+                return squadManager.sqPeriod || 0;
+            },
+            filters: SCRM.obj2Filter({published: '1'})
+        },
+        sortname: 'name', sortorder: 'asc',
+        //rownumbers: true,
+        search: true,
+        autowidth: true,
+        colModel:[
+            {name: 'id', template: idFieldTemplate, hidden:true},
+            {name: 'name', label: 'Наименование', width:200,
+                editable: true, editrules: {required: true},
+                template: editRowLinkTemplate
+            },
+            {name: 'lvl', label: 'Уровень', editable: true,
+                template: selTemplate,
+                searchoptions: {value: lookAll},
+                dbvalues: 'idLevel'
+            },
+            {name: 'trainer_name', index: 'idTrainer.name', label: 'Тренер', width: 100,
+                hidden: true, hidedlg: true
+            },
+            {name:'trainer', label: 'Тренер',
+                hidden: true, hidedlg: true,
+                editrules: {edithidden: true},
+                template: selTemplate,
+                dbvalues: 'idTrainer', dbvalues0: 0
+            },
+            {name: 'club', label: 'Зал', width: 120,
+                editable: true,
+                template: selTemplate,
+                dbvalues: 'idClub'
+            },
+            {name: 'sport', label: 'Дисциплина', width: 150, editable: true,
+                template: selTemplate,
+                dbvalues: 'idSport'
+            },
+            {name: 'limits', label: 'Лимит', hidden: true,
+                editable: true,
+                formoptions: {rowpos: 1, colpos: 2},
+                editrules: {edithidden:true},
+                template: numberTemplate
+            },
+            {name: 'lead', label: 'Канд.', hidden: true,
+                editable: true,
+                formoptions: {rowpos: 2, colpos: 2},
+                editrules: {edithidden: true},
+                template: publishedTemplate
+            },
+            {template: publishedTemplate},
+            
+            {name: 'cnt_sportsmen', label: 'Спортсмены', width: 50,
+                template: numberTemplate,
+                search: false
+            },
+            {name: 'cnt_schedule', label: 'Расписание', width: 50,
+                template: numberTemplate,
+                search: false
+            },
+            {name: 'cnt_plus', label: 'Зачислены', width: 50, hidden:true,
+                template: numberTemplate,
+                search: false,
+                cellattr: function(rowId, cellValue, rawObject, cm, rdata){
+                    return (cellValue>0)? arr2clstring(['rowYes']) : '';
+                }
+            },
+            {name: 'cnt_minus', label: 'Отчислены', width: 50, hidden:true,
+                template: numberTemplate,
+                search: false,
+                cellattr: function(rowId, cellValue, rawObject, cm, rdata){
+                    return (cellValue>0)? arr2clstring(['rowNo']) : '';
+                }
+            }
+        ],
+        rowattr: function(data) {
+            if (data.published != '1'){
+                return {'class': 'rowArc'};
+            }
+        },
+        navOpts: {add: false, edit: true, del: false},
+        fltrToolbar: true
+    })
+    .jqGridColumns()
+    .jqGridExport()
+    .on('jqGridAddEditBeforeSubmit', function(e, pd) {
+        return (pd.club)? true : [false, 'Необходимо создать и выбрать Зал'];
+    })
+    .on('jqGridSelectRow jqGridSelectAll', function(e, rid, sel) {
+        var grid = $(this);
+        var selRows = getGridSelRows(grid),
+            ids = selRows.join(',');
+        SCRM.link(squadManager, {
+            cntSquad: selRows.length,
+            selSq: ids,
+            squad1: grid.jqGrid('getRowData', selRows[0])
+        });
+        spGrid.trigger('clearSelection'); //TODO: Можно будет убрать когда всплывающее окно?
+
+        if (selRows.length > 0) {
+            showSqSportsmen();
+            // Было jqGridClearSelection
+            clubSchedule.data('key', ids).trigger('clubSchedule.reload');
+            $("#t_ScheduleLessons").trigger('reloadGrid');
+        }
+    });
+    
+    $(document)
+    .one('shown.bs.tab', '[href="#tab_sqEmpty"]', function (e, data) {
+        $('#emptySqSportsmens').trigger('sportsmenGrid', {
+            showDuedate: true,
+            postData: {
+                _where: {squad: '-'}
+            }
+        });
+    })
+    .one('shown.bs.tab', '[href="#tab_idClub"]', function (e) {
+        grids.idClub = $("#grid_idClub").jqGridInit({
+            sortname: 'name', sortorder: 'asc',
+            //rownumbers: true,
+            colModel:[
+                {template: idFieldTemplate},
+                {name: 'name', label: 'Наименование', width:200,
+                    editable: true, editrules: { required: true },
+                    template: editRowLinkTemplate
+                },
+                {name: 'address', label: 'Адрес', width:200,
+                    editable: true
+                },
+                {name: 'published', template: publishedTemplate}
+            ],
+            rowattr: function(data) {
+                if (data.published != '1'){
+                    return {'class': 'rowArc'};
+                }
+            },
+            formEditing: {
+                onclickSubmit: function(params, posdata) { 
+                    return {add_data:1}; // доп. данные для post
+                }
+            },
+            onSelectRow: function(rid, rr, ee){
+                SCRM.link(squadManager, {
+                    clubid: rid
+                });
+                var docs = $('#idClub_Files');
+                spinnr(true, docs);
+                pJSON('/hook/files', {
+                    uid: 'club'+rid,
+                    cls: 'idClub'
+                }, function(fdata){
+                    $('[data-linkfile]').trigger(fdata.postData.uid, fdata);
+                    spinnr(false, docs);
+                });
+            },
+            navOpts: {add: true, edit: true, del: false},
+            fltrToolbar: true
+        })
+        .jqGridColumns()
+        .on('jqGridAddEditAfterSubmit jqGridDeleteAfterComplete', function(e, rowid, jqXhrOrBool, postData, options) {
+            grids.idSquad
+            .jqGrid('setColProp', 'club', {dbvaluesLoaded:false})
+            .trigger('reloadGrid', [{current:true}]);
+        });
+    })
+    .one('shown.bs.tab', 'a[href="#tab_SquadScheduleLessons"]', function (e) {
+        grids.idSchedule = $("#t_ScheduleLessons")
+        .on('jqGridSerializeGridData', function(e, postData) {
+            var pdw = key2obj(postData, '_where', {});
+            $.extend(pdw, {
+                planfact:1,
+                squad: squadManager.selSq
+            });
+        })
+        .one('jqGridBeforeInit', function(e, grOpts) {
+            $.each([[!clubStatus?tbl=`idLesson`]], function(i, v){
+                grOpts.colModel.push({
+                    name:'cnt_'+v.alias,
+                    label: makeIco(v.ico),
+                    width: 40,
+                    template: numberTemplate
+                });
+            });
+            grOpts.colModel.push({name: 'cnt_lesson', label: 'Всего', template: numberTemplate, width: 60},
+                {name:'info', label: 'Комментарий', template: infoTemplate});
+        })
+        .jqGridInit({
+            sortname: 'datestart', sortorder: 'desc',
+            search:true,
+            colModel:[
+                {name: 'id', hidden: true, template: idFieldTemplate},
+                {template: createdTemplate},
+                {name: 'datestart', label: 'Дата', editable: true,
+                    template: dateTimeTemplate
+                },
+                {name:'clubname', index: 'idClub.name', label:'Зал', width: 100},
+                {name:'ssportname', index: 'idSport.shortname', label:'Дисциплина', width: 40},
+                {name:'levelname', index: 'idLevel.name', label:'Уровень', width: 45},
+                {name:'squadname', index: 'idSquad.name', label:'Группа', width: 100},
+                {name:'trainer_name', index: 'idTrainer.name', label: 'Тренер', width: 100}
+            ],
+            navOpts: {add: false, edit:false, del:false}
+        })
+        .jqGridColumns()
+        .jqGridExport();
+    });
+    $('#topNavTabs a.active').trigger('shown.bs.tab');
+});
+</script>
+
+<script id="tpl_sqIsmain" type="text/x-jsrender">
+    <div class="dropdown-arrow"></div>
+    {^{checkboxgroup sq_ismain}}
+        <label class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" name="st_1" value="1">
+            <span class="custom-control-label">Основная</span>
+        </label>
+        <label class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" name="st_0" value="0">
+            <span class="custom-control-label">Дополнительная</span>
+        </label>
+    {{/checkboxgroup}}
+</script>
+
+<script id="tplPlusMinus" type="text/x-jsrender">
+    {^{checkboxgroup pmSquad}}
+    <div class="custom-control custom-control-inline custom-checkbox">
+        <input type="checkbox" class="custom-control-input" id="ch_plus" value="plus">
+        <label class="custom-control-label" for="ch_plus">Зачислены</label>
+    </div>
+    <div class="custom-control custom-control-inline custom-checkbox">
+        <input type="checkbox" class="custom-control-input" id="ch_minus" value="minus"> 
+        <label class="custom-control-label" for="ch_minus">Отчислены</label>
+    </div>
+    {{/checkboxgroup}}
+    <span data-link="{formatDate:dates^d1}"></span> &mdash; <span data-link="{formatDate:dates^d2}"></span>
+</script>

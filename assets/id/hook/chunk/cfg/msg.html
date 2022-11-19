@@ -1,0 +1,332 @@
+<script>
+SCRM._service['/chunk/cfg.msg'] = function(opts) {
+    var msgCfg = {
+        provider_tab: function(e, data) {
+            pJSON('/hook/msg/drivers', function(data){
+                SCRM.link(msgCfg, data);
+            });
+            SCRM.link(msgCfg, {provider_tab: $.noop});
+        },
+        file_tab: function(e, data) {
+            pJSON(SCRM.files_url, {
+                uid: 'msgfile'
+            }, function(files){
+                $('[data-linkfile]').trigger('msgfile', $.extend(files, {
+                    post: {filetype: 'sysfile'}
+                }));
+            });
+            SCRM.link(msgCfg, {file_tab: $.noop});
+        }
+    };
+
+    SCRM.link(optsData, {
+        msgCfg: msgCfg,
+        //optsTmpl: '{{include msgCfg tmpl=\'#tpl_optsMsg\' /}}'
+        optsTmpl: '#tpl_optsMsg'
+    });
+    //bindAceEditor();
+}
+</script>
+
+<script id="tpl_optsMsg" type="text/x-jsrender">
+    <div class="nav nav-pills mb-2" role="tablist">
+        <a class="nav-item nav-link active" data-toggle="tab" href="#tmpl_tmpls">Шаблоны {^{:hello}}</a>
+        <a class="nav-item nav-link" data-toggle="tab" href="#msgCfg_provider" data-link="{on 'shown.bs.tab' msgCfg.provider_tab}">Провайдеры</a>
+        <a class="nav-item nav-link" data-toggle="tab" href="#msgCfg_files" data-link="{on 'shown.bs.tab' msgCfg.file_tab}">Файлы</a>
+    </div>
+    <div class="tab-content">
+        <div id="tmpl_tmpls" class="tab-pane active">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="list-group">
+                        {^{for ~S.clubStatus^idTmpl sort="meunindex" ~editRow=editRow}}
+                            <a href="#" class="list-group-item list-group-item-action list-group-item-primary prevent-default" data-link="{on ~editRow 'idTmpl'}">
+                                {{:name}}
+                            </a>
+                        {{/for}}
+                        <a href="#" class="list-group-item list-group-item-action list-group-item-success prevent-default" data-link="{on addRow 'idTmpl'}">
+                            Создать
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-md-8 mb-0" data-link="visible{:idTmpl}">
+                <form class="card card-fluid " data-link="{on 'submit' saveRow 'idTmpl'}">
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="col-8">
+                                <label for="tmplName">Name</label> <abbr class="text-danger" title="Required" data-link="visible{:!prop.optional}">*</abbr>
+                                <input id="tmplName" type="text" class="form-control" data-link="idTmpl^name" required>
+                            </div>
+                            <div class="col-4">
+                                <label for="tmplMenuindex">Menuindex</label> 
+                                <input id="tmplMenuindex" type="number" class="form-control" data-link="idTmpl^menuindex">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group my-2">
+                            <label for="tmplProvider">Provider</label> 
+                            <select id="tmplProvider" class="custom-select" data-link="{:idTmpl^cls:} {on 'change' loadCls 'idTmpl'}" required>
+                                <option value="">-- Выбрать --</option>
+                                {^{for ~S.clubStatus^idMsgProvider}}
+                                    <option value="{{:alias}}">{{:name}}</option>
+                                {{/for}}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group my-2">
+                            <label for="tmplHandler">Handler</label> 
+                            <input id="tmplHandler" type="text" class="form-control" data-link="idTmpl^handler^extoken">
+                        </div>
+                        
+                        {^{props idTmpl^extended}}
+                            <div class="form-group my-2">
+                                <label for="idTmplExt{{:key}}">{{:key}}</label> <abbr class="text-danger" title="Required" data-link="visible{:!prop.optional}">*</abbr>
+                                <input id="idTmplExt{{:key}}" type="text" class="form-control" data-link="{:prop.val:} required{:!prop.optional} data-ace{:prop.ace}">
+                            </div>
+                        {{/props}}
+                    </div>
+                    <textarea data-link="{on 'saveAce' saveRow 'idTmpl'}"></textarea>
+                    <div class="card-footer py-1 px-3 d-flex">
+                        <button class="btn btn-primary btn-xs">Сохранить</button>
+                        <!--<button class="btn btn-light btn-xs ml-2" data-link="visible{:~root.save2git} {on ~root.save2git}">.git</button>-->
+                        
+                        <button class="btn btn-light btn-xs ml-auto" type="button" data-link="visible{:idTmpl^id} {on delRow 'idTmpl'}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </form>
+                </div>
+            </div>   
+        </div>
+        
+        
+        <div id="msgCfg_provider" class="tab-pane">
+            <div class="row">
+                <div class="col-md-4">
+                    {^{for ~S.clubStatus^idMsgProvider ~editRow=editRow sort="meunindex"}}
+                        <a href="#" class="prevent-default list-group-item d-block list-group-item-action list-group-item-primary" data-link="{on ~editRow 'idMsgProvider'}">
+                            <div>{{:name}}</div>
+                            <div class="text-muted">{{:cls}}</div>
+                        </a>
+                    {{/for}}
+                    <a href="#" class="list-group-item list-group-item-action list-group-item-success prevent-default" data-link="{on addRow 'idMsgProvider'}">
+                        Создать
+                    </a>
+                </div>
+                
+                <div class="col-md-8 card card-fluid mb-0" data-link="visible{:idMsgProvider}">
+                <form data-link="{on 'submit' saveRow 'idMsgProvider'}">
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="col-8">
+                                <label for="providerName">Name</label> <abbr class="text-danger" title="Required" data-link="visible{:!prop.optional}">*</abbr>
+                                <input id="providerName" type="text" class="form-control" data-link="idMsgProvider^name" required>
+                            </div>
+                            <div class="col-4">
+                                <label for="providerMenuindex">Menuindex</label> 
+                                <input id="providerMenuindex" type="number" class="form-control" data-link="idMsgProvider^menuindex">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group my-2" data-link="visible{:idMsgProvider^id}">
+                            <label for="providerDriver">Driver</label> 
+                            <input id="providerDriver" type="text" class="form-control" data-link="disabled{:idMsgProvider^id} {:idMsgProvider^cls}">
+                        </div>
+                        
+                        <div class="form-group my-2" data-link="visible{:!idMsgProvider^id}">
+                            <label for="providerDriver">Driver</label> 
+                            <select id="providerDriver" class="custom-select" data-link="{:idMsgProvider^cls:} required{:!idMsgProvider^id} {on 'change' loadCls 'idMsgProvider'}">
+                                <option value="">-- Выбрать --</option>
+                                {^{for msgCfg^drivers}}
+                                    <option value="{{:#data}}">{{:#data}}</option>
+                                {{/for}}
+                            </select>
+                        </div>
+                        {^{props idMsgProvider^extended}}
+                            <div class="form-group my-2">
+                                <label for="idMsgProviderExt{{:key}}">{{:key}}</label> <abbr class="text-danger" title="Required" data-link="visible{:!prop.optional}">*</abbr>
+                                <input id="idMsgProviderExt{{:key}}" type="text" class="form-control" data-link="{:prop.val:} required{:!prop.optional}" >
+                            </div>
+                        {{/props}}
+                    </div>
+                    
+                    <div class="card-footer py-1 px-3 d-flex">
+                        <button class="btn btn-primary btn-xs">Сохранить</button>
+                        <!--<button class="btn btn-light btn-xs ml-2" data-link="visible{:~root.save2git} {on ~root.save2git}">.git</button>-->
+                        
+                        <button class="btn btn-light btn-xs ml-auto" type="button" data-link="visible{:idMsgProvider^id} {on delRow 'idMsgProvider'}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </form>
+                </div>
+            </div>
+        </div>
+        
+        <div id="msgCfg_files" class="tab-pane">
+            <div class="row">
+                <div class="col-xl-6" data-linkfile="" data-link="{on 'msgfile' ~S.linkFile '#tpl_files'}">
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+[[-
+<script>
+    tmpl2tab = club_Tab({
+        title: "Шаблоны2", 
+        tab_id: "tab_idTmpl2",
+        _ext: {},
+        addRow: function(type, e, d){
+            SCRM.link(tmpl2tab).setProperty(type, { menuindex: 10, handler: {} });
+        },
+        saveRow: function(type, e, d){
+            e.preventDefault();
+            var arr = {
+                name: tmpl2tab[type].name,
+                menuindex: tmpl2tab[type].menuindex,
+                extended: tmpl2tab[type].extended,
+                id: tmpl2tab[type].id,
+                info: d.linkCtx.data.getValue(),
+            };
+            if (!tmpl2tab[type].id){
+                arr.cls = tmpl2tab[type].cls;
+                arr.oper = "add";
+            }
+            arr.tbl = type; 
+            pEDIT("idStatus", arr, function(newStatus){
+                if ( type == "idTmpl" ) {
+                    if ( tmpl2tab[type].handler.old != tmpl2tab[type].handler.extoken){
+                        var extarr = {
+                            extoken: tmpl2tab[type].handler.extoken,
+                            extype: "idMsgHandler"
+                        };
+                        if (tmpl2tab[type].handler.id){
+                            extarr.id = tmpl2tab[type].handler.id;
+                        } else {
+                            extarr.oper = "add";
+                            extarr.parent = newStatus.id;
+                        }
+                        pEDIT("idExtid", extarr);
+                    }
+                }
+                if (!tmpl2tab[type].id) tmpl2tab.refreshRows(type);
+                
+                SCRM.success("Сохранено");
+            });
+        },
+        editRow: function(type, e, d){
+            var row = d.linkCtx.data;
+            row.idx = d.view.index;
+            SCRM.link(tmpl2tab).setProperty(type, row);
+            tmpl2tab.initAce(type, row.extended);
+            if (type == 'idTmpl') {
+                SCRM.link(row, {handler: {}});
+                
+                pDATA("idExtid", {
+                    extype: "idMsgHandler",
+                    _where:{
+                        parent: row.id,
+                    }
+                }, function(extid){
+                    var hndl = extid.rows[0] || {extoken: ""};
+                    hndl.old = hndl.extoken;
+                    SCRM.link(row, {handler: hndl});
+                })
+            }
+        },
+        delRow: function(type, e, d){
+            rocnfrm('Удалить <b>'+tmpl2tab[type].name+'</b>?', function(){
+                pEDIT('idStatus', {
+                    oper: 'del',
+                    id: tmpl2tab[type].id
+                }, function(){
+                    if (type == "idTmpl" && tmpl2tab[type].handler.id) {
+                        pEDIT('idExtid', {
+                            oper: 'del',
+                            id: tmpl2tab[type].handler.id
+                        });
+                    }
+                    $.observable(SCRM.clubStatus[type]).remove(tmpl2tab[type].idx);
+                    SCRM.link(tmpl2tab).setProperty(type, false);
+                });
+            })
+        },
+        refreshRows: function(type){
+            pJSON("/data/status/"+type, function(statuses){
+                if (!statuses.rows.length) SCRM.link(SCRM.clubStatus).setProperty(type, []);
+                else SCRM.setClubStatus(statuses.rows);
+            })
+            SCRM.link(tmpl2tab).setProperty(type, false);
+        },
+        loadCls: function(type, e, d){
+            console.log(type, e, d);
+            var val = $(e.currentTarget).val(),
+                cls = tmpl2tab[type].cls;
+            if ( cls ) tmpl2tab._ext[cls] = tmpl2tab[type].extended; //&& !tmpl2tab[type].id && !tmpl2tab._ext[cls]
+            
+            if (val == "") {
+                SCRM.link(tmpl2tab[type], {
+                    extended: {}
+                });
+                return false;
+            }
+            
+            if (type == 'idTmpl'){
+                $.each(SCRM.clubStatus.idMsgProvider, function(k, v){
+                    if (v.alias == val) {
+                        val = v.cls;
+                        return false;
+                    }
+                });
+            }
+            pJSON("/hook/msg/init?path="+val, {
+            }, function(data){
+                var extended = {},
+                    cls = tmpl2tab[type].cls;
+                $.each(data.fields[type], function(k,v){
+                    if ( tmpl2tab._ext[cls] && tmpl2tab._ext[cls][k] ) v = tmpl2tab._ext[cls][k];
+                    if (Array.isArray(v)) v = {};
+                    extended[k] = v;
+                })
+                SCRM.link(tmpl2tab[type], {extended: extended});
+                tmpl2tab.initAce(type, extended);
+                
+            })
+        },
+        initAce: function(type, extended){
+            $.each($("[data-ace]"), function(k,elm){
+                var key = elm.id.split(type+'Ext')[1];
+                $(elm).on('clubAce', function(e, editor){
+                    editor.setValue(extended[key].val || '');
+                    editor.on("change", function(){
+                        SCRM.link(extended[key], {val:editor.getValue()});                         
+                    });
+                })
+                .clubAce({
+                    mode: 'html'
+                });
+            });
+        }
+    });
+    
+    $(document)
+    .one('shown.bs.tab', 'a[href="#tab_idTmpl2"]', function(){
+        var ed_elm = $('#tmpl_tmpls textarea')
+        .on('clubAce', function(e, editor){
+            $.observe(tmpl2tab, 'idTmpl^info', function(e, data){
+                editor.setValue(data.value.info || '');
+            });
+        })
+        .clubAce({
+            mode: 'html'
+        });
+        
+        pJSON("/data/status/idMsgProvider,idTmpl", function(statuses){
+            SCRM.setClubStatus(statuses.rows);
+        })
+    })
+</script>
+]]

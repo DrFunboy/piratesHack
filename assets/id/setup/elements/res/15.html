@@ -1,0 +1,570 @@
+<style>
+    #schBox .fltr_trainer {
+        display:none;
+    }
+</style>
+
+<div class="section-block my-0">
+    <table id="grid_idTrainer" data-entity="idTrainer"></table>
+    <div class="mt-2" id="idTrainerPanel" style="display:none" data-link="visible{:name}">
+        <h3 class="section-title mb-0 pb-2">
+            <span data-link="name"></span>
+            <span class="dropdown">
+                <button class="btn btn-sm btn-icon btn-light" data-toggle="dropdown"><i class="fa fa-fw fa-ellipsis-v"></i></button>
+                
+                <div class="dropdown-menu">
+                    <div class="dropdown-arrow"></div>
+                    <a href="#" target="_blank" class="dropdown-item"
+                        data-link="href{:'/trainer/lessons.html?trainer=' + uid}">Журнал</a>
+                    [[-<button href="#" class="dropdown-item"
+                        data-link="{on 'click' schEditor}">Добавить занятие</button>]]
+                </div>
+            </span>
+        </h3>
+        <div class="card1 card-fluid1">
+            <nav class="nav-scroller border-bottom card-header1">
+                <div class="nav nav-tabs card-header-tabs1" role="tablist">
+                    <a class="nav-item nav-link active" data-toggle="tab" href="#trainerInfo"><i class="fa fa-info-circle"></i></a>
+                    <a class="nav-item nav-link" data-toggle="tab" href="#schBox">Расписание</a>
+                    <a class="nav-item nav-link" data-toggle="tab" href="#tabTrSchedule">Занятия</a>
+                    <a class="nav-item nav-link" data-toggle="tab" href="#tabTrContent">Описание</a>
+                </div>
+            </nav>
+    
+            <div class="tab-content spinner-parent">
+                <div id="trainerInfo" class="tab-pane active mt-2">
+                    <div class="row">
+                        <div class="col-12 col-md-6 col-xl-5">
+    
+    <div class="row">
+        <div class="col-md-4" data-linkfile="" data-file1type="tr_photo"
+            data-link="{on uid ~S.linkFile '#tpl_filePhoto1'}">
+        </div>
+        <div class="col-md-8">
+            <div class="card card-body" data-link="{include tmpl='#tpl_trainerCabinet'}">
+                [[-<div class="d-flex justify-content-between align-items-center">
+                    <h3 class="card-title m-0">Кабинет</h3>
+                    <div class="card-title-control">
+                        <label class="switcher-control">
+                            <input type="checkbox" class="switcher-input" data-link="checked{:iduser} {on 'change' ~idUser}">
+                            <span class="switcher-indicator"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-2" data-link="html{:username} visible{:username}"></div>]]
+            </div>
+        </div>
+    </div>
+    
+                            <div id="trainerFiles" data-link="{on uid ~S.linkFile '#tpl_files'}" data-linkfile=""></div>
+                        </div>
+                    </div>
+                    <div class="trainerContent d-none"></div>
+                </div>
+                <div id="schBox" class="tab-pane card card-body">
+                    <div id="schEditor" data-link="{include tmpl='#tpl_schEditor'}"></div>
+                    <div id="schBoxInner" data-mode="trainer" data-cnt_squad="1"></div>
+                </div>
+                <div id="tabTrSchedule" class="tab-pane mt-2">
+                    <div class="mb-2">
+                        <a href="#" target="_blank" class="btn btn-primary btn-sm"
+                            data-link="href{:'/trainer/lessons.html?trainer=' + uid}"><i class="fa fa-check-square-o"></i> Редактировать журнал</a>
+                    </div>
+                    <table id="t_idSchedule" data-entity="idSchedule"></table>
+                </div>
+                <div id="tabTrContent" class="tab-pane mt-2">
+                    <p>
+                    <button class="btn btn-primary btn-sm" data-link="text{:editMode?'Сохранить':'Редактировать'} {on ~infoEdit}"></button>
+                    </p>
+                    <div class="summernote"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+[[$schedInner]]
+
+[[$tplFiles]]
+
+<script>
+var trainerData = { };
+
+SCRM.loadWSS(['ready','grid'], function () {
+    var clubSchedule = $('#schBoxInner');
+    
+    $.link(true, '#idTrainerPanel', trainerData, {
+        [[-trLinkFile: function(tpl, e, data, nd) {
+            SCRM.loadWSS('files', function(){
+                var f = $.views.helpers.linkFile;
+                f(tpl, e, data, nd);
+                data.linkCtx.tag.ctxPrm('trLinkFile', f);
+            });
+        },]]
+        idUser: function(e, data){
+            e.preventDefault();
+            var d = data.linkCtx.data;
+            //var checked = $(e.target).prop('checked');
+            //$(e.target).prop('checked', !checked);
+            function reloadTr() {
+                getTrainerData();
+                $('[data-entity="idTrainer"]').trigger('reloadGrid', [{current:true}]);
+            }
+
+            if (!d.iduser) {
+                SCRM._run('/chunk/newcabinet', {
+                    postData: {
+                        user_group: 'idTrainer',
+                        email: d.email,
+                        iduser_row: d.id,
+                        fullname: d.name
+                    },
+                    success: reloadTr
+                });
+            } else rocnfrm('Отключить Кабинет?', function(){
+                pEDIT('idTrainer', {
+                    id: trainerData.id,
+                    iduser: 0
+                }, reloadTr);
+            });
+        },
+        infoEdit: function() {
+            if (!trainerData.editMode) {
+                SCRM.link(trainerData, {editMode:true});
+                SCRM.loadWSS('summernoteBS4', function() {
+                    trainerContentSN.summernote({
+                        focus: true,
+                        minHeight: 300
+                    });
+                });
+            } else {
+                pEDIT('idTrainer', {
+                    id: trainerData.id,
+                    content: trainerContentSN.summernote('code')
+                }, function(){
+                    SCRM.success('Saved');
+                });
+            }
+        }
+    });
+
+    function hasUser(cellValue, options, rowObject) {
+        return (cellValue)? makeIco('fa-key', { big: 1 }) : '';
+    }
+
+    function getTrainerData() {
+        var trainerInfo = $('#trainerInfo');
+        spinnr(true, trainerInfo);
+    
+        pJSON('/data/trainer', {key: trainerData.uid}, function(data){
+            data.loading = false;
+            SCRM.link(trainerData, data);
+            //$(document).trigger('clubFiles', data.files);
+            $('[data-linkfile]').trigger(data.uid, $.extend(data.files, {
+                gender: data.gender
+            }));
+            
+            if ($.summernote) trainerContentSN.summernote('code', data.content);
+            else trainerContentSN.html(data.content);
+
+            spinnr(false, trainerInfo);
+        });
+    }
+
+    $(document)
+    .on('editSchedule.changed', function(e, data){
+        console.log('editSchedule.changed');
+        //if (data.trainer == trainerData.id) 
+        clubSchedule.trigger('clubSchedule.reload', {
+            f: { } // Сбросить фильтры
+        });
+    });
+
+
+    grids.idTrainer = $("#grid_idTrainer")
+    .one('jqGridBeforeInit', function(e, grOpts){
+        var gr = $(e.target), param = getUrlVars();
+        if (param.filter) {
+            grOpts.postData.filters = SCRM.obj2Filter({
+                birth: {op: 'db', data: 'b7d'}
+            }, grOpts.postData.filters)
+            /*setTimeout(function(){ // one.onLoad
+                switch (param.filter){
+                    case 'birth':
+                    gr.setGridFilter('birth', 'b7d');
+                    break;
+                }
+            }, 500);*/
+        }
+    })
+    .jqGridInit({
+        sortname: 'name', sortorder: 'asc',
+        search: true,
+        postData: {
+            filters: SCRM.obj2Filter({published: '1'})
+        },
+        colModel:[
+            {template: idFieldTemplate},
+            {name:'uid', hidden: true},
+            {name:'name', label:'Ф.И.О.', width:200, editable: true, editrules:{required:true}},
+            {name:'gender', label: 'Пол', width:40, hidden: false, editable: true,
+                editoptions: {
+                    defaultValue: '[[!clubConfig?name=`Gender_main`]]'
+                },
+                formoptions: {rowpos: 1, colpos: 2},
+                template: selTemplate,
+                clubStatus: 'Gender', lookupKey: 'alias'
+            },
+            {name:'birth', label: 'Дата рождения', editable: true,
+                template: dateTemplate,
+                fltrFunc: true // TODO: Что это?
+            },                
+            {template: telTemplate, editable: true},
+            {name: 'email', label: 'E-mail', width:100, editable: true, editrules: {email: true, required: false}},                
+            {name: 'begindate', label: 'Дата договора', editable: true, template: dateTemplate },
+            {name: 'meddate', label: 'Дата медкнижки', editable: true, template: dateTemplate,
+                cellattr: cellInsuranceColor
+            },
+            {name: 'categ', label: 'Категория', editable: true,
+                template: selTemplate,
+                clubStatus: 'TrainerCategory', lookupKey: 'name',
+                dbvalues0: '-'
+            },
+            {name:'referee', label: 'Судья', editable: true,
+                template: selTemplate,
+                clubStatus: 'TrainerRank', lookupKey: 'name',
+                dbvalues0: '-'
+            },
+            [[-{name:'sport', label: 'Дисциплина', editable: true, template: selTemplate,
+                editoptions: {value: makeGridOpts(club_opts.idSport)},
+                searchoptions: {value: makeGridOpts(club_opts.idSport, true)}
+            },]]
+            {name:'username', label: 'Кабинет', width:30, // hidden: true,
+                search:false,
+                align: 'center',
+                formatter: hasUser
+            },
+            {name: 'published', template: publishedTemplate}
+        ],
+        rowattr: function(data) {
+            if (data.published != '1'){
+                return {'class': 'rowArc'};
+            }
+        },
+        onSelectRow: function(rid,rr,ee) {
+            var rdata = grids.idTrainer.jqGrid('getRowData', rid);
+            SCRM.link(trainerData, {
+                id: rid,
+                name: rdata.name,
+                uid: rdata.uid,
+                loading: true
+            });
+
+            getTrainerData();
+            clubSchedule.data('key', rdata.uid).trigger('clubSchedule.reload');
+
+            $("#t_idSchedule").trigger('reloadGrid');
+        },
+        navOpts: {add:true, edit:true, del:false},
+        fltrToolbar: true
+    })
+    .jqGridColumns()
+    .jqGridExport();
+    
+    $(document)
+    .one('shown.bs.tab', 'a[href="#tabTrSchedule"]', function (e) {
+        grids.idSchedule = $("#t_idSchedule")
+        .on('jqGridSerializeGridData', function(e, postData) {
+            var pdw = key2obj(postData, '_where', {});
+            $.extend(pdw, {
+                planfact:1,
+                trainer: trainerData.id
+            });
+        })
+        .one('jqGridBeforeInit', function(e, grOpts){
+            $.each([[!clubStatus?tbl=`idLesson`]], function(i, v){
+                grOpts.colModel.push({
+                    name:'cnt_'+v.alias,
+                    label: makeIco(v.ico),
+                    width: 40,
+                    template: numberTemplate
+                });
+            });
+            grOpts.colModel.push({name: 'cnt_lesson', label: 'Всего', template: numberTemplate},
+                {name:'info', label: 'Комментарий', template: infoTemplate});
+        })
+        .jqGridInit({
+            sortname: 'datestart', sortorder: 'desc',
+            search: true,
+            colModel:[
+                {name: 'id', hidden: true, template: idFieldTemplate},
+                {template: createdTemplate},
+                {name: 'datestart', label: 'Дата', editable: true,
+                    template: dateTimeTemplate
+                },
+                {name: 'clubname', index: 'idClub.name', label: 'Зал', width: 100},
+                {name: 'ssportname', index: 'idSport.shortname', label: 'Дисциплина', width: 40},
+                {name: 'levelname', index: 'idLevel.name', label: 'Уровень', width: 45},
+                {name: 'squadname', index: 'idSquad.name', label: 'Группа', width: 100}
+            ],
+            navOpts: {add: false, edit:false, del:false}
+        })
+        .jqGridColumns()
+        .jqGridExport();
+    });
+    
+    /* ================== Дополнительно ============= */
+    var trainerContentSN = $('#tabTrContent .summernote');
+    
+    /* ================== idSchedule ================ */
+
+    //$('.fltr-schedule', clubSchedule)
+    //    .attr('data-link', 'visible{:showFilter}');
+    //$('#schEditor', clubSchedule)
+    //    .attr('data-link', '{include tmpl="#tpl_schEditor"}'); // связывание после основного
+    
+    /* idSchedule Editor */
+    var schEData = {
+        selRows: [ ],
+        showFilter: false,
+        schEditorAdd: function(e, data){
+            SCRM._run('/chunk/schedule.edit', {
+                Trainer: trainerData
+            });
+        }
+    };
+    
+    function getSelectedPlan() {
+         var sel_rows = [ ];
+        $('.sch-select:checked', clubSchedule).each(function(i, v){
+            var el = $(v).closest('.sch-item');
+            if ((el.data('planfact')||0)*1 == 0) {
+                sel_rows.push( el.data('id'));
+            }
+        });
+        return sel_rows;
+    }
+
+
+    $.link(true, '#schEditor', schEData, {
+        showFilter: function(e, data){
+            SCRM.link(schEData, {showFilter: !schEData.showFilter});
+        },
+        deleteSch: function(e, data){
+            e.preventDefault();
+            rocnfrm('Удаляются только запланированные занятия. Для удаления факта используйте вкладку "Занятия".<br>Удалить?', function(){
+                var sel_rows = getSelectedPlan();
+                if (sel_rows.length) pEDIT('idSchedule', {
+                    oper: 'del',
+                    id: sel_rows.join(',')
+                }, function(data){
+                    clubSchedule.trigger('clubSchedule.reload');
+                });
+            });
+        },
+        changeTrainer: function(e, data){
+            e.preventDefault();
+            var params = {
+                idTrainer: [],
+                trainer: '',
+                change_mode: 'repeat',
+                title: 'Сменить тренера',
+                body: '#tpl_trainers',
+                onOK: function(e, md) {
+                    if (!md.trainer) {
+                        SCRM.link(md, {bad_trainer: true});
+                        return false;
+                    }
+                    SCRM.link(md, {loading: true});
+ 
+                    var schData = clubSchedule.data('schData');
+                    var sel_rows = getSelectedPlan();
+                    pJSON('/hook/schedule.change',  {
+                        ids: sel_rows.join(','),
+                        weekstart: schData.serverData.weekstart,
+                        mode: md.change_mode,
+                        value: md.trainer
+                    }, function(data){
+                        clubSchedule.trigger('clubSchedule.reload');
+                        md.mdl_hide();
+                    });
+                    //return true;
+                }
+            };
+            club_Modal(params);
+            pJSON(dbvaluesUrl, {mode: 'idTrainer', city:'my'}, function(dbv) {
+                SCRM.link(params, {idTrainer: dbv.idTrainer});
+            });
+        }
+    });
+
+
+    clubSchedule
+    .on('clubSchedule.onbuild', function(e, data){
+        //$('.sch-header', this).prepend();
+        $('.sch-time', this)
+        .before('<input type="checkbox" class="mr-1 sch-select">')
+        .wrap('<a href="#" class="sch-time-a"></a>')
+        
+        SCRM.link(schEData, {
+            selRows: [],
+            cal_data: data
+        });
+    })
+    .on('change', '.sch-select', function(e){
+        var sel_rows = [ ];
+        $('.sch-select:checked').each(function(i, v){
+            var el = $(v).closest('.sch-item');
+            var parent = (el.data('parent')||0)*1;
+            sel_rows.push( parent||el.data('id')); 
+        });
+        SCRM.link(schEData, {selRows: sel_rows});
+    })
+    .on('click', '.sch-time-a', function(e){
+        e.preventDefault();
+        var el = $(this).closest('.sch-item');
+        var ids = [el.data('id'), el.data('parent')];
+        pDATA('idSchedule', {
+            _where: {id: ids}
+        }, function(data){
+            var row;
+            $.each(data.rows, function(i, v) {
+                row = v;
+                // Ищет родительский элемент
+                if (v.id == ids[1]) return false;
+            });
+            
+            if (row) {
+                console.log(row)
+                SCRM._run('/chunk/schedule.edit', {
+                    Trainer: {
+                        id: row.trainer,
+                        name: row.trainer_name
+                    },
+                    repeat_mode: row.repeat=='1',
+                    postData: {
+                        // в родительском элементе не будет parent, а если родитель потерялся, создать новый
+                        id: (row.parent != '0')? 0 : row.id,
+                        trainer2: row.trainer2,
+                        stype: row.stype,
+                        club: row.club,
+                        sport: row.sport,
+                        squad: row.squad,
+                        datestart: row.datestart,
+                        dateend: row.dateend,
+                        location: row.location
+                    }
+                });
+            }
+        });
+    })
+    .on('clubSchedule.beforeload', function(e, data){
+        spinnr(true, $(this));
+    })
+    .on('clubSchedule.onload', function(e, data){
+        spinnr(false, $(this));
+    })
+    .clubSchedule();
+
+    var fltrs = $('.fltr-schedule', clubSchedule);
+    $('#schEditorFltr').insertAfter(fltrs).html(fltrs);
+
+    /* PageLoad */
+    if (location.hash == '#schedit') {
+        $('a[href="#schBox"]').click();
+    }
+});
+</script>
+
+<script id="tpl_trainers" type="text/x-jsrender">
+    <p>Меняет тренера только в запланированных занятиях. Факт не меняется.</p>
+    <select class="custom-select" data-link="{:trainer:} class{merge:bad_trainer toggle='is-invalid'}">
+    <option value="">-- Выбрать --</option>
+    {^{for idTrainer}}
+        <option value="{{:id}}">{{:name}}</option>
+    {{/for}}
+    </select>
+    <fieldset disabled1="disabled" class="form-group mt-2">
+        <div class="custom-control custom-control-inline custom-radio">
+            <input type="radio" class="custom-control-input" name="change_type" id="ct_repeat"
+                value="repeat" data-link="change_mode">
+            <label class="custom-control-label" for="ct_repeat">Постоянно</label>
+        </div>
+        <div class="custom-control custom-control-inline custom-radio">
+            <input type="radio" class="custom-control-input" name="change_type" id="ct_once"
+                value="once" data-link="change_mode">
+            <label class="custom-control-label" for="ct_once">Временно</label>
+        </div>
+    </fieldset>
+</script>
+
+<script id="tpl_schEditor" type="text/x-jsrender">
+<div class="mb-2 d-flex">
+    <button class="btn btn-success btn-sm" data-link="{on 'click' schEditorAdd}"><i class="fa fa-plus"></i></button>
+    <div class="dropdown mx-1">
+        <button data-toggle="dropdown" class="btn btn-primary btn-sm d-flex flex-nowrap align-items-center" data-link="disabled{:selRows^length==0}"
+            disabled="disabled">Действия
+            <small data-link="text{:selRows^length} visible{:selRows^length>0}" class="badge badge-pill badge-warning ml-1"></small>
+        </button>
+        <div class="dropdown-menu">
+            <div class="dropdown-arrow"></div>
+            <a href="#" class="dropdown-item" data-link="{on ~changeTrainer}">Сменить тренера</a>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item" data-link="{on ~deleteSch}">Удалить</a>
+        </div>
+    </div>
+    <button class="btn btn-secondary btn-sm" data-link="{on ~showFilter}"><i class="fa fa-filter"></i></button>
+</div>
+<div id="schEditorFltr" data-link="visible{:showFilter}"></div>
+</script>
+
+<script id="tpl_trainerCabinet" type="text/x-jsrender">
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="#" target="_blank" data-link="href{:'/trainer/lessons.html?trainer='+uid}">
+            <i class="fa fa-sign-in"></i>
+            <span data-link="html{:username || 'Кабинет'}"></span>
+        </a>
+        <div class="card-title-control">
+            {^{if !iduser}}
+            <button class="btn btn-icon btn-light" data-link="{on ~idUser}"><i class="fa fa-key"></i></button>
+            {{else}}
+            <div class="dropdown">
+                <button class="btn btn-icon btn-subtle-success" data-toggle="dropdown"><i class="fa fa-key"></i></button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-arrow"></div>
+                    <a href="#" class="dropdown-item"
+                        data-run="/chunk/forgotpassword" data-link="data-username{:username}">Восстановление пароля</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item"
+                        data-link="{on ~idUser}">Отключить</a>
+                </div>
+            </div>
+            {{/if}}
+            [[-<label class="switcher-control">
+                <input type="checkbox" class="switcher-input" data-link="checked{:sp^iduser} {on 'change' ~idUser}">
+                <span class="switcher-indicator"></span>
+            </label>]]
+        </div>
+    </div>
+</script>
+
+[[-var confirm_schdel = true;
+    $(document).on('change', '#confirm_schdel', function(){
+        confirm_schdel = !$(this).prop('checked');
+    });]]
+    
+[[-<select id="h_start" class="form-control sel-hour"></select>
+<select id="m_start" class="form-control sel-minute"></select>]]
+
+[[-<input id="duration" class="form-control" size="3" value="45"> минут
+<select id="h_end" class="form-control sel-hour"></select>
+<select id="m_end" class="form-control sel-minute"></select>]]
+
+[[-for (var t = 0; t <= 23; t++){
+    var lzt = leadZero(t);
+    $('.sel-hour').append('<option value="'+ lzt +':">'+ lzt +':</option>');
+}
+for (var t = 0; t <= 55; t += 5){
+    var lzt = leadZero(t);
+    $('.sel-minute').append('<option value="'+ lzt +':00">'+ lzt +'</option>');
+}]]

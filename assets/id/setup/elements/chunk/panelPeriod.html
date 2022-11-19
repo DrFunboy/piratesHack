@@ -1,0 +1,95 @@
+<script id="tpl_selectPeriod" type="text/x-jsrender">
+<div class="input-group input-group-alt">
+    <div class="input-group-prepend">
+    <select class="custom-select selectPeriod" data-link="{:selPeriod:} data-period{:~sPeriod(selPeriod)}">
+        <option value="">...</option>
+        {^{props period sort="prop.menuindex"}}
+            <option data-link="text{:prop.name} value{:key}"></option>
+        {{/props}}
+    </select>
+    </div>
+</div>
+</script>
+
+
+<script>
+(function( $ ){
+
+$.fn.panelPeriod = function(params){
+    params = (typeof params === 'string')? {key: params} : params||{};
+    var pp = this;
+
+    var periods = { },
+        today = new Date(),
+        m = today.getMonth(),
+        y = today.getFullYear();
+    for (i = 0; i < 24; i++) {
+        periods[i] = {
+            name: (m+1)+' / '+y,
+            d1d2: [new Date(y, m, 1), new Date(y, m+1, 0, 23, 59, 59)],
+            menuindex: i,
+            m: m, y: y
+        };
+        if (m==0) { m = 11; y--; } else { m--; } // year
+    }
+
+    pp.each(function(){
+        var ppData = $.extend({
+            period: periods,
+            //d1d2: periods[0].d1d2, // TODO: Удалить
+            selPeriod: '0'
+        }, params);
+        ppData.selectedDates = periods[ppData.selPeriod].d1d2;
+
+        if (ppData.key) ppData = key2obj(SCRM, ppData.key, ppData);
+
+        var el = $(this).data('ppData', ppData);
+        var input = el.is('input')? el : $('<input />').appendTo(el);
+        var pnl = $('<div></div>').insertBefore(input);
+
+        el.trigger('periodInit', ppData);
+        
+        $.templates('#tpl_selectPeriod')
+        .link(pnl, ppData, {
+            sPeriod: function(val, e) {
+                var calendar = el.data('calendar');
+                if (val && calendar) {
+                    setTimeout(function(){
+                        calendar.setDate(ppData.period[val].d1d2, true);
+                    }, 8);
+                }
+                return val;
+            }
+        });
+        
+        $('.input-group', pnl).append(input);
+
+        input.addClass('form-control')
+        .on('onChangeDateEdit', function(e, data) {
+            console.log('onChangeDateEdit', data);
+            if (data.selectedDates.length>=2) {
+                el.trigger('periodChange', data.d1d2);
+                SCRM.link(ppData, {selectedDates: data.selectedDates});
+            }
+        })
+        .on('onInitDateEdit', function(e, data) {
+            el.data('calendar', data.instance);
+            //calendar = data.instance;
+            var nd = {};
+            $.each(ppData.period, function(i, v) {
+                var mName = flatpickr.l10ns.default.months.longhand[v.m];
+                if (mName) nd[i+'.name'] = mName +' '+ v.y;
+            });
+            SCRM.link(ppData.period, nd);
+        })
+        .initDateEdit({
+            mode: 'range',
+            defaultDate: ppData.selectedDates
+            //locale: { rangeSeparator: ';' }
+        });
+    });
+	return pp;
+};
+
+})( jQuery );
+</script>

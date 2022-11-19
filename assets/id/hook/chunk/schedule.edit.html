@@ -1,0 +1,358 @@
+<script>
+SCRM.setClubStatus([[!clubStatus?tbl=`idSchedule`]]);
+
+SCRM.editScheduleData = { 
+    date4new: (new Date()).toISOString().slice(0, 10)
+};
+
+SCRM._service['/chunk/schedule.edit'] = function(init_data) {
+    var editSchedule = SCRM.editScheduleData;
+    
+    init_data = $.extend({
+        bad: {},
+        times: 1,
+        datestart: editSchedule.date4new // Если не редактирутся - берем дату для новых
+    }, init_data);
+    init_data.postData = $.extend({
+        id: 0
+    }, init_data.postData);
+    if (init_data.postData.datestart) {
+        var ds = init_data.postData.datestart.split(' ');
+        init_data.datestart = ds[0];
+        if (ds[1]) {
+            init_data.time_start = ds[1].slice(0,5);
+        }
+        if (init_data.postData.dateend) {
+            var de = init_data.postData.dateend.split(' ');
+            if (de[1]) {
+                init_data.time_end = de[1].slice(0,5);
+            }
+        }
+    }
+    if (init_data.postData.trainer2) {
+        if (init_data.postData.trainer2 == init_data.postData.trainer || init_data.postData.trainer2 == '0') {
+            init_data.postData.trainer2 = '';
+        }
+    }
+    //console.log('init_data', init_data);
+    
+    if (!editSchedule.postData) {
+        $.extend(true, editSchedule, {
+            Trainer: { },
+            postData: {
+                //id: 0,
+                trainer2: '',
+                squad: '0',
+                stype: '[[clubConfig?name=`idSchedule_main`]]'
+            },
+            time_start: '10:00',
+            time_end: '10:45',
+            repeat_mode: true,
+            opts: {},
+            daynames: {},
+            timelist: [ ],
+            //cm_size: 'md',
+            //stypes: SCRM.clubStatus.idSchedule,
+            title: '#tpl_editScheduleTitle',
+            body: '#tpl_editSchedule',
+            preventDestroy: true
+        }, init_data, [[!dbvalues?mode=`idTrainer,idSport,idClub,idSquad` &city=`my`]]);
+        if (editSchedule.idSport.length==1) editSchedule.postData.sport = editSchedule.idSport[0].id;
+        if (editSchedule.idClub.length==1) editSchedule.postData.club = editSchedule.idClub[0].id;
+        
+        club_Drawer(editSchedule, {
+            addTrainer2: function(e, data){
+                SCRM.link(editSchedule.postData, {trainer2: '0'});
+            },
+            saveSch: function(e, data){
+                var t = editSchedule.timelist,
+                    bad = {},
+                    schPost = $.extend({
+                        oper: (editSchedule.postData.id == 0)? 'add': 'edit',
+                        repeat: (editSchedule.repeat_mode)? 1:0,
+                        trainer: editSchedule.Trainer.id
+                    }, editSchedule.postData);
+                    
+                if (schPost.trainer2==schPost.trainer) schPost.trainer2 = '';
+                if (editSchedule.hide_squad) {
+                    schPost.squad = 0;
+                } else {
+                    if (!schPost.squad || schPost.squad=='0') bad.squad = 1;
+                }
+                if (!schPost.sport) bad.sport = 1;
+                if (!schPost.club) bad.club = 1;
+                if (t.length<1) bad.time = 1;
+    
+                SCRM.link(editSchedule, {bad: bad});
+                if (SCRM.countProps(bad)) {
+                    SCRM.alert('Не заполнено одно из полей');
+                    return false; // exit if error
+                }
+    
+                function addData(n) {
+                    if (n < t.length) {
+                        pEDIT('idSchedule', $.extend(schPost, {
+                            datestart: t[n].d1,
+                            dateend: t[n].d2
+                        }), function(data) {
+                            addData(n+1);
+                        });
+                    } else {
+                        $(document).trigger('editSchedule.changed', editSchedule.postData);
+                        SCRM.success('OK');
+                        editSchedule.mdl_hide();
+                    }
+                }
+                addData(0);
+            }
+        });
+    
+        $.observe(editSchedule, 'datestart', function(e, data){
+            calcWeek();
+            if (editSchedule.postData.id==0) editSchedule.date4new = editSchedule.datestart;
+            editSchedule.fp.setDate(editSchedule.datestart, false);
+            console.log('datestart', e, data);
+        });
+        
+        $.observe(editSchedule, 'times', 'time_start', 'time_end', buildTimelist);
+        $.observe(editSchedule, 'postData^club', 'postData^squad', checkClubEqual);
+        $.observe(editSchedule, 'postData^stype', calcStype);
+        
+        $('[data-masked]', editSchedule.mdl).initMaskEdit();
+        $('.datestart', editSchedule.mdl)
+        .on('onChangeDateEdit', function(e, data) {
+            //console.log('onChangeDateEdit', e, data);
+            SCRM.link(editSchedule, {datestart: data.dateStr}); // Первый раз не вызовет потому что уже установлен
+        })
+        .on('onInitDateEdit', function(e, data) {
+            SCRM.link(editSchedule, {
+                daynames: flatpickr.l10ns.default.weekdays.longhand,
+                fp: data.instance
+            });
+        })
+        .initDateEdit({
+            altInput: true,
+            altFormat: SCRM.dateFormat, //altFormat: "l", // день недели
+            dateFormat: 'Y-m-d', 
+            defaultDate: editSchedule.datestart
+        });
+        
+        calcWeek();
+        checkClubEqual();
+        calcStype();
+
+        /*pJSON(dbvaluesUrl, {mode: 'idTrainer,idSport,idClub,idSquad', city:'my'}, function(data) {
+            if (data.idSport.length==1) data['postData.sport'] = data.idSport[0].id;
+            if (data.idClub.length==1) data['postData.club'] = data.idClub[0].id;
+            SCRM.link(editSchedule, data);
+            checkClubEqual();
+        });*/
+    } else {
+        editSchedule.mdl.modal('show');
+        SCRM.link(editSchedule.postData, init_data.postData);
+        delete init_data.postData;
+        SCRM.link(editSchedule, init_data);
+        console.log('editSchedule', editSchedule);
+    }
+    
+    function calcStype() {
+        var stype = SCRM.getClubStatus('idSchedule', editSchedule.postData.stype)||{},
+            ext = stype.extended||{},
+            nd = {};
+        //nd['opts.duration'] = ext.duration || 45;
+        nd['hide_squad'] = !ext.group;
+        SCRM.link(editSchedule, nd);
+    }
+    
+    function calcWeek() {
+        var ds = new Date(editSchedule.datestart),
+            dw = ds.getDay();
+        //console.log('dw', dw);
+        var diff = ds.getDate() - dw + (dw == 0 ? -6:1); // adjust when day is sunday
+        ds.setDate(diff);
+        var dates = [];
+        for (var i = 0; i < 7; i++) {
+            //console.log(ds)
+            var idate = ds.toISOString().slice(0, 10),
+                iday = ds.getDay();
+            dates.push({
+                date: idate,
+                day: iday,
+                dayname: i
+            });
+            ds.setDate(ds.getDate() + 1);
+            //if (iday == dw) editSchedule.opts.repeatdate = idate;
+        }
+        SCRM.link(editSchedule, {dates: dates});
+        buildTimelist();
+    }
+
+    function buildTimelist() {
+        var timelist = [],
+        d = editSchedule.datestart.split(/[- :]/),
+        dUTC = Date.UTC(d[0]*1, d[1]*1-1, d[2]*1);
+        d1 = new Date(dUTC), d2 = new Date(dUTC),
+        t1 = editSchedule.time_start.split(':'), t2 = editSchedule.time_end.split(':');
+
+        if (d1 != 'Invalid Date' && d2 !='Invalid Date') {
+            d1.setUTCHours(t1[0]*1); d1.setUTCMinutes(t1[1]*1);
+            d2.setUTCHours(t2[0]*1); d2.setUTCMinutes(t2[1]*1);
+
+            if (d2 <= d1) d2 = new Date(d2.getTime() + 3600000 * 24); // добавить день если вторая дата меньше
+            var diff = d2 - d1;
+            
+            for (i = 0; i < editSchedule.times*1; i++) {
+                timelist.push({
+                    d1: d1.toISOString().split('.')[0],
+                    d2: d2.toISOString().split('.')[0],
+                    dt: leadZero(d1.getUTCHours())+':'+leadZero(d1.getUTCMinutes())
+                });
+                d1 = new Date(d1.getTime() + diff);
+                d2 = new Date(d2.getTime() + diff);
+            }
+        }
+        SCRM.link(editSchedule, {timelist: timelist});
+    }
+
+    function checkClubEqual() {
+        var pd = editSchedule.postData,
+            club_equal = true;
+        if (pd.club&&pd.squad!='0'&&editSchedule.idSquad) {
+            club_equal = false; // Надо проверять
+            $.each(editSchedule.idSquad, function(i, v){
+                if (v.id==pd.squad && v.club == pd.club) club_equal = true;
+            });
+        }
+        SCRM.link(editSchedule, {club_equal: club_equal});
+    }
+    //checkClubEqual();
+
+}
+</script>
+
+<script id="tpl_editScheduleTitle" type="text/x-jsrender">
+    <i class="fa fa-calendar-o text-muted mr-2"></i>
+    <span data-link="Trainer^name"></span>
+</script>
+
+<script id="tpl_editSchedule" type="text/x-jsrender">
+<div>
+    <div class="dropdown d-block my-3">
+        <a href="#" class="dashed" data-link="~S.getClubStatus('idSchedule', postData^stype).name" data-toggle="dropdown"></a>
+        <div class="dropdown-menu" data-link="{radiogroup postData^stype}">
+            <div class="dropdown-arrow"></div>
+            {^{for stypes||~S.clubStatus.idSchedule}}
+                <label class="custom-control custom-radio">
+                    <input type="radio" class="custom-control-input" name="SchType" value="{{:alias}}">
+                    <span class="custom-control-label">{{:name}}</span>
+                </label>
+            {{/for}}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 mb-2" data-link="visible{:idClub^length > 1}">
+            [[-<label>Зал <abbr title="Required">*</abbr></label>]]
+            <select class="custom-select" data-link="{:postData^club:} class{merge:bad^club toggle='is-invalid'}">
+            <option value="">-- Зал --</option>
+            {{for idClub tmpl="#tpl_selectOption" /}}
+            </select>
+        </div>
+        <div class="col-sm-6 mb-2">
+            <input class="form-control" data-link="postData^location" placeholder="Площадка">
+        </div>
+    </div>
+    <div class="row" id="params_schedule">
+        <div class="col-sm-6 mb-2" data-link="visible{:idSport^length > 1}">
+            [[-<label>Дисциплина <abbr title="Required">*</abbr></label>]]
+            <select class="custom-select" data-link="{:postData^sport:} class{merge:bad^sport toggle='is-invalid'}">
+            <option value="">-- Дисциплина --</option>
+            {^{for idSport tmpl="#tpl_selectOption" /}}
+            </select>
+        </div>
+        <div class="col-sm-6 mb-2" data-link="visible{:!hide_squad}">
+            [[-<label>Группа  <abbr title="Required">*</abbr></label>]]
+            <select class="custom-select"
+                data-link="{:postData^squad:} class{merge:bad^squad toggle='is-invalid'}">
+            <option value="0">-- Группа --</option>
+            {{for idClub}}
+                <optgroup label="{{:name}}">
+                {{for idSquad}}<option value="{{:id}}">{{:squad_name}} ({{:ssport_name}})</option>{{/for}}
+                </optgroup>
+            {{/for}}
+            </select>
+        </div>
+    </div>
+    <div class="text-info small mb-2" data-link="visible{:!hide_squad&&!club_equal}">
+        <i class="fa fa-info-circle"></i> Группа занимается не в своем зале.
+    </div>
+    <button class="btn btn-light btn-sm btn-block"
+        data-link="{on ~addTrainer2} visible{:(postData^trainer2=='')}">
+        <i class="fa fa-user-plus"></i> Тренер 2</button>
+    <div data-link="class{:(postData^trainer2!='')? 'd-flex align-items-center':'d-none'}">
+        <i class="fa fa-plus text-muted mr-2"></i>
+        <select class="custom-select flex-grow-1" data-link="postData^trainer2">
+            <option value="0">-- Тренер 2 --</option>
+            {{for idTrainer tmpl="#tpl_selectOption" /}}
+        </select>
+    </div>    
+    <hr>
+    <div>
+        <label class="switcher-control switcher-control-lg">
+            <input type="checkbox" class="switcher-input" data-link="{:repeat_mode:} disabled{:postData^id!=0}">
+            <span class="switcher-indicator"></span>
+            <span class="switcher-label-on"><i class="fa fa-repeat"></i></span>
+            <span class="switcher-label-off"><i class="fa fa-calendar"></i></span>
+        </label>
+        <span data-link="{:repeat_mode? 'Повторять' : 'На дату'}"></span>
+    </div>
+    <div class="my-2">
+        <select class="custom-select" data-link="visible{:repeat_mode} {:datestart:}">
+            {^{for dates ~dnames=daynames}}
+                <option value="{{:date}}">{^{:~dnames[day]||dayname}}</option>
+            {{/for}}
+        </select>
+        <span data-link="visible{:!repeat_mode}">
+            <input class="form-control datestart" data-link="datestart">
+        </span>
+    </div>
+    [[- DEBUG {^{for dates ~dnames=daynames}}
+        <br>{{:date}}=={^{:~dnames[day]||dayname}}
+    {{/for}}]]
+    
+    <div class="form-row align-items-center">
+        <div class="col-auto mb-2">
+            <div class="input-group"data-link="class{merge:bad^time toggle='is-invalid'}">
+                <input class="form-control" size="5" data-link="time_start trigger=false"
+                    placeholder="hh:mm" data-masked="00:00">
+                <label class="input-group-prepend"><span class="badge m-0">—</span></label>
+                <input class="form-control" size="5" data-link="time_end trigger=false"
+                    placeholder="hh:mm" data-masked="00:00">
+            </div>
+        </div>
+        [[-<div class="col-auto mb-2 d-none">
+            <div class="input-group">
+            <div class="input-group-prepend">
+                <div class="input-group-text"><i class="fa fa-clock-o"></i></div>
+            </div>
+                <input type="text" class="form-control" size="3" data-link="opts^duration">
+            </div>
+        </div>]]
+        <div class="col-auto mb-2" data-link="visible{:postData^id==0}">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <div class="input-group-text"><i class="fa fa-times"></i></div>
+                </div>
+                <input type="text" class="form-control" size="2" data-link="times">
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-2" data-link="visible{:timelist^length>1}">
+        {^{for timelist}}
+            <span class="badge badge-subtle badge-primary mr-1">{{:dt}}[[- DEBUG {{:d1}} {{:d2}}]]</span>
+        {{/for}}
+    </div>
+    <button class="btn btn-success ml-auto" data-link="{on 'click' ~saveSch} text{:(postData^id==0)? 'Добавить':'Сохранить'}"></button>
+</div>
+
+</script>

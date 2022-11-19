@@ -1,0 +1,21 @@
+<script id="tpl_searchinput" type="text/x-jsrender">
+<form class="input-group input-group-alt srch-group" action="" data-link="{on 'submit' ~srchSubmit}">
+    <input type="text" class="srch-input form-control clubmodal-focus" 
+        data-link="{:srchTxt:} placeholder{:~placeholder}" />
+    <div class="input-group-append">
+        <button type="submit" class="btn btn-secondary"><i class="fa fa-search"></i></button>
+    </div>
+</form>
+</script>
+
+<script id="tpl_rowSportsmen" type="text/x-jsrender">
+<a href="#" class="list-group-item list-group-item-action list-group-item-primary" data-link="{on ~chSportsmen}">
+    <div class="list-group-item-body">
+    <h4 class="list-group-item-title">{{:name}}</h4>
+    <h5 class="list-group-item-subtitle">{{formatDate:birth}}</h5>
+    </div>
+    <div class="list-group-item-figure">
+        <i data-link="class{:'fa ' + (~cls? ~cls:'fa-plus')}"></i>
+    </div>
+</a>
+</script>

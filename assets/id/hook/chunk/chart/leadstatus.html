@@ -1,0 +1,53 @@
+<script id="tpl_ReportLeadChart" type="text/x-jsrender">
+    <div class="reportDates mb-3"></div>
+    <p data-link="{:introtext}"></p>
+    <div class="reportChart"></div>
+    <hr>
+    <div>Всего: <b data-link="cnt"></b></div>
+</script>
+
+<script>
+SCRM._service['[[+rq]]'] = function(param) {
+    
+    SCRM.setClubStatus( [[!clubStatus?tbl=`idLead`]] );
+    
+    SCRM.loadWSS('c3', function(){
+        var report = $.templates('#tpl_ReportLeadChart')
+        .link(param.container, param);
+        
+        report.find('.reportDates')
+        .on('periodChange', function(e, dates) {
+            pDATA('idLead', $.extend({
+                rows: 1001,
+                _report: 'idLead_status'
+            }, dates), function(data) {
+                var nd = {
+                    cnt: 0,
+                    introtext: data.introtext
+                },
+                dataChart = [ ];
+
+                $.each(data.rows, function(k, v){
+                    v.label = SCRM.getClubStatus('idLead', v.label).name;
+                    dataChart.push([v.label+' ('+ v.data +')',  v.data]);
+                    nd.cnt += v.data*1;
+                });
+
+                SCRM.link(param, nd);
+
+                c3.generate({
+                    bindto: report.find('.reportChart')[0],
+                    data: {
+                        columns: dataChart,
+                        type : 'pie'
+                    },
+                    size: {
+                        height: 330
+                    }
+                });
+            });
+        })
+        .panelPeriod('reportDates');
+    });
+};
+</script>

@@ -1,0 +1,18 @@
+<div id="scrmlk"></div>
+
+<script>
+removeObjectFromLocalStorage('saasData');
+
+$('#scrmlk').load('https://w.sportcrm.club/hook/scrmh/lk', {
+    scrmlk: 'html',
+    key: '[[!++club_key]]',
+    user: SCRM.app.user
+}, function(){
+    $(document)
+    .on('show.bs.modal', '#cmSdSCRM',function(e) {
+        var mdl = $(e.target);
+            //v = $.view(mdl, true);
+        $('#SdSCRMlabel', mdl).text('Пожелания и предложения');
+    });
+});
+</script>

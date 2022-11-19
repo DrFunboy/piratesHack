@@ -1,0 +1,65 @@
+<div class="card">
+    <div class="card-header d-flex d-print-none" id="scheduleHeader">
+        <div data-link="visible{:idCity} {include tmpl='#tpl_cityOpts'}" style="width:150px;display:none"></div>
+        <div class="mx-2">
+        [[!#SESSION.club_manager:notempty=`<a href="/database/trainers.html#schedit" class="btn btn-primary">Редактировать</a>`]]
+        </div>
+        <div class="ml-auto">
+            <button class="btn btn-outline-primary" data-link="{on ~schedulePrint}">
+                <i class="fa fa-print"></i> Напечатать</button>
+        </div>
+    </div>
+    <div class="card-body spinner-parent">
+        <div id="schBox" data-cnt_squad="1"></div>
+        <div class="d-print-none mt-2"><a href="javascript:(window.location=window.location)"><i class="fa fa-refresh" aria-hidden="true"></i> Показать все расписание</a></div>
+    </div>
+</div>
+
+<script id="tpl_cityOpts" type="text/x-jsrender">
+<select class="form-control" data-link="{on 'change' ~setCity}">
+    {^{for idCity}}
+        <option value="{{:id}}">{{:name}}</option>
+    {{/for}}
+</select>
+</script>
+
+[[$schedInner]]
+
+<script>
+$(function () {
+    var clubSchedule = $('#schBox');
+    
+    var scheduleHeader = { };
+    $.link(true, '#scheduleHeader', scheduleHeader, {
+        schedulePrint: function(e) {
+            $('select[data-fltr]', clubSchedule)
+            .addClass('d-print-none')
+            .each(function(i, v){
+                if ( $(v).val() ) $(v).removeClass('d-print-none');
+            });
+            window.print();
+        },
+        setCity: function(e, data) {
+            clubSchedule.data('key', $(e.target).val()).trigger('clubSchedule.reload', {
+                f: {}
+            });
+        }
+    });
+    
+    clubSchedule
+    .on('clubSchedule.reload', function(e) {
+        spinnr(true, $(this));
+    })
+    .on('clubSchedule.onload', function(e, d) {
+        console.log(e, d);
+        spinnr(false, $(this));
+        if (d.serverData.idCity && d.serverData.idCity.length) {
+            $.observable(scheduleHeader).setProperty({
+                idCity: d.serverData.idCity,
+                city: d.serverData.idCity[0].id
+            });
+        }
+    })
+    .clubSchedule();
+});
+</script>

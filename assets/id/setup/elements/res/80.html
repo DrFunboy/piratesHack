@@ -1,0 +1,250 @@
+<style>
+    header.page-navs { display:none; }
+    .col-lghead {
+        flex: 0 0 35%;
+    }
+</style>
+
+<div class="section-block my-0">
+    <div class="row" id="qrWrapper">
+        <div class="col-md-6">
+            <div class="card" id="QSportsmen" data-link="{if name tmpl='#tplQSportsmen'}"></div>
+        </div>
+        <div class="col-md-6 spinner-parent" id="QSportsmenSchedule">
+
+            <div class="d-flex mb-2">
+                <div class="flex-grow-1 input-group">
+                    <label class="input-group-prepend" for="QRcalendar">
+                        <span class="badge"><i class="fa fa-calendar "></i></span>
+                    </label>
+                    <input type="text" class="form-control" id="QRcalendar">
+                </div>
+                <div class="dropdown ml-2">
+                    <button class="btn btn-secondary" data-toggle="dropdown"><i class="fa fa-th-large"></i></button>
+                    <div class="dropdown-menu dropdown-menu-right stop-propagation1" data-link="{radiogroup schParams^mode}">
+                        <div class="dropdown-arrow"></div>
+                        <label class="custom-control custom-radio">
+                            <input type="radio" class="custom-control-input" name="schParamsMode" value="sportsmen">
+                            <span class="custom-control-label">По расписанию</span>
+                        </label>
+                        <label class="custom-control custom-radio">
+                            <input type="radio" class="custom-control-input" name="schParamsMode" value="trainer">
+                            <span class="custom-control-label">Другие занятия</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2" data-link="visible{:schParams^mode=='trainer'} {if idTrainer ~link=qrTrainer ~rows=idTrainer tmpl='#tpl_Select'}"></div>
+            <div data-link="{for idLessons tmpl='#tpl_QRlessons'}"></div>
+            <div data-link="{if loading ~loadingStyle='mt-2' tmpl='Loading'}" class="text-center"></div>
+            [[-<button data-link="{on ~addSchedule}" class="btn btn-block btn-subtle-primary btn-sm">
+                <i class="fa fa-plus"></i> Другие занятия
+            </button>]]
+        </div>
+    </div>
+</div>
+
+<script id="tplQSportsmen" type="text/x-jsrender">
+    <div class="card-header">
+    <div class="d-flex">
+        <div class="mr-3">
+             <a href="/sportsmens/sportsmen.html?key={{:key}}" target="_blank" 
+                data-sportsmen="{{:key}}"
+                class="user-avatar user-avatar-xl">
+                <img alt="" src="" data-link="src{:Photo^sm||~S.emptyImg(gender)}">
+                <span data-toggle="tooltip" data-link="title{:status}
+                    class{:'avatar-badge ' + (status=='Действует'? 'online': (status=='Архив'? 'offline':'idle'))}"></span>
+            </a>
+        </div><!-- /avatar -->
+        <div class="flex-grow-1">
+            <a href="/sportsmens/sportsmen.html?key={{:key}}"
+                data-sportsmen="{{:key}}" target="_blank">
+                <h3 class="card-title">
+                {{:name}}
+                {{if todaybirth}}
+                    <span class="badge badge-warning pulse_fast">{{:todaybirth}}</span>
+                {{/if}}
+                </h3>
+            </a>
+            <h6 class="card-subtitle text-muted" data-link="{formatDate:birth}"></h6>
+        </div><!-- /name+birth -->
+    </div>
+    </div>
+    <div class="list-group list-group-bordered list-group-reflow">
+        <div class="list-group-item">
+            <div class="col-lghead text-muted">
+                Договор
+            </div>
+            <div>
+                <b>{{:contract}}</b> от {{formatDate:contractdate}}
+            </div>
+        </div>
+        <div class="list-group-item" data-link="class{:price!=0? 'list-group-item' : 'd-none'}">
+            <div class="col-lghead text-muted">
+                Тариф
+            </div>
+            <div>
+                {{:discount? discount+' : ' : ''}}
+                {{:price}}
+            </div>
+        </div>
+        <div class="list-group-item justify-content-between align-items-start">
+            <div class="col-lghead text-muted">
+                Баланс
+            </div>
+            <div class="mr-auto">
+                <div class="mb-2">
+                    {^{if saldo!=0}}
+                        <span data-link="class{:saldo > 0? 'text-success':'text-danger'} html{formatMoney:saldo}"></span>
+                    {{else}}
+                        <span class="text-muted">Баланс: 0</span>
+                    {{/if}}
+                </div>
+                {{include tmpl='#tpl_InvoiceLesson' /}}
+            </div>
+            <button class="btn btn-icon btn-addinvoice btn-secondary" data-link="{on ~addInvoice}"><i class="fa fa-plus"></i></button>
+        </div>
+    </div>
+</script>
+
+
+<script id="tpl_QRlessons" type="text/x-jsrender">
+<div class="card">
+    <div class="card-header">
+        <span>
+            {{:d_s}} - {{:d_e}}
+            <small data-link="visible{:(repeat==1 || parent!=0)}"><i class="fa fa-repeat text-muted"></i></small>
+        </span>
+        {{if lesson_cnt > 0 }}
+        <button class="btn btn-subtle-success pull-right my-n2"><i class="fa fa-check-square-o"></i></button>
+        {{else}}
+        <button class="btn btn-primary pull-right my-n2" data-link="{on ~newLesson}"><i class="fa fa-check"></i> Отметить</button>
+        {{/if}}
+    </div>
+    <div class="card-body">
+        <div class="mb-1" data-link="visible{:squad!=0}">
+            <i class="fa fa-users text-muted fa-fw"></i>
+            {{:squadname}}
+        </div>
+        <div class="mb-1">
+            <i class="fa fa-map-marker text-muted fa-fw"></i>
+            {{:clubname}}{{:location? ', '+location:''}}
+        </div>
+        <div>
+            <span class="badge badge-secondary" data-toggle="tooltip"
+            data-link="title{:sportname} css-background-color{:sportcolor} {:ssportname}"></span>
+            <small class="text-muted1 border-bottom1 border-primary1">
+                {{:trainername}}{{:trainername2? ', '+trainername2:''}}</small>
+        </div>
+    </div>
+</div>
+</script>
+
+[[$tplInvoiceLesson]]
+<script>
+var qrSportsmen = [[!idGetSportsmen]];
+SCRM.loadWSS('ready', function() {
+    if (qrSportsmen.birth && (qrSportsmen.birth.substr(5,5) == qrSportsmen.now.substr(5,5))) {
+        qrSportsmen.todaybirth = qrSportsmen.now.substr(0,4) - qrSportsmen.birth.substr(0,4)*1;
+    }
+    
+    var schParams = {
+        mode: 'sportsmen',
+        sportsmen: qrSportsmen.id,
+        key: function() {
+            return (schParams.mode == 'sportsmen')? qrSportsmen.key : qrSportsmen.qrTrainer;
+        }
+	};
+	var calend = $('#QRcalendar');
+	
+	$.extend(qrSportsmen, {
+	    schParams: schParams,
+	    loading: true,
+	    Photo: {}
+	});
+	
+	$.each(qrSportsmen.files.rows || [], function(i, v){
+        if (v.filetype == 'photo') {
+            qrSportsmen.Photo = v;
+            return false;
+        }
+    });
+    
+    $.link(true, "#qrWrapper", qrSportsmen, {
+        newLesson: function(e, d){
+            var btn = $(e.target);
+            spinnr(true, calend);
+    	    var shRow = d.linkCtx.data;
+            pJSON('/hook/schedule.start/', {
+                sportsmen: qrSportsmen.id,
+                start_id: shRow.id,
+                datestart: schParams.datestart +' '+ shRow.d_s
+            }, function(data){
+                getSchData().done(function(data){
+                    SCRM.success('Отметил присутствие');
+                });
+            });
+        },
+        addInvoice: function(e){
+            SCRM._run('/chunk/newinvoice', {
+                payd: true,
+                paymode: true,
+                key: qrSportsmen.key
+            });
+        }
+    });
+    
+    $.observe(qrSportsmen, 'schParams^mode', function(e, data){
+        if (!qrSportsmen.idTrainer) {
+            pJSON(dbvaluesUrl, {mode:'idTrainer', city: 'my'}, function(data){
+                var nd = {};
+                nd.idTrainer = $.map(data.idTrainer, function(v, i){
+                    if (i==0 || v.id == qrSportsmen.trainer) nd.qrTrainer = v.uid;
+                    v.id = v.uid;
+                    return v;
+                });
+                SCRM.link(qrSportsmen, nd);
+            })
+        } else {
+            getSchData(true);
+        }
+    });
+    
+    $(document)
+    .on('clubUpdateSpData', function(e, data){
+        if (data.id == qrSportsmen.id) {
+            pJSON('/data/sportsmen', {key: qrSportsmen.key},
+            function(data){
+                SCRM.link(qrSportsmen, data);
+            });
+        }
+    });
+    
+    $.observe(qrSportsmen, 'qrTrainer', getSchData);
+	
+    calend
+    .on('onChangeDateEdit', function(e, data) {
+        SCRM.link(schParams, {datestart: data.dateStr});
+        getSchData(true);
+    })
+    .initDateEdit({
+        defaultDate: 'today'
+    });
+
+    function getSchData(clear){
+        if (clear) {
+            SCRM.link(qrSportsmen, {idLessons: [], loading: true});
+        } else {
+            spinnr(true, calend);
+        }
+        return pJSON('/hook/schedule.data/', schParams, function(dayData){
+            SCRM.link(qrSportsmen, {
+                idLessons: dayData.idSchedule,
+                loading: false
+            });
+            spinnr(false, calend);
+        });
+    }
+});
+</script>

@@ -1,0 +1,72 @@
+<script>
+SCRM.squadData = [[!dbvalues?mode=`idClub,idSquad` &city=`my`]];
+SCRM._service['[[+rq]]'] = function(data) {
+    data = $.extend({
+        mode: 'html',
+        idClub: SCRM.squadData.idClub
+    }, (typeof data === 'function')? {
+        callback: data
+    } : data);
+
+    if (data.post) {
+        data = $.extend(true, {
+            post: {
+                squad: '0'
+            },
+            body: '#tpl_chSquadModal',
+            title: 'Группа/уровень',
+            ok: 'Добавить в группу',
+            disabledOK: true,
+            onOK: function(e, md) {
+                if (md.post.ismain && md.post.ismain=='1') {
+                    md.post.id = md.post.sportsmen;
+                    delete md.post.sportsmen;
+                    pEDIT('idSportsmen', md.post, md.callback);
+                } else {
+                    pEDIT('idSportsmenSquad', $.extend({
+                        oper: 'add',
+                        addmulti: 'sportsmen'
+                    }, md.post), md.callback);
+                }
+                md.mdl_hide();
+            }
+        }, data);
+        club_Modal(data);
+        $.observe(data.post, 'squad', function(e, d) {
+            SCRM.link(data, {
+                disabledOK: data.post.squad == '0'
+            });
+        });
+    } else {
+        if (data.callback) data.callback( (data.mode=='html')? $.templates('#tpl_SquadList').render(data) : data );
+    }
+    console.log('[[+rq]]', data)
+}
+</script>
+
+<script id="tpl_SquadList" type="text/x-jsrender">
+<option value="0">{{:idSquad0||'…'}}</option>
+{{for idClub}}
+<optgroup label="{{:name}}">
+    {{for idSquad}}<option value="{{:id}}">{{:lvl_name}}, {{:name}} ({{:ssport_name}})</option>{{/for}}
+</optgroup>
+{{/for}}
+</script>
+
+<script id="tpl_chSquadModal" type="text/x-jsrender">
+<select class="form-control" data-link="{:post^squad:}">
+    {{include tmpl='#tpl_SquadList' /}}
+</select>
+<div class="form-group mt-1" data-link="{radiogroup post^ismain}">
+    <div class="custom-control custom-control-inline custom-radio">
+        <input type="radio" class="custom-control-input" id="sq_main" checked="checked" name="ismain" value="1">
+        <label class="custom-control-label" for="sq_main">Основная</label>
+    </div>
+    <div class="custom-control custom-control-inline custom-radio">
+        <input type="radio" class="custom-control-input" id="sq_add" name="ismain" value="0">
+        <label class="custom-control-label" for="sq_add">Дополнительная</label>
+    </div>
+</div>
+<textarea rows="2" class="form-control" placeholder="Комментарий"
+    data-link="post^change_info"></textarea>
+</script>

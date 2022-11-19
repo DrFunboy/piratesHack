@@ -1,0 +1,196 @@
+<div id="manageUsers" class="section-block my-0">
+    <div class="mb-2 dropdown">
+        <button class="btn btn-success btn-sm" data-toggle="dropdown">
+            <i class="fa fa-user-plus"></i> Новый пользователь
+        </button>
+        <div class="dropdown-menu">
+            <div class="dropdown-arrow"></div>
+            <button class="dropdown-item" data-link="{on addManagerUser}">Менеджер</button>
+            <div class="dropdown-divider"></div>
+            <a href="/database/db.html" class="dropdown-item">Спортсмен</a>
+            <a href="/database/trainers.html" class="dropdown-item">Тренер</a>
+        </div>
+    </div>
+
+    <table id="grid_Users" data-entity="modUser"></table>
+
+    <div id="permissions" style="display:none" data-link="visible{:id}">
+        <h3 class="section-title mb-0">
+            <span data-link="rdata^fullname"></span>
+            (<span data-link="rdata^email"></span>)
+            <span class="dropdown">
+                <button class="btn btn-sm btn-icon btn-light" data-toggle="dropdown">
+                    <i class="fa fa-fw fa-ellipsis-v"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-arrow"></div>
+                    <a href="#" class="dropdown-item"
+                        data-run="/chunk/forgotpassword" data-link="data-username{:rdata^email}">Восстановление пароля</a>
+                    [[-<div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item"
+                        data-link="{on ~idUser}">Отключить</a>]]
+                </div>
+            </span>
+        </h3>
+        <div class="row">
+            <div class="col-sm-6">
+                <div data-link="{if cityList tmpl='#tplCity'}"></div>
+                <div data-link="{checkboxgroup userPerms tmpl='#permTmpl'}"></div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<script id="permTmpl" type="text/x-jsrender">
+{{for perms}}
+    <p class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input" id="xx{{:alias}}" value="{{:alias}}" data-link="{on 'change' ~changePerm}" >
+        <label class="custom-control-label" for="xx{{:alias}}"><b>{{:name}}</b> &mdash; {{:info}}</label>
+    </p>
+{{/for}}
+</script>
+
+<script id="tplCity" type="text/x-jsrender">
+<div class="form-group">
+    <label class="col-form-label col-form-label-sm" for="selCity">Филиал</label>
+    <select class="custom-select custom-select-sm" id="selCity" data-field="idcity" data-link="{:idcity:} {on 'change' changeCity}">
+        <option value=""></option>
+        {^{for cityList tmpl='#tpl_selectOption' /}}
+    </select>
+</div>
+[[-<div class="form-group">
+    <label class="col-form-label col-form-label-sm" for="selClub">Зал</label>
+    <select class="custom-select custom-select-sm" id="selClub" data-field="idclub" data-link="{:idclub:}">
+        <option value=""></option>
+        {^{for clubList}}
+            <option value="{{:id}}">{{:name}}</option>
+        {{/for}}            
+    </select>
+</div>]]
+</script>
+
+<script>
+SCRM.loadWSS('grid', function(){
+    var userData = {
+        rdata: {},
+        perms: [[!clubStatus?tbl=`idPermission` &addfields=`info`]],
+        changeCity: function(e, evData) {
+            var sel = $(e.target);
+            pJSON('/hook/user.city/' + sel.val(), {
+                user: userData.rdata.id
+            }, function(data) {
+                $('table[data-entity="modUser"]').trigger('reloadGrid', [{current:true}]);
+            });
+        },
+        addManagerUser: function (e, data) {
+            SCRM._run('/chunk/newcabinet', {
+                postData: {
+                    user_group: 'idManager',
+                    fullname: '',
+                    email: ''
+                },
+                success: function(data) {
+                    SCRM.link(userData, {id: null});
+                    $('[data-entity="modUser"]')
+                    /*.one('jqGridAfterLoadComplete', function(e, data){
+                        var grid = $(this), ids = grid.jqGrid('getDataIDs');
+                        console.log(grid, ids)
+                        setTimeout(function(){
+                            grid.jqGrid('setSelection', ids[0]);
+                        }, 500);
+                    })*/
+                    .setGridFilter([{fld: 'email', value: data.email}]);
+                }
+            });
+        },
+        userPerms: []
+    };
+
+    $.link(true, "#manageUsers", userData, {
+        changePerm: function(e, data) {
+            var cbox = $(e.target);
+            pEDIT('modUserGroupMember', {
+                oper: cbox.prop('checked')? 'add' : 'del',
+                member: userData.id,
+                id: data.linkCtx.data.alias
+            }, function(data){
+                $('#grid_Users').trigger('reloadGrid', [{current:true}]);
+            });
+        }
+    });
+    
+
+    $.observe(userData, 'idcity', function(ev, eventArgs) {
+        SCRM.link(userData, {
+            clubList: ev.target.cityClub[eventArgs.value]
+            // не используется, прогружал клубы
+        });
+    });
+    
+    pJSON(dbvaluesUrl, {}, function(data) {
+        var cityData = { cityClub: {} };
+        cityData.cityList = $.map(data.idCity, function(v, i){
+            cityData.cityClub[v.id] = v.idClub;
+            return {id: v.id, name: v.name};
+        });
+        SCRM.link(userData, cityData);
+    });
+
+    grids.Users = $('#grid_Users')
+    .on('jqGridSelectRow', function(e, rid, sel) {
+        var grid = $(e.target);
+        var rdata = grid.jqGrid('getRowData', rid);
+
+        SCRM.link(userData, {
+            id: rid,
+            idcity: rdata.idcity,
+            idclub: 0,
+            rdata: rdata
+        });
+         
+        pDATA('modUserGroupMember', {
+            _where: {member: rdata.id}
+        }, function(data) {
+            var ids = $.map(data.rows, function(v, i) {
+                return v.usergroup_name;
+            });
+            SCRM.link(userData, {
+                userPerms: ids
+            });
+        });
+    })
+    .jqGridInit({
+        sortname: 'Profile.fullname', sortorder: 'asc',
+        search: true,
+        autowidth: true,
+        colModel:[
+            {name: 'id', hidden: true, template: idFieldTemplate},
+            {name: 'fullname', index:'Profile.fullname', label:'Имя', width:200,
+                editable: false
+            },
+            {name: 'email', index:'Profile.email', width:100,
+                editable: false
+            },
+            {name: 'mobilephone', index:'Profile.mobilephone', label:'Телефон', width:100,
+                editable: false
+            },
+            {name: 'ugr_name', index:'gr.name', label:'Группы', width:200},
+            {name: 'idcity', hidden: true},
+            {name: 'city_name', index:'idCity.name', label:'Город', width:200,
+                editable: false
+            },
+            {name: 'active', editable: true,
+                template: 'booleanCheckboxFa',
+                editoptions: { defaultValue: "1" }
+            },
+            {name: 'profile_id', hidden: true},
+            {name: 'extended', hidden: true}
+        ],
+        navOpts: {add:false, edit:true, del:false},
+        fltrToolbar: true
+    })
+    .jqGridColumns()
+    .jqGridExport();
+});
+</script>

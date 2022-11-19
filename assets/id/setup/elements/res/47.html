@@ -1,0 +1,281 @@
+<style>
+    #tab_idOrderPack #ordersBlock {
+        margin-top:1rem;
+    } 
+</style>
+
+<div class="card card-fluid"id="tabs">
+    <nav class="nav-scroller card-header">
+        <div class="nav nav-tabs card-header-tabs" role="tablist">
+            <a class="nav-item nav-link active" data-toggle="tab" href="#tab_idOrderItems" aria-selected="true">Товары</a>
+            <a class="nav-item nav-link" data-toggle="tab" href="#tab_idOrderPack" aria-selected="false">Заказы</a>
+        </div>
+    </nav>
+
+    <div class="tab-content card-body">
+        <div id="tab_idOrderItems" class="tab-pane active">
+            <div id="ordersBlock">
+                <div id="shopActions" class="mb-2 d-flex">
+                    <button class="btn btn-sm btn-primary" data-link="disabled{:!selRowsL} {on ~chStatus}">Статус
+                        <small data-link="{:selRowsL} visible{:selRowsL}" class="badge badge-pill badge-warning ml-1"></small></button>
+                </div>
+                <table id="grid_idOrderItems" data-entity="idOrderItems"></table>
+                
+            </div>
+        </div>
+        <div id="tab_idOrderPack" class="tab-pane">
+            <table id="grid_idOrderPack" data-entity="idOrderPack"></table>
+        </div>
+    </div>
+</div>
+
+<script id="tpl_oiStatus" type="text/x-jsrender">
+    <select class="form-control form-control-sm mr-2" data-link="chStatus">
+    <option value="">-- Статус --</option>
+    {^{for statuses}}
+        <option value="{{:alias}}">{{:name}}</option>
+    {{/for}}
+    </select>
+</script>
+
+<script>
+var shopData = {
+    selRowsL: 0
+};
+
+SCRM.loadWSS('grid', function() {
+    var statusCls = {};
+
+    $.link(true, "#tab_idOrderItems", shopData, {
+        chStatus: function(e, data) {
+            var d = data.linkCtx.data;
+            club_Modal({
+                chStatus: '',
+                statuses: SCRM.clubStatus.idOrderItems||[],
+                body: '#tpl_oiStatus',
+                onOK: function(e, md) {
+                    //console.log(this, e, md)
+                    if (!md.chStatus) {
+                        SCRM.alert('Empty value');
+                    } else pEDIT('idOrderItems', {
+                        id: d.selRows.join(','),
+                        status: md.chStatus
+                    }, function(data) {
+                        grids.idOrderItems.jqGrid('clearGridData').trigger('reloadGrid');
+                        SCRM.link(shopData, {selRowsL: 0});
+                        md.mdl_hide();
+                    });
+                }
+            });
+        }
+    });
+    
+    [[-
+    function fmtSportsmens(cellValue, options, rObj) {
+        // Не используется функция когда было несклько спортсмено в одной ячейке
+        // formatter: fmtSportsmens
+        return cellValue? cellValue.replace(';', '\n') : '';
+    }
+    ]]
+    
+    
+    grids.idOrderItems = $("#grid_idOrderItems")
+    .jqGridInit({
+        postData: {
+            filters: SCRM.obj2Filter({status: 'process'}),
+            tableadd: 'idSportsmen'
+        },
+        search: true,
+        sortname: 'idOrderItems.created', sortorder: 'desc',
+        autowidth: true,
+        colModel:[
+            {name:'id', hidden: false, template: idFieldTemplate},
+            {name:'orderpack', index:'orderpack', label:'Заказ', width: 70,
+                searchoptions: { sopt: numberSearchOptions },
+                formatter: function(cv, opt, data){
+                    if (!cv||cv=='0') return '';
+                    return '<a href="#" class="showOrderpack prevent-default" data-orderpack="'+ data.orderpack +'">'+
+                        makeIco('fa-truck') +' '+ cv +'</a>';
+                }
+            },
+            {name:'status', label: 'Статус', editable: true, template: selTemplate,
+                clubStatus: 'idOrderItems', lookupKey: 'alias'
+            },
+            {index: 'idOrderItems.created',
+                template:createdTemplate,
+                hidden: false, label: 'Создан'
+            },
+            {name: 'name', index: 'idShopItem.name', label: 'Товар', width:100},
+            {name: 'opts', label: 'Опции', width:40, editable: true},
+            {name: 'price', label: 'Цена', template: numberTemplate, editable: true},
+            {name: 'amount', label: 'Количество', template: numberTemplate, editable: true},
+            {name: 'total', label: 'Сумма', template: numberTemplate, editable: true},
+            {name: 'info', label: 'Заметки',
+                editable: true, editrules: {edithidden:true},
+                template: infoTemplate
+            },
+            {name: 'customer_name', index: 'idOrderPack.name', label: 'Заказчик', width:100, hidden:true},
+            {name: 'tel', index: 'idOrderPack.tel', label:'Телефон', width:100, hidden:true},
+            {name: 'address', index: 'idOrderPack.address', label:'Адрес', width:200, hidden:true,
+                template: infoTemplate
+            },
+            {name:'sportsmen_name', index:'idSportsmen.name', hidden:true,
+                label: 'Спортсмен', width:100
+            },
+            {name: 'cityname', index: 'idCity.name', label: 'Город', width:80, hidden:true},
+            {name: 'clubname', index: 'idClub.name', label: 'Зал', width:80, hidden:true},
+            {name: 'datepay', index: 'idOrderPack.datepay', label: 'Оплачен', hidden:true,
+                template: dateTimeTemplate
+            }
+        ],
+        multiselect: true,
+        rowattr: function(data){
+            var statusCls = (SCRM.getClubStatus('idOrderItems', data.status, 'alias')||{}).cls;
+            return {'class': 'table-' + statusCls};
+        },
+        navOpts: {add: false, edit: true, del: false},
+        fltrToolbar: true
+    })
+    .jqGridColumns()
+    .jqGridExport()
+    .on('jqGridSelectRow jqGridSelectAll', function(e, rid, sel) {
+        var grid = $(this);
+        var selRows = getGridSelRows(grid);
+        console.log(selRows);
+        SCRM.link(shopData, {
+            selRowsL: selRows.length, // Обязательно. Без этого jsviews не очень
+            selRows: selRows
+        });
+    });
+
+    
+    /* ORDERS */
+    grids.idOrder = $("#grid_idOrderPack")
+    .jqGridInit({
+        search: true,
+        sortname: 'idOrderPack.created', sortorder: 'desc',
+        autowidth: true,
+        colModel:[
+            {name:'id', hidden: false, template: idFieldTemplate},
+            {index: 'idOrderPack.created', label: 'Создан',
+                template:createdTemplate, hidden: false
+            },
+            {name:'name', label: 'Заказчик', width:100, editable: true},
+            {name:'tel', label:'Телефон', width:100, editable: true},
+            {name:'address', label:'Адрес', width:200, editable: true,
+                template: infoTemplate
+            },
+            {name:'cnt', label:'Количество', width:40},
+            {name:'total', label:'Сумма', template: numberTemplate},
+            {name:'sportsmen_name', index:'idSportsmen.name', label: 'Спортсмен', width:100},
+            {name:'cityname', index:'idCity.name', label: 'Город', width:80},
+            {name:'clubname', index:'idClub.name', label: 'Зал', width:80},
+            {name:'datepay', label: 'Оплачен', template:dateTimeTemplate},
+            {name:'info', label:'Заметки',
+                editable: true, editrules: {edithidden:true},
+                template: infoTemplate
+            }
+        ],
+        multiselect: true,
+        rowattr: function(data){
+            if (data.datepay) return {'class': 'rowWarn'};
+            if (data.order_status == 'done') return {'class': 'rowYes'};
+            if (data.order_status == 'process') return {'class': 'rowNo'};
+        },
+        onSelectRow: function(rid,rr,ee) {
+            showOrderItems(rid);
+        },
+        navOpts: {add: false, edit: true, del: true},
+        fltrToolbar: true
+    })
+    .jqGridColumns()
+    .jqGridExport();
+    
+    function showOrderItems(orderPack) {
+        grids.idOrderItems.jqGrid('setGridParam', {
+            postData: {
+                filters: SCRM.obj2Filter({orderpack: orderPack})
+            },
+            search: true
+        })
+        .trigger('reloadGrid');
+    }
+    
+    $('#tabs').on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
+        var target = $(e.target).attr('href');
+        $('#ordersBlock').appendTo(target);
+        /*grids.idOrderItems.jqGrid('setGridParam', {
+            postData: { filters: (target=='#tab_idOrderPack')? fltOrders : '' },
+            search: true
+        })
+        .trigger('reloadGrid');*/
+    });
+    
+
+    
+    $(document)
+    .on('click', '.showOrderpack', function(e) {
+        var id = $(this).data('orderpack');
+
+        var _mdlData = {
+            zindex: 1035,
+            cm_size: 'lg',
+            body: '#tpl_modalOrder',
+            //hideRemove: false,
+            orderData: {
+                id: id
+            },
+            title: '<span>Заказ:</span> <span data-link="orderData^id"></span>'
+        };
+        club_Drawer(_mdlData, {
+            showOrderItems: function(e, data) {
+                showOrderItems(id);
+            }
+        });
+        pDATA('idOrderPack', {
+            _where: {id: id}
+        }, function(data){
+            if (data.rows.length > 0) {
+                SCRM.link(_mdlData, {
+                    orderData: data.rows[0]
+                });
+            }
+        });
+    });
+});
+</script>
+
+<script id="tpl_modalOrder" type="text/x-jsrender">
+    <div class="row mt-3">
+        <div class="col-6 mb-3">
+            <h6>Получатель</h6>
+            <p data-link="orderData^name"></p>
+        </div>
+        <div class="col-6 mb-3">
+            <h6>Телефон</h6>
+            <p data-link="orderData^tel"></p>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <h6>Адрес</h6>
+        <p data-link="orderData^address"></p>
+        <div><b data-link="orderData^cityname"></b> <span data-link="orderData^cityname"></span></div>
+    </div>
+    <div class="mb-3">
+        <h6>Спортсмен</h6>
+        <p data-link="orderData^sportsmen_name"></p>
+    </div>
+    <div class="mb-3" data-link="visible{:orderData^info}">
+        <h6>Заметки</h6>
+        <p data-link="orderData^info"></p>
+    </div>
+    <div class="mb-3">
+        <button type="button" class="btn btn-light" data-dismiss="modal" data-link="{on ~showOrderItems}">
+            <i class="fa fa-angle-double-left"></i>
+            Количество: <b data-link="orderData^cnt"></b>,
+            Сумма: <b data-link="orderData^total"></b>
+        </button>
+    </div>
+
+</script>

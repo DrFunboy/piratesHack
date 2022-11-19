@@ -1,0 +1,175 @@
+<script id="tpl_lessonRows" type="text/x-jsrender">
+    <div class="card-header1 p1y-2 1px-2 list-group-item flex-column" id="cInvoiceLessonHeading{{:id}}">
+        <button class="btn btn-reset collapsed d-flex"
+            data-toggle="collapse" data-target="#cInvoiceLesson{{:id}}" aria-expanded="false" aria-controls="cInvoiceLesson{{:id}}">
+            <span class="collapse-indicator">
+                <i class="fa fa-fw fa-caret-right"></i>
+            </span>
+            <div class="text-left">
+                <div class="mb-1">{{:name_typeinvoice}}</div>
+                <div data-link="class{:cls}"> 
+                    <b data-link="visible{:(lesson_amount > 0 || debt_lesson !=0)}" class="mr-3">{{:debt_lesson}}{{if lesson_amount > 0}} / {{:lesson_amount}}{{/if}}</b>
+                    <small>{{formatDate:dateinvoice}} ~ {{formatDate:duedate}}</small>
+                </div>
+            </div>
+        </button>
+        <div data-link="{on 'show.bs.collapse' ~loadLessons}" id="cInvoiceLesson{{:id}}" class="collapse ml-3" aria-labelledby="cInvoiceLessonHeading{{:id}}" data-parent1="#invoiceLessonParent">
+            <table class="table table-borderless1 table-sm text-left mb-0 mt-2">
+                <tbody>
+                    {^{for lessons}}
+                        <tr>
+                            <td class="text-right">{{:#getIndex()+1}}. </td>
+                            <td class="text-center">
+                                <div class="badge badge-subtle">
+                                    {{fmtStatus:status tbl='idLesson'}}
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    {{formatDateTime:datestart}}
+                                    <i class="fa {{:stype_ico}} text-muted ml-2" data-toggle="tooltip" title="{{:stype_name}}"></i>
+                                </div>
+                                <div class="mt-1 small">
+                                    <span class="badge badge-subtle badge-primary" 
+                                    data-toggle="tooltip" 
+                                    data-link="title{:sportname} css-background-color{:sportcolor}" 
+                                    title="">{{:ssportname}}</span>
+                                    {{:trainer_name}} {{:squadname}}
+                                </div>
+                            </td>
+                        </tr>
+                    {{else}}
+                    <tr><td class="text-center pt-3 text-muted">
+                        <span class="spinner-grow spinner-grow-lg" role="status" data-link="visible{:loading}"></span>
+                        <i class="fa fa-lg fa-calendar-times-o" data-link="visible{:!loading}"></i>
+                    </td></tr>
+                    {{/for}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</script>
+
+<script id="tpl_cntLessonMdl" type="text/x-jsrender">
+<div id="invoiceLessonParent">
+    <div class="card1 card-fluid1 list-group list-group-bordered" data-link="visible{:validInvoice&&validInvoice^length}">
+        {^{for validInvoice ~invId=invId tmpl="#tpl_lessonRows" /}}
+    </div>
+    
+    <div class="card1 card-fluid1 list-group list-group-bordered mt-3" data-link="visible{:!invId}">
+        <div class="card-header1 list-group-header">
+            Архив
+        </div>
+        {^{for expiredInvoice ~invId=invId tmpl="#tpl_lessonRows" /}}
+    </div>
+    <div class="card-footer1 mt-2" data-link="visible{:(page < total)}">
+        <button class="btn btn-secondary btn-sm btn-block" data-link="{on 'click' loadMore}">
+            <i class="fa fa-chevron-down" aria-hidden="true"></i>
+        </button>
+    </div>
+</div>
+</script>
+
+<script>
+SCRM._service[ '[[+rq]]' ] = function(data) {
+    var cntLessonMdl = SCRM.invoiceLessonData = {
+        title: 'Абонементы',
+        body: '#tpl_cntLessonMdl',
+        key: data.spkey,
+        invId: data.idinvoice,
+        expiredInvoice: [],
+        expired_display: 0,
+        loadMore: function(){
+            //cntLessonMdl.page++;
+            getInvoiceRows({
+                rows: 12,
+                page: cntLessonMdl.page+1,
+                _where: {
+                    0: 'duedate<NOW()',
+                }
+            }, function(rows){
+                SCRM.link(cntLessonMdl.expiredInvoice).insert(rows);
+            });
+        },
+        total: 0,
+        page: 0
+    };
+
+    SCRM.setClubStatus([[!clubStatus?tbl=`idLesson,idSchedule`]]);
+
+    club_Modal(cntLessonMdl, {
+        loadLessons: function(e, d){
+            d = d.linkCtx.data;
+            SCRM.link(d, {loading: true});
+            //получение списка занятий привязанных к абонементу
+            getDataRows('idLesson', {
+                sidx: 'datestart',
+                _where: {
+                    idinvoice: d.id
+                }
+            }, function(lessons){
+                SCRM.link(d, {
+                    lessons: lessons.rows,
+                    loading: false
+                });
+            })
+        }
+    });
+    
+    function getDataRows(table, opts, callback) {
+        opts = $.extend({
+            table: table,
+            key: cntLessonMdl.key,
+            rows: 1001,
+            sord: 'desc',
+            page: 1
+        }, opts);
+        pJSON('/data/cabinet', opts, callback);
+    };
+
+    function getInvoiceRows(opts, callback) {
+        getDataRows('idInvoice', $.extend(opts, {
+            sidx: 'dateinvoice'
+        }), function(data) {
+            $.each(data.rows, function(i, v){
+                var diff = diffNow(v.duedate);
+                v.debt_lesson = v.lesson_amount*1 - v.cnt_lesson;
+                if (diff < 0 && (v.debt_lesson > 0 || v.lesson_amount*1 == 0)) {
+                    v.cls = 'text-success';
+                } else {
+                    v.cls = 'text-muted';
+                }
+            });
+            console.log('getInvoiceRows', data.rows)
+            callback(data.rows);
+            SCRM.link(cntLessonMdl, {
+                total: data.total*1,
+                page: data.page*1
+            });
+        });
+    }
+
+    var initOpts = (!cntLessonMdl.invId)? {
+        rows: 1001,
+        _where: {
+            '0': 'duedate>=NOW()'
+        }
+    } : {
+        _where: {
+            'idInvoice.id': cntLessonMdl.invId
+        }
+    };
+    
+    getInvoiceRows(initOpts, function(rows){
+        SCRM.link(cntLessonMdl, {
+            validInvoice: rows
+        });
+        if (cntLessonMdl.invId) {
+            $("#cInvoiceLesson"+cntLessonMdl.invId).collapse('show');
+        } else {
+            cntLessonMdl.loadMore();
+        }
+    });
+}
+
+</script>

@@ -1,0 +1,82 @@
+<script>
+SCRM._service[ '[[+rq]]' ] = function(chData) {
+    console.log('[[+rq]]', chData);
+    if (chData.e) {
+        var btn = $(chData.e.target),
+            caption = btn.attr('title') || btn.text();
+            
+        $.extend(chData, {
+            title: caption, ok: caption,
+            info_pholder: btn.data('pholder') || 'Номер приказа или комментарий'
+        });
+    }
+    $.extend(chData, {
+        body: '#tpl_spChangeField',
+        emptyStr: SCRM.emptyStr,
+        onOK: function(e, md) {
+            if (!md.postData.change_info) {
+                SCRM.alert('Не указана причина изменений');
+                return false;
+            }
+            if (md.postData.change_value == md.emptyStr) {
+                SCRM.alert('Empty VALUE');
+                return false;
+            }
+            md.postData[md.chfield] = md.postData.change_value;
+            console.log(md.postData);
+            SCRM.link(md, {loading: true});
+            pEDIT('idSportsmen', md.postData, function(edata){
+                md.mdl.trigger('clubUpdateSpData', {id: md.postData.id});
+                if (md.callback) md.callback(md);
+            });
+            return true;
+        },
+        fields: {
+            trainer: {src: 'dbValues', tbl: 'idTrainer'},
+            razr: {tbl: 'idSportsmenGrade', key: 'name'},
+            status: {tbl: 'idSportsmen', key: 'name'}
+        }
+    });
+    chData.fieldSrc = $.extend({
+        src: 'clubStatus'
+    }, chData.fields[ chData.chfield ]);
+    if (chData.fieldSrc.tbl) {
+        chData.rows = SCRM[chData.fieldSrc.src][chData.fieldSrc.tbl] || [];
+        chData.postData.change_value = SCRM.emptyStr;
+        if (!chData.rows.length) {
+            if (chData.fieldSrc.src == 'clubStatus') {
+                pJSON('/data/status/'+chData.fieldSrc.tbl, function(data){
+                    SCRM.link(chData, {rows: data.rows});
+                });
+            } else {
+                pJSON(dbvaluesUrl, {mode: chData.fieldSrc.tbl, city:'my'}, function(data){
+                    SCRM.link(chData, {rows: data.idTrainer});
+                });
+            }
+        }
+        
+    }
+    club_Modal(chData);
+    return chData.mdl;
+}
+</script>
+
+<script id="tpl_spChangeField" type="text/html">
+    <div class="form-group">
+        {{if rows}}
+        <select class="form-control" data-link="{:postData^change_value:}">
+            <option value="{{:emptyStr}}">{{:emptyStr}}</option>
+            {^{for rows ~key=fieldSrc.key}}
+                <option value="{{:#data[~key]||id}}">{{:name}}</option>
+            {{/for}}
+        </select>
+        {{else}}
+        <input type="text" class="form-control" data-link="postData^change_value" placeholder="Новое значение">
+        {{/if}}
+    </div>
+    {{:add_tpl}}
+    <div class="form-group">
+        <textarea rows="2" class="form-control"
+            data-link="{:postData^change_info:} placeholder{:info_pholder}"></textarea>
+    </div>
+</script>
