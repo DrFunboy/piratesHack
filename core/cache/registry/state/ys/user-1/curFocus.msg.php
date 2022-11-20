@@ -1,2 +1,2 @@
 <?php
-return 'modx-resource-searchable';
+return 'modx-resource-pagetitle';

@@ -252,7 +252,7 @@
     <p>Once you log into the MODX Manager at [[+surl]], you can change your password.</p>
 
     <p>Regards,<br />Site Administrator</p>',
-  'site_name' => 'РосМедНадзор',
+  'site_name' => 'PowerPark',
   'site_start' => '1',
   'site_status' => '1',
   'site_unavailable_message' => 'The site is currently unavailable',

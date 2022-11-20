@@ -343,7 +343,7 @@ $(function(){
 [[!+BottomHTMLBlock]]
 </body>
 </html>',
-    '_isForward' => false,
+    '_isForward' => true,
   ),
   'contentType' => 
   array (
@@ -362,36 +362,99 @@ $(function(){
   array (
     'modChunk' => 
     array (
-      'idLoginMenu4' => 
+      'idLogoutMenu4' => 
       array (
         'fields' => 
         array (
-          'id' => 14,
+          'id' => 13,
           'source' => 1,
           'property_preprocess' => false,
-          'name' => 'idLoginMenu4',
+          'name' => 'idLogoutMenu4',
           'description' => '',
           'editor_type' => 0,
           'category' => 5,
           'cache_type' => 0,
-          'snippet' => '[[-<li><a href="/?action=login" class="showLogin"><i class="fa fa-sign-in"></i> Войти</a></li>]]
-
-<a href="/?action=login" class="btn-account showLogin"><i class="fa fa-sign-in"></i>&nbsp;Войти</a>',
+          'snippet' => '<button class="btn-account" type="button" data-toggle="dropdown"[[- data-display="static" aria-haspopup="true" aria-expanded="false"]]>
+    <span class="d-block d-md-none">
+        <i class="fa fa-user-circle-o"></i>
+    </span>
+    <span class="account-summary d-none d-md-block">
+        <span class="account-name">[[!#SESSION.user_fullname]]</span>
+        <span class="account-description">[[!#SESSION.club_cityname]]</span>
+    </span>
+</button>
+<!-- .dropdown-menu -->
+<div class="dropdown-menu dropdown-menu-right">
+    <div class="dropdown-arrow"></div>
+    <h6 class="dropdown-header d-md-none" id="user_fullname">[[!#SESSION.user_fullname]]</h6>
+[[#SESSION.club_manager:notempty=`
+    <a class="dropdown-item" href="/database/db.html" id="chCity">
+        <i class="dropdown-icon fa fa-map-marker"></i> [[#SESSION.club_cityname]]
+    </a>
+`]]
+    <a class="dropdown-item" href="/login/profile.html"><i class="dropdown-icon fa fa-id-card-o"></i> Профиль</a>
+    <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="[[+logoutUrl]]"><i class="dropdown-icon fa fa-sign-out"></i> Выход</a>
+</div>
+<!-- /.dropdown-menu -->
+[[-#SESSION.club_manager:notempty=`
+<li class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="chCity" aria-expanded="false">
+        <i class="fa fa-map-marker"></i> 
+        [[-#SESSION.club_cityname]]
+        <span class="caret"></span>
+    </a>
+    
+    <ul class="dropdown-menu">
+        <li><a href="/database/db.html">База данных</a></li>
+    </ul>
+</li>
+`]]',
           'locked' => false,
           'properties' => 
           array (
           ),
           'static' => false,
           'static_file' => '',
-          'content' => '[[-<li><a href="/?action=login" class="showLogin"><i class="fa fa-sign-in"></i> Войти</a></li>]]
-
-<a href="/?action=login" class="btn-account showLogin"><i class="fa fa-sign-in"></i>&nbsp;Войти</a>',
+          'content' => '<button class="btn-account" type="button" data-toggle="dropdown"[[- data-display="static" aria-haspopup="true" aria-expanded="false"]]>
+    <span class="d-block d-md-none">
+        <i class="fa fa-user-circle-o"></i>
+    </span>
+    <span class="account-summary d-none d-md-block">
+        <span class="account-name">[[!#SESSION.user_fullname]]</span>
+        <span class="account-description">[[!#SESSION.club_cityname]]</span>
+    </span>
+</button>
+<!-- .dropdown-menu -->
+<div class="dropdown-menu dropdown-menu-right">
+    <div class="dropdown-arrow"></div>
+    <h6 class="dropdown-header d-md-none" id="user_fullname">[[!#SESSION.user_fullname]]</h6>
+[[#SESSION.club_manager:notempty=`
+    <a class="dropdown-item" href="/database/db.html" id="chCity">
+        <i class="dropdown-icon fa fa-map-marker"></i> [[#SESSION.club_cityname]]
+    </a>
+`]]
+    <a class="dropdown-item" href="/login/profile.html"><i class="dropdown-icon fa fa-id-card-o"></i> Профиль</a>
+    <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="[[+logoutUrl]]"><i class="dropdown-icon fa fa-sign-out"></i> Выход</a>
+</div>
+<!-- /.dropdown-menu -->
+[[-#SESSION.club_manager:notempty=`
+<li class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="chCity" aria-expanded="false">
+        <i class="fa fa-map-marker"></i> 
+        [[-#SESSION.club_cityname]]
+        <span class="caret"></span>
+    </a>
+    
+    <ul class="dropdown-menu">
+        <li><a href="/database/db.html">База данных</a></li>
+    </ul>
+</li>
+`]]',
         ),
         'policies' => 
         array (
-          'web' => 
-          array (
-          ),
         ),
         'source' => 
         array (
@@ -900,9 +963,6 @@ return $output;',
         ),
         'policies' => 
         array (
-          'web' => 
-          array (
-          ),
         ),
         'source' => 
         array (
@@ -1058,9 +1118,6 @@ return $menu;
         ),
         'policies' => 
         array (
-          'web' => 
-          array (
-          ),
         ),
         'source' => 
         array (
@@ -1162,9 +1219,6 @@ return "";',
         ),
         'policies' => 
         array (
-          'web' => 
-          array (
-          ),
         ),
         'source' => 
         array (
@@ -1218,9 +1272,6 @@ return (sizeof($json) > 1)? json_encode($json, JSON_UNESCAPED_UNICODE) : $json[$
         ),
         'policies' => 
         array (
-          'web' => 
-          array (
-          ),
         ),
         'source' => 
         array (

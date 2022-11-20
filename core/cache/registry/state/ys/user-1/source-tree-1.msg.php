@@ -1,2 +1,2 @@
 <?php
-return '/Filesystem/assets/clubtools/hook';
+return '/Filesystem/assets/id/hook';
